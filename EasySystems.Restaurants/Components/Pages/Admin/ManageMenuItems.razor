@@ -1,0 +1,290 @@
+﻿@page "/admin/restaurants/{RestaurantId:int}/items"
+@using EasySystems.Restaurants.Data
+@using EasySystems.Restaurants.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Forms
+@inject ApplicationDbContext Db
+@inject NavigationManager Navigation
+@inject IWebHostEnvironment Environment
+
+<PageTitle>Manage Menu Items</PageTitle>
+
+<div class="admin-page">
+    <div class="admin-header">
+        <div>
+            <p class="eyebrow">Menu Items</p>
+            <h1>Manage dishes</h1>
+            <p class="subtitle">Add dishes with category, price, description and image.</p>
+        </div>
+    </div>
+
+    @if (restaurant is null)
+    {
+        <div class="form-card admin-center-card">
+            <h2>Restaurant not found</h2>
+            <p>This restaurant does not exist.</p>
+        </div>
+    }
+    else if (categories.Count == 0)
+    {
+        <div class="form-card admin-center-card">
+            <h2>No categories yet</h2>
+            <p>You need to create menu categories before adding dishes.</p>
+            <button class="save-btn" type="button" @onclick="GoToCategories">Create categories</button>
+        </div>
+    }
+    else
+    {
+        <div class="admin-grid">
+            <div class="form-card">
+                <h2>Add new dish</h2>
+
+                <label>Category</label>
+                <InputSelect class="input" @bind-Value="newItem.MenuCategoryId">
+                    @foreach (var category in categories)
+                    {
+                        <option value="@category.Id">@category.Name</option>
+                    }
+                </InputSelect>
+
+                <label>Dish name</label>
+                <InputText class="input" @bind-Value="newItem.Name" placeholder="Kyckling Kebab Tallrik" />
+
+                <label>Description</label>
+                <InputTextArea class="input textarea" @bind-Value="newItem.Description" placeholder="Serveras med ris, sallad och valfri sås..." />
+
+                <div class="two-cols">
+                    <div>
+                        <label>Price</label>
+                        <InputNumber class="input" @bind-Value="newItem.Price" />
+                    </div>
+
+                    <div>
+                        <label>Sort order</label>
+                        <InputNumber class="input" @bind-Value="newItem.SortOrder" />
+                    </div>
+                </div>
+
+                <label>Dish image</label>
+                <InputFile class="file-input" OnChange="UploadItemImage" accept="image/png,image/jpeg,image/webp" />
+
+                @if (!string.IsNullOrWhiteSpace(newItem.ImageUrl))
+                {
+                    <p class="upload-success">Dish image uploaded successfully</p>
+                }
+
+                <button class="save-btn" type="button" @onclick="AddItem">Add dish</button>
+
+                @if (!string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    <div class="error">@errorMessage</div>
+                }
+            </div>
+
+            <div class="preview-card">
+                <p class="preview-label">@restaurant.Name dishes</p>
+
+                @if (items.Count == 0)
+                {
+                    <div class="empty-menu">
+                        <h3>No dishes yet</h3>
+                        <p>Add your first dish to the menu.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="item-admin-list">
+                        @foreach (var item in items)
+                        {
+                            <div class="item-admin-card">
+                                @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                {
+                                    <img src="@item.ImageUrl" alt="@item.Name" />
+                                }
+
+                                <div>
+                                    <strong>@item.Name</strong>
+                                    <p>@item.Description</p>
+                                    <span>@item.Price.ToString("0.00") kr</span>
+                                    <small>@item.MenuCategory?.Name</small>
+                                </div>
+
+                                <div class="category-actions">
+                                    <button type="button" @onclick="() => ToggleAvailability(item)">
+                                        @(item.IsAvailable ? "Mark unavailable" : "Mark available")
+                                    </button>
+
+                                    <button class="danger-btn" type="button" @onclick="() => DeleteItem(item)">
+                                        Delete
+                                    </button>
+                                </div>
+
+                                @if (!item.IsAvailable)
+                                {
+                                    <small class="hidden-badge">Unavailable</small>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
+                <button class="secondary-admin-btn" type="button" @onclick="GoToRestaurant">
+                    View restaurant page
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int RestaurantId { get; set; }
+
+    private Restaurant? restaurant;
+    private List<MenuCategory> categories = [];
+    private List<MenuItem> items = [];
+    private string? errorMessage;
+
+    private MenuItem newItem = new()
+        {
+            IsAvailable = true
+        };
+
+    private const long MaxFileSize = 5 * 1024 * 1024;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        restaurant = await Db.Restaurants.FirstOrDefaultAsync(x => x.Id == RestaurantId);
+
+        categories = await Db.MenuCategories
+            .Where(x => x.RestaurantId == RestaurantId)
+            .OrderBy(x => x.SortOrder)
+            .ToListAsync();
+
+        await LoadItems();
+
+        newItem = new MenuItem
+            {
+                MenuCategoryId = categories.FirstOrDefault()?.Id ?? 0,
+                IsAvailable = true,
+                SortOrder = items.Count + 1
+            };
+    }
+
+    private async Task LoadItems()
+    {
+        items = await Db.MenuItems
+            .Include(x => x.MenuCategory)
+            .Where(x => x.MenuCategory != null && x.MenuCategory.RestaurantId == RestaurantId)
+            .OrderBy(x => x.MenuCategory!.SortOrder)
+            .ThenBy(x => x.SortOrder)
+            .ToListAsync();
+    }
+
+    private async Task AddItem()
+    {
+        errorMessage = null;
+
+        newItem.Name = newItem.Name.Trim();
+
+        if (newItem.MenuCategoryId <= 0)
+        {
+            errorMessage = "Category is required.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(newItem.Name))
+        {
+            errorMessage = "Dish name is required.";
+            return;
+        }
+
+        if (newItem.Price <= 0)
+        {
+            errorMessage = "Price must be greater than 0.";
+            return;
+        }
+
+        newItem.IsAvailable = true;
+
+        Db.MenuItems.Add(newItem);
+        await Db.SaveChangesAsync();
+
+        await LoadItems();
+
+        newItem = new MenuItem
+            {
+                MenuCategoryId = categories.FirstOrDefault()?.Id ?? 0,
+                IsAvailable = true,
+                SortOrder = items.Count + 1
+            };
+    }
+
+    private async Task UploadItemImage(InputFileChangeEventArgs e)
+    {
+        newItem.ImageUrl = await SaveImageAsync(e.File, "products");
+    }
+
+    private async Task<string> SaveImageAsync(IBrowserFile file, string folderName)
+    {
+        errorMessage = null;
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+
+        if (!allowedExtensions.Contains(extension))
+        {
+            errorMessage = "Only JPG, PNG and WEBP images are allowed.";
+            return string.Empty;
+        }
+
+        if (file.Size > MaxFileSize)
+        {
+            errorMessage = "Image size must be less than 5 MB.";
+            return string.Empty;
+        }
+
+        var uploadFolder = Path.Combine(Environment.WebRootPath, "uploads", folderName);
+
+        if (!Directory.Exists(uploadFolder))
+        {
+            Directory.CreateDirectory(uploadFolder);
+        }
+
+        var fileName = $"{Guid.NewGuid()}{extension}";
+        var fullPath = Path.Combine(uploadFolder, fileName);
+        var relativePath = $"/uploads/{folderName}/{fileName}";
+
+        await using var readStream = file.OpenReadStream(MaxFileSize);
+        await using var writeStream = File.Create(fullPath);
+
+        await readStream.CopyToAsync(writeStream);
+
+        return relativePath;
+    }
+
+    private async Task ToggleAvailability(MenuItem item)
+    {
+        item.IsAvailable = !item.IsAvailable;
+        await Db.SaveChangesAsync();
+        await LoadItems();
+    }
+
+    private async Task DeleteItem(MenuItem item)
+    {
+        Db.MenuItems.Remove(item);
+        await Db.SaveChangesAsync();
+        await LoadItems();
+    }
+
+    private void GoToCategories()
+    {
+        Navigation.NavigateTo($"/admin/restaurants/{RestaurantId}/categories");
+    }
+
+    private void GoToRestaurant()
+    {
+        if (restaurant is not null)
+            Navigation.NavigateTo($"/restaurant/{restaurant.Slug}");
+    }
+}

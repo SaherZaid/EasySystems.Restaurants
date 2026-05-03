@@ -1,0 +1,524 @@
+﻿@page "/restaurant/{Slug}"
+@rendermode InteractiveServer
+
+@using EasySystems.Restaurants.Data
+@using EasySystems.Restaurants.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.JSInterop
+@using System.Text.Json
+
+@inject ApplicationDbContext Db
+@inject IJSRuntime JS
+
+<PageTitle>@(restaurant?.Name ?? "Restaurant")</PageTitle>
+
+@if (isLoading)
+{
+    <div class="public-loading">Loading restaurant...</div>
+}
+else if (restaurant is null)
+{
+    <div class="public-not-found">
+        <h1>Restaurant not found</h1>
+        <p>The restaurant you are looking for does not exist or is not active.</p>
+    </div>
+}
+else
+{
+    <main class="restaurant-public" style="--primary:@restaurant.PrimaryColor; --secondary:@restaurant.SecondaryColor;">
+        <section class="restaurant-hero-public" style="@GetHeroStyle()">
+            <div class="restaurant-hero-overlay">
+                <div class="restaurant-logo-public">
+                    @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
+                    {
+                        <img src="@restaurant.LogoUrl" alt="@restaurant.Name logo" />
+                    }
+                    else
+                    {
+                        <span>@GetInitials(restaurant.Name)</span>
+                    }
+                </div>
+
+                <p class="restaurant-badge">Göteborg • Online menu</p>
+                <h1>@restaurant.Name</h1>
+                <p class="restaurant-description">@restaurant.Description</p>
+
+                <div class="restaurant-actions">
+                    <a href="#menu" class="primary-action">Se meny</a>
+                    <a href="#contact" class="secondary-action">Kontakt</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="menu" class="restaurant-section">
+            <div class="section-heading">
+                <p>Meny</p>
+                <h2>Våra rätter</h2>
+            </div>
+
+            @if (categories.Count == 0)
+            {
+                <div class="empty-menu">
+                    <h3>Menyn är inte publicerad ännu</h3>
+                    <p>Restaurangen håller på att lägga till sina kategorier och rätter.</p>
+                </div>
+            }
+            else
+            {
+                <div class="menu-category-tabs">
+                    @foreach (var category in categories)
+                    {
+                        <button type="button" @onclick="() => ScrollToCategory(category.Id)">
+                            @category.Name
+                        </button>
+                    }
+                </div>
+
+                <div class="public-menu-list">
+                    @foreach (var category in categories)
+                    {
+                        var categoryItems = items
+                        .Where(x => x.MenuCategoryId == category.Id)
+                        .OrderBy(x => x.SortOrder)
+                        .ToList();
+
+                        <section id="category-@category.Id" class="public-menu-category">
+                            <div class="public-menu-category-header">
+                                <div>
+                                    <h3>@category.Name</h3>
+
+                                    @if (!string.IsNullOrWhiteSpace(category.Description))
+                                    {
+                                        <p>@category.Description</p>
+                                    }
+                                </div>
+
+                                <span>@categoryItems.Count rätter</span>
+                            </div>
+
+                            @if (categoryItems.Count == 0)
+                            {
+                                <div class="empty-category">
+                                    Inga rätter i denna kategori ännu.
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="public-dish-list">
+                                    @foreach (var item in categoryItems)
+                                    {
+                                        <article class="public-dish-row">
+                                            <div class="dish-text">
+                                                <h4>@item.Name</h4>
+
+                                                @if (!string.IsNullOrWhiteSpace(item.Description))
+                                                {
+                                                    <p>@item.Description</p>
+                                                }
+
+                                                <strong>@item.Price.ToString("0.00") kr</strong>
+                                            </div>
+
+                                            @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                            {
+                                                <img src="@item.ImageUrl" alt="@item.Name" />
+                                            }
+
+                                            <button type="button" @onclick="() => AddToCart(item)">
+                                                Lägg till
+                                            </button>
+                                        </article>
+                                    }
+                                </div>
+                            }
+                        </section>
+                    }
+                </div>
+            }
+        </section>
+
+        <section id="contact" class="restaurant-section contact-section">
+            <div>
+                <p class="small-label">Kontakt</p>
+                <h2>Hitta oss</h2>
+            </div>
+
+            <div class="contact-grid">
+                <div>
+                    <strong>Telefon</strong>
+                    <p>@restaurant.Phone</p>
+                </div>
+
+                <div>
+                    <strong>Adress</strong>
+                    <p>@restaurant.Address</p>
+                </div>
+            </div>
+        </section>
+
+        @if (CartCount > 0 && !showCart)
+        {
+            <div class="cart-bar">
+                <div>
+                    <strong>Varukorg</strong>
+                    <span>@CartCount varor • @CartTotal.ToString("0.00") kr</span>
+                </div>
+
+                <button type="button" @onclick="OpenCart">
+                    Visa varukorg
+                </button>
+            </div>
+        }
+
+        @if (showCart)
+        {
+            <div class="cart-overlay">
+                <div class="cart-panel">
+                    <div class="cart-header">
+                        <div>
+                            <p>Din beställning</p>
+                            <h2>Varukorg</h2>
+                        </div>
+
+                        <button type="button" class="cart-close" @onclick="CloseCart">×</button>
+                    </div>
+
+                    @if (orderSubmitted)
+                    {
+                        <div class="order-success">
+                            <strong>Tack! Din beställning är mottagen.</strong>
+                            <p>Ordernummer: #@createdOrderId</p>
+
+                            <button type="button" class="checkout-btn" @onclick="CloseCart">
+                                Stäng
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="cart-panel-content">
+                            @foreach (var item in cart)
+                            {
+                                <div class="cart-item">
+                                    <div>
+                                        <strong>@item.Name</strong>
+                                        <span>@item.UnitPrice.ToString("0.00") kr</span>
+                                    </div>
+
+                                    <div class="quantity-controls">
+                                        <button type="button" @onclick="() => DecreaseQuantity(item)">−</button>
+                                        <span>@item.Quantity</span>
+                                        <button type="button" @onclick="() => IncreaseQuantity(item)">+</button>
+                                    </div>
+
+                                    <button type="button" class="remove-item" @onclick="() => RemoveFromCart(item)">
+                                        Ta bort
+                                    </button>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="cart-checkout-area">
+                            <div class="cart-total">
+                                <span>Totalt</span>
+                                <strong>@CartTotal.ToString("0.00") kr</strong>
+                            </div>
+
+                            @if (!showCheckout)
+                            {
+                                <button type="button" class="checkout-btn" @onclick="OpenCheckout">
+                                    Fortsätt till beställning
+                                </button>
+                            }
+                            else
+                            {
+                                <div class="checkout-form">
+                                    <h3>Kunduppgifter</h3>
+
+                                    <label>Namn</label>
+                                    <InputText class="input" @bind-Value="customerName" placeholder="Ditt namn" />
+
+                                    <label>Telefon</label>
+                                    <InputText class="input" @bind-Value="customerPhone" placeholder="070-123 45 67" />
+
+                                    <label>Meddelande</label>
+                                    <InputTextArea class="input textarea" @bind-Value="customerNote" placeholder="Exempel: Ingen lök, extra sås..." />
+
+                                    @if (!string.IsNullOrWhiteSpace(orderErrorMessage))
+                                    {
+                                        <div class="error">@orderErrorMessage</div>
+                                    }
+
+                                    <button type="button" class="checkout-btn" @onclick="SubmitOrder">
+                                        Skicka beställning
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </main>
+}
+
+@code {
+    [Parameter]
+    public string Slug { get; set; } = string.Empty;
+
+    private Restaurant? restaurant;
+    private bool isLoading = true;
+
+    private List<MenuCategory> categories = [];
+    private List<MenuItem> items = [];
+
+    private List<CartItem> cart = [];
+
+    private bool showCart;
+    private bool showCheckout;
+    private bool cartLoaded;
+
+    private string customerName = string.Empty;
+    private string customerPhone = string.Empty;
+    private string customerNote = string.Empty;
+    private string? orderErrorMessage;
+
+    private bool orderSubmitted;
+    private int createdOrderId;
+
+    private string CartStorageKey => restaurant is null ? "cart" : $"restaurant-cart-{restaurant.Id}";
+    private decimal CartTotal => cart.Sum(x => x.UnitPrice * x.Quantity);
+    private int CartCount => cart.Sum(x => x.Quantity);
+
+    private class CartItem
+    {
+        public int MenuItemId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public decimal UnitPrice { get; set; }
+        public int Quantity { get; set; }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+
+        restaurant = await Db.Restaurants
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Slug == Slug && x.IsActive);
+
+        if (restaurant is not null)
+        {
+            categories = await Db.MenuCategories
+                .AsNoTracking()
+                .Where(x => x.RestaurantId == restaurant.Id && x.IsVisible)
+                .OrderBy(x => x.SortOrder)
+                .ToListAsync();
+
+            items = await Db.MenuItems
+                .AsNoTracking()
+                .Include(x => x.MenuCategory)
+                .Where(x =>
+                    x.IsAvailable &&
+                    x.MenuCategory != null &&
+                    x.MenuCategory.RestaurantId == restaurant.Id &&
+                    x.MenuCategory.IsVisible)
+                .OrderBy(x => x.MenuCategory!.SortOrder)
+                .ThenBy(x => x.SortOrder)
+                .ToListAsync();
+        }
+
+        isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && restaurant is not null && !cartLoaded)
+        {
+            cartLoaded = true;
+            await LoadCart();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadCart()
+    {
+        if (restaurant is null)
+            return;
+
+        var json = await JS.InvokeAsync<string?>("easyCart.get", CartStorageKey);
+
+        if (!string.IsNullOrWhiteSpace(json))
+        {
+            cart = JsonSerializer.Deserialize<List<CartItem>>(json) ?? [];
+        }
+    }
+
+    private async Task SaveCart()
+    {
+        var json = JsonSerializer.Serialize(cart);
+        await JS.InvokeVoidAsync("easyCart.set", CartStorageKey, json);
+    }
+
+    private async Task AddToCart(MenuItem item)
+    {
+        var existing = cart.FirstOrDefault(x => x.MenuItemId == item.Id);
+
+        if (existing is null)
+        {
+            cart.Add(new CartItem
+                {
+                    MenuItemId = item.Id,
+                    Name = item.Name,
+                    UnitPrice = item.Price,
+                    Quantity = 1
+                });
+        }
+        else
+        {
+            existing.Quantity++;
+        }
+
+        await SaveCart();
+    }
+
+    private async Task RemoveFromCart(CartItem item)
+    {
+        cart.Remove(item);
+        await SaveCart();
+
+        if (cart.Count == 0)
+        {
+            showCart = false;
+            showCheckout = false;
+        }
+    }
+
+    private async Task IncreaseQuantity(CartItem item)
+    {
+        item.Quantity++;
+        await SaveCart();
+    }
+
+    private async Task DecreaseQuantity(CartItem item)
+    {
+        if (item.Quantity <= 1)
+        {
+            cart.Remove(item);
+        }
+        else
+        {
+            item.Quantity--;
+        }
+
+        await SaveCart();
+
+        if (cart.Count == 0)
+        {
+            showCart = false;
+            showCheckout = false;
+        }
+    }
+
+    private void OpenCart()
+    {
+        showCart = true;
+        orderSubmitted = false;
+    }
+
+    private void CloseCart()
+    {
+        showCart = false;
+        showCheckout = false;
+        orderErrorMessage = null;
+    }
+
+    private void OpenCheckout()
+    {
+        showCheckout = true;
+        orderErrorMessage = null;
+    }
+
+    private async Task SubmitOrder()
+    {
+        orderErrorMessage = null;
+
+        if (restaurant is null)
+        {
+            orderErrorMessage = "Restaurant was not found.";
+            return;
+        }
+
+        if (cart.Count == 0)
+        {
+            orderErrorMessage = "Varukorgen är tom.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(customerName))
+        {
+            orderErrorMessage = "Namn krävs.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(customerPhone))
+        {
+            orderErrorMessage = "Telefonnummer krävs.";
+            return;
+        }
+
+        var order = new Order
+            {
+                RestaurantId = restaurant.Id,
+                CustomerName = customerName.Trim(),
+                CustomerPhone = customerPhone.Trim(),
+                CustomerNote = customerNote.Trim(),
+                TotalAmount = CartTotal,
+                Status = "New",
+                CreatedAt = DateTime.UtcNow,
+                Items = cart.Select(x => new OrderItem
+                {
+                    MenuItemId = x.MenuItemId,
+                    ItemName = x.Name,
+                    UnitPrice = x.UnitPrice,
+                    Quantity = x.Quantity,
+                    LineTotal = x.UnitPrice * x.Quantity
+                }).ToList()
+            };
+
+        Db.Orders.Add(order);
+        await Db.SaveChangesAsync();
+
+        createdOrderId = order.Id;
+        orderSubmitted = true;
+
+        cart.Clear();
+        customerName = string.Empty;
+        customerPhone = string.Empty;
+        customerNote = string.Empty;
+        showCheckout = false;
+
+        await JS.InvokeVoidAsync("easyCart.remove", CartStorageKey);
+    }
+
+    private async Task ScrollToCategory(int categoryId)
+    {
+        await JS.InvokeVoidAsync("scrollToElementById", $"category-{categoryId}");
+    }
+
+    private string GetHeroStyle()
+    {
+        if (restaurant is null || string.IsNullOrWhiteSpace(restaurant.HeroImageUrl))
+            return "background: linear-gradient(135deg, var(--primary), #111827);";
+
+        return $"background: linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)), url('{restaurant.HeroImageUrl}') center/cover;";
+    }
+
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "ES";
+
+        var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Join("", words.Take(2).Select(x => x[0])).ToUpper();
+    }
+}

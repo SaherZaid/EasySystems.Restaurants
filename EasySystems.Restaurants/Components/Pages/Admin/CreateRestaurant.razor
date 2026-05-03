@@ -1,0 +1,245 @@
+﻿@page "/admin/restaurants/create"
+@using EasySystems.Restaurants.Data
+@using EasySystems.Restaurants.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Forms
+@inject ApplicationDbContext Db
+@inject NavigationManager Navigation
+@inject IWebHostEnvironment Environment
+
+<PageTitle>Create Restaurant</PageTitle>
+
+<div class="admin-page">
+    <div class="admin-header">
+        <div>
+            <p class="eyebrow">EasySystems Restaurants</p>
+            <h1>Create new restaurant</h1>
+            <p class="subtitle">Create a real restaurant website with editable content, branding and images.</p>
+        </div>
+    </div>
+
+    <EditForm Model="restaurant" OnValidSubmit="SaveRestaurant">
+        <DataAnnotationsValidator />
+
+        <div class="admin-grid">
+            <div class="form-card">
+                <h2>Restaurant details</h2>
+
+                <label>Restaurant name</label>
+                <InputText class="input" @bind-Value="restaurant.Name" placeholder="Göteborg Mat & Grill" />
+
+                <label>Slug / URL</label>
+                <InputText class="input" @bind-Value="restaurant.Slug" placeholder="goteborg-mat-grill" />
+
+                <label>Description</label>
+                <InputTextArea class="input textarea" @bind-Value="restaurant.Description" placeholder="God mat i hjärtat av Göteborg..." />
+
+                <div class="two-cols">
+                    <div>
+                        <label>Phone</label>
+                        <InputText class="input" @bind-Value="restaurant.Phone" placeholder="031-123 45 67" />
+                    </div>
+
+                    <div>
+                        <label>Address</label>
+                        <InputText class="input" @bind-Value="restaurant.Address" placeholder="Avenyn 12, Göteborg" />
+                    </div>
+                </div>
+
+                <h2>Branding</h2>
+
+                <div class="two-cols">
+                    <div>
+                        <label>Primary color</label>
+                        <InputText class="input" @bind-Value="restaurant.PrimaryColor" placeholder="#8B0000" />
+                    </div>
+
+                    <div>
+                        <label>Secondary color</label>
+                        <InputText class="input" @bind-Value="restaurant.SecondaryColor" placeholder="#FFF7ED" />
+                    </div>
+                </div>
+
+                <label>Logo</label>
+                <InputFile class="file-input" OnChange="UploadLogo" accept="image/png,image/jpeg,image/webp" />
+                @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
+                {
+                    <p class="upload-success">Logo uploaded successfully</p>
+                }
+
+                <label>Hero image</label>
+                <InputFile class="file-input" OnChange="UploadHeroImage" accept="image/png,image/jpeg,image/webp" />
+                @if (!string.IsNullOrWhiteSpace(restaurant.HeroImageUrl))
+                {
+                    <p class="upload-success">Hero image uploaded successfully</p>
+                }
+
+                <button class="save-btn" type="submit">Create restaurant</button>
+
+                @if (!string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    <div class="error">@errorMessage</div>
+                }
+            </div>
+
+            <div class="preview-card">
+                <p class="preview-label">Live preview</p>
+
+                <div class="restaurant-preview" style="--primary:@restaurant.PrimaryColor; --secondary:@restaurant.SecondaryColor;">
+                    <div class="preview-hero" style="@GetHeroBackgroundStyle()">
+                        <div class="preview-logo">
+                            @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
+                            {
+                                <img src="@restaurant.LogoUrl" />
+                            }
+                            else
+                            {
+                                <span>@GetInitials()</span>
+                            }
+                        </div>
+
+                        <h2>@DisplayOrFallback(restaurant.Name, "Göteborg Mat & Grill")</h2>
+                        <p>@DisplayOrFallback(restaurant.Description, "God mat i hjärtat av Göteborg. Beställ snabbt och enkelt online.")</p>
+
+                        <button type="button">Se meny</button>
+                    </div>
+
+                    <div class="preview-info">
+                        <span>@DisplayOrFallback(restaurant.Phone, "031-123 45 67")</span>
+                        <span>@DisplayOrFallback(restaurant.Address, "Göteborg, Sverige")</span>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <strong>Production ready direction</strong>
+                    <p>Images are uploaded to your own project, not loaded from external placeholder links.</p>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    private Restaurant restaurant = new()
+        {
+            PrimaryColor = "#8B0000",
+            SecondaryColor = "#FFF7ED",
+            IsActive = true
+        };
+
+    private string? errorMessage;
+
+    private const long MaxFileSize = 5 * 1024 * 1024;
+
+    private async Task SaveRestaurant()
+    {
+        errorMessage = null;
+
+        restaurant.Name = restaurant.Name.Trim();
+        restaurant.Slug = NormalizeSlug(restaurant.Slug);
+
+        if (string.IsNullOrWhiteSpace(restaurant.Name))
+        {
+            errorMessage = "Restaurant name is required.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(restaurant.Slug))
+        {
+            errorMessage = "Slug is required.";
+            return;
+        }
+
+        bool slugExists = await Db.Restaurants.AnyAsync(x => x.Slug == restaurant.Slug);
+
+        if (slugExists)
+        {
+            errorMessage = "This slug is already used. Choose another one.";
+            return;
+        }
+
+        Db.Restaurants.Add(restaurant);
+        await Db.SaveChangesAsync();
+
+        Navigation.NavigateTo($"/restaurant/{restaurant.Slug}");
+    }
+
+    private async Task UploadLogo(InputFileChangeEventArgs e)
+    {
+        restaurant.LogoUrl = await SaveImageAsync(e.File, "logos");
+    }
+
+    private async Task UploadHeroImage(InputFileChangeEventArgs e)
+    {
+        restaurant.HeroImageUrl = await SaveImageAsync(e.File, "heroes");
+    }
+
+    private async Task<string> SaveImageAsync(IBrowserFile file, string folderName)
+    {
+        errorMessage = null;
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+
+        if (!allowedExtensions.Contains(extension))
+        {
+            errorMessage = "Only JPG, PNG and WEBP images are allowed.";
+            return string.Empty;
+        }
+
+        if (file.Size > MaxFileSize)
+        {
+            errorMessage = "Image size must be less than 5 MB.";
+            return string.Empty;
+        }
+
+        var uploadFolder = Path.Combine(Environment.WebRootPath, "uploads", folderName);
+
+        if (!Directory.Exists(uploadFolder))
+        {
+            Directory.CreateDirectory(uploadFolder);
+        }
+
+        var fileName = $"{Guid.NewGuid()}{extension}";
+        var fullPath = Path.Combine(uploadFolder, fileName);
+        var relativePath = $"/uploads/{folderName}/{fileName}";
+
+        await using var readStream = file.OpenReadStream(MaxFileSize);
+        await using var writeStream = File.Create(fullPath);
+
+        await readStream.CopyToAsync(writeStream);
+
+        return relativePath;
+    }
+
+    private string DisplayOrFallback(string value, string fallback)
+        => string.IsNullOrWhiteSpace(value) ? fallback : value;
+
+    private string GetInitials()
+    {
+        if (string.IsNullOrWhiteSpace(restaurant.Name))
+            return "ES";
+
+        var words = restaurant.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Join("", words.Take(2).Select(x => x[0])).ToUpper();
+    }
+
+    private string GetHeroBackgroundStyle()
+    {
+        if (string.IsNullOrWhiteSpace(restaurant.HeroImageUrl))
+            return string.Empty;
+
+        return $"background: linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)), url('{restaurant.HeroImageUrl}') center/cover;";
+    }
+
+    private string NormalizeSlug(string value)
+    {
+        return value
+            .Trim()
+            .ToLower()
+            .Replace(" ", "-")
+            .Replace("å", "a")
+            .Replace("ä", "a")
+            .Replace("ö", "o");
+    }
+}

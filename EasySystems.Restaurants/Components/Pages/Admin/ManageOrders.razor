@@ -1,0 +1,132 @@
+﻿@page "/admin/restaurants/{RestaurantId:int}/orders"
+@using EasySystems.Restaurants.Data
+@using EasySystems.Restaurants.Models
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext Db
+
+<PageTitle>Orders</PageTitle>
+
+<div class="admin-page">
+    <div class="admin-header">
+        <div>
+            <p class="eyebrow">Orders</p>
+            <h1>Restaurant orders</h1>
+            <p class="subtitle">View customer orders and update their status.</p>
+        </div>
+    </div>
+
+    @if (restaurant is null)
+    {
+        <div class="form-card admin-center-card">
+            <h2>Restaurant not found</h2>
+        </div>
+    }
+    else
+    {
+        <div class="orders-board">
+            @if (orders.Count == 0)
+            {
+                <div class="form-card">
+                    <h2>No orders yet</h2>
+                    <p>New customer orders will appear here.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var order in orders)
+                {
+                    <div class="order-card">
+                        <div class="order-top">
+                            <div>
+                                <p class="order-number">Order #@order.Id</p>
+                                <h2>@order.CustomerName</h2>
+                                <span>@order.CustomerPhone</span>
+                            </div>
+
+                            <div class="order-status @GetStatusClass(order.Status)">
+                                @order.Status
+                            </div>
+                        </div>
+
+                        <div class="order-meta">
+                            <span>@order.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>
+                            <strong>@order.TotalAmount.ToString("0.00") kr</strong>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(order.CustomerNote))
+                        {
+                            <div class="customer-note">
+                                <strong>Note</strong>
+                                <p>@order.CustomerNote</p>
+                            </div>
+                        }
+
+                        <div class="order-items">
+                            @foreach (var item in order.Items)
+                            {
+                                <div>
+                                    <span>@item.Quantity × @item.ItemName</span>
+                                    <strong>@item.LineTotal.ToString("0.00") kr</strong>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="order-actions">
+                            <button type="button" @onclick="@(() => UpdateStatus(order, "Accepted"))">Accept</button>
+                            <button type="button" @onclick="@(() => UpdateStatus(order, "Preparing"))">Preparing</button>
+                            <button type="button" @onclick="@(() => UpdateStatus(order, "Ready"))">Ready</button>
+                            <button type="button" @onclick="@(() => UpdateStatus(order, "Completed"))">Completed</button>
+                            <button class="danger-btn" type="button" @onclick="@(() => UpdateStatus(order, "Cancelled"))">Cancel</button>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int RestaurantId { get; set; }
+
+    private Restaurant? restaurant;
+    private List<Order> orders = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        restaurant = await Db.Restaurants
+            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+
+        await LoadOrders();
+    }
+
+    private async Task LoadOrders()
+    {
+        orders = await Db.Orders
+            .Include(x => x.Items)
+            .Where(x => x.RestaurantId == RestaurantId)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync();
+    }
+
+    private async Task UpdateStatus(Order order, string status)
+    {
+        order.Status = status;
+        await Db.SaveChangesAsync();
+        await LoadOrders();
+    }
+
+    private string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "New" => "status-new",
+            "Accepted" => "status-accepted",
+            "Preparing" => "status-preparing",
+            "Ready" => "status-ready",
+            "Completed" => "status-completed",
+            "Cancelled" => "status-cancelled",
+            _ => "status-new"
+        };
+    }
+}

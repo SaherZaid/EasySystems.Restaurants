@@ -13,6 +13,32 @@
 
 <body>
     <Routes @rendermode="PageRenderMode" />
+
+    <script>
+        window.scrollToElementById = (id) => {
+            const element = document.getElementById(id);
+
+            if (element) {
+                element.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        };
+
+        window.easyCart = {
+            get: (key) => {
+                return localStorage.getItem(key);
+            },
+            set: (key, value) => {
+                localStorage.setItem(key, value);
+            },
+            remove: (key) => {
+                localStorage.removeItem(key);
+            }
+        };
+    </script>
+
     <script src="_framework/blazor.web.js"></script>
 </body>
 
