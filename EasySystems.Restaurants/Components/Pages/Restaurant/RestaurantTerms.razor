@@ -1,0 +1,117 @@
+﻿@page "/restaurant/{Slug}/terms"
+
+@using EasySystems.Restaurants.Data
+@using EasySystems.Restaurants.Models
+@using Microsoft.EntityFrameworkCore
+
+@inject ApplicationDbContext Db
+
+<PageTitle>Terms & Conditions</PageTitle>
+
+@if (isLoading)
+{
+    <div class="public-loading">Loading...</div>
+}
+else if (restaurant is null || legalPage is null || !legalPage.IsPublished)
+{
+    <div class="public-not-found">
+        <h1>Page not found</h1>
+    </div>
+}
+else
+{
+    <main class="legal-public-page"
+          style="--primary:@restaurant.PrimaryColor; --secondary:@restaurant.SecondaryColor;">
+
+        <section class="legal-hero">
+            <div class="legal-hero-box">
+
+                <div class="legal-logo">
+                    @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
+                    {
+                        <img src="@restaurant.LogoUrl" />
+                    }
+                    else
+                    {
+                        <span>@GetInitials()</span>
+                    }
+                </div>
+
+                <p class="eyebrow">@restaurant.Name</p>
+                <h1>@legalPage.Title</h1>
+
+                <a class="legal-back-btn" href="/restaurant/@restaurant.Slug">
+                    ← Back to menu
+                </a>
+            </div>
+        </section>
+
+        <section class="legal-content-wrap">
+            <article class="legal-content-card">
+                @foreach (var line in lines)
+                {
+                    <p>@line</p>
+                }
+            </article>
+        </section>
+
+        <footer class="legal-footer">
+            <a href="/restaurant/@restaurant.Slug">Menu</a>
+            <a href="/restaurant/@restaurant.Slug/privacy">Privacy Policy</a>
+        </footer>
+
+    </main>
+}
+
+@code {
+    [Parameter]
+    public string Slug { get; set; } = "";
+
+    private Restaurant? restaurant;
+    private RestaurantLegalPage? legalPage;
+
+    private bool isLoading = true;
+
+    private List<string> lines = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+
+        restaurant = await Db.Restaurants
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Slug == Slug && x.IsActive);
+
+        if (restaurant is not null)
+        {
+            legalPage = await Db.RestaurantLegalPages
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x =>
+                    x.RestaurantId == restaurant.Id &&
+                    x.PageType == "Terms");
+
+            if (legalPage is not null &&
+                !string.IsNullOrWhiteSpace(legalPage.Content))
+            {
+                lines = legalPage.Content
+                    .Split(Environment.NewLine)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToList();
+            }
+        }
+
+        isLoading = false;
+    }
+
+    private string GetInitials()
+    {
+        if (restaurant is null || string.IsNullOrWhiteSpace(restaurant.Name))
+            return "ES";
+
+        var words = restaurant.Name.Split(
+            ' ',
+            StringSplitOptions.RemoveEmptyEntries);
+
+        return string.Join("", words.Take(2).Select(x => x[0])).ToUpper();
+    }
+}

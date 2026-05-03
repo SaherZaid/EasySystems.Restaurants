@@ -1,0 +1,159 @@
+﻿@page "/admin/restaurants/{RestaurantId:int}/legal"
+@rendermode InteractiveServer
+
+@using EasySystems.Restaurants.Data
+@using EasySystems.Restaurants.Models
+@using Microsoft.EntityFrameworkCore
+
+@inject ApplicationDbContext Db
+
+<PageTitle>Legal Pages</PageTitle>
+
+<div class="admin-page">
+    <div class="admin-header">
+        <div>
+            <p class="eyebrow">Legal Pages</p>
+            <h1>@(restaurant?.Name ?? "Restaurant")</h1>
+            <p class="subtitle">Manage Privacy Policy and Terms & Conditions.</p>
+        </div>
+    </div>
+
+    @if (restaurant is null)
+    {
+        <div class="form-card">
+            <h2>Restaurant not found</h2>
+        </div>
+    }
+    else
+    {
+        <EditForm Model="privacy" OnValidSubmit="SavePages">
+            <div class="admin-grid">
+
+                <div class="form-card">
+                    <h2>Privacy Policy</h2>
+
+                    <label>Title</label>
+                    <InputText class="input" @bind-Value="privacy.Title" />
+
+                    <label>Content</label>
+                    <InputTextArea class="input textarea legal-area"
+                                   @bind-Value="privacy.Content" />
+
+                    <label class="checkbox-label">
+                        <InputCheckbox @bind-Value="privacy.IsPublished" />
+                        Published
+                    </label>
+                </div>
+
+                <div class="form-card">
+                    <h2>Terms & Conditions</h2>
+
+                    <label>Title</label>
+                    <InputText class="input" @bind-Value="terms.Title" />
+
+                    <label>Content</label>
+                    <InputTextArea class="input textarea legal-area"
+                                   @bind-Value="terms.Content" />
+
+                    <label class="checkbox-label">
+                        <InputCheckbox @bind-Value="terms.IsPublished" />
+                        Published
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-card" style="margin-top:20px;">
+                <button class="save-btn" type="submit">
+                    Save legal pages
+                </button>
+
+                @if (!string.IsNullOrWhiteSpace(message))
+                {
+                    <div class="upload-success">@message</div>
+                }
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int RestaurantId { get; set; }
+
+    private Restaurant? restaurant;
+
+    private RestaurantLegalPage privacy = new()
+        {
+            PageType = "Privacy",
+            Title = "Privacy Policy"
+        };
+
+    private RestaurantLegalPage terms = new()
+        {
+            PageType = "Terms",
+            Title = "Terms & Conditions"
+        };
+
+    private string? message;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        restaurant = await Db.Restaurants
+            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+
+        if (restaurant is null)
+            return;
+
+        var pages = await Db.RestaurantLegalPages
+            .Where(x => x.RestaurantId == RestaurantId)
+            .ToListAsync();
+
+        privacy = pages.FirstOrDefault(x => x.PageType == "Privacy")
+            ?? new RestaurantLegalPage
+                {
+                    RestaurantId = RestaurantId,
+                    PageType = "Privacy",
+                    Title = "Privacy Policy"
+                };
+
+        terms = pages.FirstOrDefault(x => x.PageType == "Terms")
+            ?? new RestaurantLegalPage
+                {
+                    RestaurantId = RestaurantId,
+                    PageType = "Terms",
+                    Title = "Terms & Conditions"
+                };
+    }
+
+    private async Task SavePages()
+    {
+        message = null;
+
+        privacy.RestaurantId = RestaurantId;
+        privacy.UpdatedAt = DateTime.UtcNow;
+
+        terms.RestaurantId = RestaurantId;
+        terms.UpdatedAt = DateTime.UtcNow;
+
+        await SaveSinglePage(privacy);
+        await SaveSinglePage(terms);
+
+        await Db.SaveChangesAsync();
+
+        message = "Saved successfully.";
+    }
+
+    private async Task SaveSinglePage(RestaurantLegalPage page)
+    {
+        if (page.Id == 0)
+        {
+            Db.RestaurantLegalPages.Add(page);
+        }
+        else
+        {
+            Db.RestaurantLegalPages.Update(page);
+        }
+
+        await Task.CompletedTask;
+    }
+}

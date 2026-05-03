@@ -1,8 +1,11 @@
 ﻿@page "/admin/restaurants/create"
+@rendermode InteractiveServer
+
 @using EasySystems.Restaurants.Data
 @using EasySystems.Restaurants.Models
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.Forms
+
 @inject ApplicationDbContext Db
 @inject NavigationManager Navigation
 @inject IWebHostEnvironment Environment
@@ -14,7 +17,7 @@
         <div>
             <p class="eyebrow">EasySystems Restaurants</p>
             <h1>Create new restaurant</h1>
-            <p class="subtitle">Create a real restaurant website with editable content, branding and images.</p>
+            <p class="subtitle">Build a complete restaurant website with branding, contact, social links and opening hours.</p>
         </div>
     </div>
 
@@ -34,6 +37,8 @@
                 <label>Description</label>
                 <InputTextArea class="input textarea" @bind-Value="restaurant.Description" placeholder="God mat i hjärtat av Göteborg..." />
 
+                <h2>Contact</h2>
+
                 <div class="two-cols">
                     <div>
                         <label>Phone</label>
@@ -41,9 +46,91 @@
                     </div>
 
                     <div>
-                        <label>Address</label>
-                        <InputText class="input" @bind-Value="restaurant.Address" placeholder="Avenyn 12, Göteborg" />
+                        <label>Email</label>
+                        <InputText class="input" @bind-Value="restaurant.Email" placeholder="info@restaurant.se" />
                     </div>
+                </div>
+
+                <label>Address</label>
+                <InputText class="input" @bind-Value="restaurant.Address" placeholder="Avenyn 12, Göteborg" />
+
+                <h2>Social media</h2>
+
+                <div class="two-cols">
+                    <div>
+                        <label>Instagram URL</label>
+                        <InputText class="input" @bind-Value="restaurant.InstagramUrl" placeholder="https://instagram.com/restaurant" />
+                    </div>
+
+                    <div>
+                        <label>Facebook URL</label>
+                        <InputText class="input" @bind-Value="restaurant.FacebookUrl" placeholder="https://facebook.com/restaurant" />
+                    </div>
+                </div>
+
+                <div class="two-cols">
+                    <div>
+                        <label>TikTok URL</label>
+                        <InputText class="input" @bind-Value="restaurant.TikTokUrl" placeholder="https://tiktok.com/restaurant" />
+                    </div>
+
+                    <div>
+                        <label>Website URL</label>
+                        <InputText class="input" @bind-Value="restaurant.WebsiteUrl" placeholder="https://restaurant.se" />
+                    </div>
+                </div>
+
+                <h2>Opening hours</h2>
+
+                <div class="opening-hours-grid">
+                    <div>
+                        <label>Monday</label>
+                        <InputText class="input" @bind-Value="restaurant.MondayHours" placeholder="10:00 - 21:00" />
+                    </div>
+
+                    <div>
+                        <label>Tuesday</label>
+                        <InputText class="input" @bind-Value="restaurant.TuesdayHours" placeholder="10:00 - 21:00" />
+                    </div>
+
+                    <div>
+                        <label>Wednesday</label>
+                        <InputText class="input" @bind-Value="restaurant.WednesdayHours" placeholder="10:00 - 21:00" />
+                    </div>
+
+                    <div>
+                        <label>Thursday</label>
+                        <InputText class="input" @bind-Value="restaurant.ThursdayHours" placeholder="10:00 - 21:00" />
+                    </div>
+
+                    <div>
+                        <label>Friday</label>
+                        <InputText class="input" @bind-Value="restaurant.FridayHours" placeholder="10:00 - 22:00" />
+                    </div>
+
+                    <div>
+                        <label>Saturday</label>
+                        <InputText class="input" @bind-Value="restaurant.SaturdayHours" placeholder="11:00 - 22:00" />
+                    </div>
+
+                    <div>
+                        <label>Sunday</label>
+                        <InputText class="input" @bind-Value="restaurant.SundayHours" placeholder="11:00 - 20:00" />
+                    </div>
+                </div>
+
+                <h2>Order settings</h2>
+
+                <div class="option-row">
+                    <label class="checkbox-label">
+                        <InputCheckbox @bind-Value="restaurant.IsPickupEnabled" />
+                        Pickup enabled
+                    </label>
+
+                    <label class="checkbox-label">
+                        <InputCheckbox @bind-Value="restaurant.IsDeliveryEnabled" />
+                        Delivery enabled
+                    </label>
                 </div>
 
                 <h2>Branding</h2>
@@ -82,7 +169,7 @@
                 }
             </div>
 
-            <div class="preview-card">
+            <div class="preview-card sticky-preview">
                 <p class="preview-label">Live preview</p>
 
                 <div class="restaurant-preview" style="--primary:@restaurant.PrimaryColor; --secondary:@restaurant.SecondaryColor;">
@@ -106,13 +193,30 @@
 
                     <div class="preview-info">
                         <span>@DisplayOrFallback(restaurant.Phone, "031-123 45 67")</span>
+                        <span>@DisplayOrFallback(restaurant.Email, "info@restaurant.se")</span>
                         <span>@DisplayOrFallback(restaurant.Address, "Göteborg, Sverige")</span>
                     </div>
                 </div>
 
+                <div class="preview-mini-section">
+                    <strong>Opening hours</strong>
+                    <div>
+                        <span>Mån</span>
+                        <p>@DisplayOrFallback(restaurant.MondayHours, "10:00 - 21:00")</p>
+                    </div>
+                    <div>
+                        <span>Fre</span>
+                        <p>@DisplayOrFallback(restaurant.FridayHours, "10:00 - 22:00")</p>
+                    </div>
+                    <div>
+                        <span>Sön</span>
+                        <p>@DisplayOrFallback(restaurant.SundayHours, "11:00 - 20:00")</p>
+                    </div>
+                </div>
+
                 <div class="tip-box">
-                    <strong>Production ready direction</strong>
-                    <p>Images are uploaded to your own project, not loaded from external placeholder links.</p>
+                    <strong>Professional setup</strong>
+                    <p>This profile includes contact, social links, opening hours, branding and order settings.</p>
                 </div>
             </div>
         </div>
@@ -124,11 +228,19 @@
         {
             PrimaryColor = "#8B0000",
             SecondaryColor = "#FFF7ED",
+            MondayHours = "10:00 - 21:00",
+            TuesdayHours = "10:00 - 21:00",
+            WednesdayHours = "10:00 - 21:00",
+            ThursdayHours = "10:00 - 21:00",
+            FridayHours = "10:00 - 22:00",
+            SaturdayHours = "11:00 - 22:00",
+            SundayHours = "11:00 - 20:00",
+            IsPickupEnabled = true,
+            IsDeliveryEnabled = false,
             IsActive = true
         };
 
     private string? errorMessage;
-
     private const long MaxFileSize = 5 * 1024 * 1024;
 
     private async Task SaveRestaurant()
@@ -161,7 +273,7 @@
         Db.Restaurants.Add(restaurant);
         await Db.SaveChangesAsync();
 
-        Navigation.NavigateTo($"/restaurant/{restaurant.Slug}");
+        Navigation.NavigateTo("/admin/restaurants");
     }
 
     private async Task UploadLogo(InputFileChangeEventArgs e)
