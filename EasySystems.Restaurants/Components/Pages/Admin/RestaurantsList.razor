@@ -1,0 +1,137 @@
+﻿@page "/admin/restaurants"
+@rendermode InteractiveServer
+
+@using EasySystems.Restaurants.Data
+@using EasySystems.Restaurants.Models
+@using Microsoft.EntityFrameworkCore
+
+@inject ApplicationDbContext Db
+@inject NavigationManager Navigation
+
+<PageTitle>Restaurants</PageTitle>
+
+<div class="admin-page">
+    <div class="admin-header admin-header-row">
+        <div>
+            <p class="eyebrow">EasySystems Restaurants</p>
+            <h1>Restaurants</h1>
+            <p class="subtitle">Manage all restaurant websites from one place.</p>
+        </div>
+
+        <button class="admin-primary-btn" type="button" @onclick="CreateRestaurant">
+            Create restaurant
+        </button>
+    </div>
+
+    <div class="restaurants-list-card">
+        @if (restaurants.Count == 0)
+        {
+            <div class="empty-menu">
+                <h3>No restaurants yet</h3>
+                <p>Create your first restaurant website.</p>
+            </div>
+        }
+        else
+        {
+            <div class="restaurants-grid">
+                @foreach (var restaurant in restaurants)
+                {
+                    <div class="restaurant-admin-card">
+                        <div class="restaurant-admin-cover" style="@GetCoverStyle(restaurant)">
+                            <div class="restaurant-admin-logo">
+                                @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
+                                {
+                                    <img src="@restaurant.LogoUrl" alt="@restaurant.Name logo" />
+                                }
+                                else
+                                {
+                                    <span>@GetInitials(restaurant.Name)</span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="restaurant-admin-body">
+                            <div class="restaurant-admin-title">
+                                <div>
+                                    <h2>@restaurant.Name</h2>
+                                    <p>/restaurant/@restaurant.Slug</p>
+                                </div>
+
+                                <span class="restaurant-state @(restaurant.IsActive ? "active" : "inactive")">
+                                    @(restaurant.IsActive ? "Active" : "Inactive")
+                                </span>
+                            </div>
+
+                            <div class="restaurant-admin-info">
+                                <span>@restaurant.Phone</span>
+                                <span>@restaurant.Address</span>
+                            </div>
+
+                            <div class="restaurant-admin-actions">
+                                <button type="button" @onclick="() => GoToCategories(restaurant.Id)">Categories</button>
+                                <button type="button" @onclick="() => GoToItems(restaurant.Id)">Items</button>
+                                <button type="button" @onclick="() => GoToOrders(restaurant.Id)">Orders</button>
+                                <button type="button" @onclick="() => ViewRestaurant(restaurant.Slug)">View</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Restaurant> restaurants = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        restaurants = await Db.Restaurants
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync();
+    }
+
+    private void CreateRestaurant()
+    {
+        Navigation.NavigateTo("/admin/restaurants/create");
+    }
+
+    private void GoToCategories(int restaurantId)
+    {
+        Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/categories");
+    }
+
+    private void GoToItems(int restaurantId)
+    {
+        Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/items");
+    }
+
+    private void GoToOrders(int restaurantId)
+    {
+        Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/orders");
+    }
+
+    private void ViewRestaurant(string slug)
+    {
+        Navigation.NavigateTo($"/restaurant/{slug}");
+    }
+
+    private string GetCoverStyle(Restaurant restaurant)
+    {
+        if (!string.IsNullOrWhiteSpace(restaurant.HeroImageUrl))
+        {
+            return $"background: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.35)), url('{restaurant.HeroImageUrl}') center/cover;";
+        }
+
+        return $"background: linear-gradient(135deg, {restaurant.PrimaryColor}, #111827);";
+    }
+
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "ES";
+
+        var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Join("", words.Take(2).Select(x => x[0])).ToUpper();
+    }
+}

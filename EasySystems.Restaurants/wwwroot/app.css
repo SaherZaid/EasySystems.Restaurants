@@ -1342,3 +1342,348 @@ html {
         flex-direction: column;
     }
 }
+
+.orders-dashboard {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    gap: 20px;
+}
+
+.order-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+    .order-stats div {
+        background: white;
+        border: 1px solid rgba(15, 23, 42, .08);
+        border-radius: 24px;
+        padding: 22px;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, .06);
+    }
+
+    .order-stats span {
+        display: block;
+        color: #6b7280;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
+
+    .order-stats strong {
+        display: block;
+        color: #111827;
+        font-size: 1.8rem;
+        font-weight: 900;
+    }
+
+.order-filter-tabs {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+    .order-filter-tabs button {
+        border: none;
+        border-radius: 999px;
+        background: white;
+        color: #111827;
+        font-weight: 900;
+        padding: 11px 16px;
+        cursor: pointer;
+        border: 1px solid rgba(15, 23, 42, .08);
+    }
+
+        .order-filter-tabs button.active,
+        .order-filter-tabs button:hover {
+            background: #111827;
+            color: white;
+        }
+
+.orders-table-card {
+    background: white;
+    border: 1px solid rgba(15, 23, 42, .08);
+    border-radius: 26px;
+    padding: 16px;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, .06);
+    overflow-x: auto;
+}
+
+.orders-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .orders-table th {
+        text-align: left;
+        color: #6b7280;
+        font-size: .85rem;
+        padding: 14px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .orders-table td {
+        padding: 16px 14px;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: middle;
+    }
+
+    .orders-table tr:last-child td {
+        border-bottom: none;
+    }
+
+.selected-row {
+    background: #f9fafb;
+}
+
+.customer-cell strong {
+    display: block;
+    color: #111827;
+}
+
+.customer-cell span {
+    color: #6b7280;
+    font-size: .9rem;
+}
+
+.view-order-btn {
+    border: none;
+    background: #111827;
+    color: white;
+    border-radius: 999px;
+    padding: 9px 14px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.order-detail-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: min(460px, 100%);
+    height: 100dvh;
+    background: white;
+    z-index: 70;
+    padding: 28px;
+    overflow-y: auto;
+    box-shadow: -18px 0 50px rgba(15, 23, 42, .22);
+}
+
+.order-detail-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: start;
+    margin-bottom: 18px;
+}
+
+    .order-detail-header h2 {
+        margin: 0;
+        font-weight: 900;
+    }
+
+@media (max-width: 900px) {
+    .order-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .order-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .orders-table th:nth-child(3),
+    .orders-table td:nth-child(3),
+    .orders-table th:nth-child(6),
+    .orders-table td:nth-child(6) {
+        display: none;
+    }
+}
+
+.toast-success {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    background: #111827;
+    color: white;
+    padding: 14px 18px;
+    border-radius: 16px;
+    font-weight: 800;
+    z-index: 9999;
+    box-shadow: 0 18px 40px rgba(0,0,0,.18);
+    animation: slideToast .25s ease;
+}
+
+@keyframes slideToast {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.order-status-big {
+    display: inline-flex;
+    margin: 8px 0 18px;
+    border-radius: 999px;
+    padding: 10px 16px;
+    font-weight: 900;
+}
+.admin-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+}
+
+.admin-primary-btn {
+    border: none;
+    border-radius: 999px;
+    background: #111827;
+    color: white;
+    padding: 13px 18px;
+    font-weight: 900;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.restaurants-list-card {
+    max-width: 1180px;
+    margin: 0 auto;
+}
+
+.restaurants-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 20px;
+}
+
+.restaurant-admin-card {
+    background: white;
+    border: 1px solid rgba(15, 23, 42, .08);
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, .06);
+}
+
+.restaurant-admin-cover {
+    height: 180px;
+    position: relative;
+    display: flex;
+    align-items: end;
+    padding: 18px;
+}
+
+.restaurant-admin-logo {
+    width: 74px;
+    height: 74px;
+    border-radius: 22px;
+    background: rgba(255,255,255,.16);
+    color: white;
+    border: 1px solid rgba(255,255,255,.28);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    overflow: hidden;
+}
+
+    .restaurant-admin-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+.restaurant-admin-body {
+    padding: 22px;
+}
+
+.restaurant-admin-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: start;
+}
+
+    .restaurant-admin-title h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 900;
+        color: #111827;
+    }
+
+    .restaurant-admin-title p {
+        margin: 6px 0 0;
+        color: #6b7280;
+        font-size: .92rem;
+    }
+
+.restaurant-state {
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-size: .8rem;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+    .restaurant-state.active {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .restaurant-state.inactive {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+.restaurant-admin-info {
+    display: grid;
+    gap: 6px;
+    margin-top: 16px;
+    color: #4b5563;
+    font-weight: 700;
+}
+
+.restaurant-admin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+    .restaurant-admin-actions button {
+        border: none;
+        border-radius: 999px;
+        background: #f3f4f6;
+        color: #111827;
+        padding: 10px 13px;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+        .restaurant-admin-actions button:hover {
+            background: #111827;
+            color: white;
+        }
+
+@media (max-width: 680px) {
+    .admin-header-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-primary-btn {
+        width: 100%;
+    }
+
+    .restaurants-grid {
+        grid-template-columns: 1fr;
+    }
+}
