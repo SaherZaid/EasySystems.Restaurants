@@ -1,8 +1,11 @@
 ﻿@page "/admin/restaurants/{RestaurantId:int}/items"
+@rendermode InteractiveServer
+
 @using EasySystems.Restaurants.Data
 @using EasySystems.Restaurants.Models
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.Forms
+
 @inject ApplicationDbContext Db
 @inject NavigationManager Navigation
 @inject IWebHostEnvironment Environment
@@ -14,7 +17,7 @@
         <div>
             <p class="eyebrow">Menu Items</p>
             <h1>Manage dishes</h1>
-            <p class="subtitle">Add dishes with category, price, description and image.</p>
+            <p class="subtitle">Add dishes, edit them, manage options and control availability.</p>
         </div>
     </div>
 
@@ -66,7 +69,7 @@
                 </div>
 
                 <label>Dish image</label>
-                <InputFile class="file-input" OnChange="UploadItemImage" accept="image/png,image/jpeg,image/webp" />
+                <InputFile class="file-input" OnChange="UploadNewItemImage" accept="image/png,image/jpeg,image/webp" />
 
                 @if (!string.IsNullOrWhiteSpace(newItem.ImageUrl))
                 {
@@ -78,6 +81,11 @@
                 @if (!string.IsNullOrWhiteSpace(errorMessage))
                 {
                     <div class="error">@errorMessage</div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(successMessage))
+                {
+                    <div class="upload-success">@successMessage</div>
                 }
             </div>
 
@@ -97,31 +105,90 @@
                         @foreach (var item in items)
                         {
                             <div class="item-admin-card">
-                                @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                @if (editingItemId == item.Id)
                                 {
-                                    <img src="@item.ImageUrl" alt="@item.Name" />
+                                    <div class="edit-item-form">
+                                        <label>Category</label>
+                                        <InputSelect class="input" @bind-Value="editItem.MenuCategoryId">
+                                            @foreach (var category in categories)
+                                            {
+                                                <option value="@category.Id">@category.Name</option>
+                                            }
+                                        </InputSelect>
+
+                                        <label>Dish name</label>
+                                        <InputText class="input" @bind-Value="editItem.Name" />
+
+                                        <label>Description</label>
+                                        <InputTextArea class="input textarea" @bind-Value="editItem.Description" />
+
+                                        <div class="two-cols">
+                                            <div>
+                                                <label>Price</label>
+                                                <InputNumber class="input" @bind-Value="editItem.Price" />
+                                            </div>
+
+                                            <div>
+                                                <label>Sort order</label>
+                                                <InputNumber class="input" @bind-Value="editItem.SortOrder" />
+                                            </div>
+                                        </div>
+
+                                        <label class="checkbox-label">
+                                            <InputCheckbox @bind-Value="editItem.IsAvailable" />
+                                            Available
+                                        </label>
+
+                                        <label>Replace image</label>
+                                        <InputFile class="file-input" OnChange="UploadEditItemImage" accept="image/png,image/jpeg,image/webp" />
+
+                                        <div class="category-actions">
+                                            <button type="button" @onclick="SaveEditItem">Save</button>
+                                            <button type="button" @onclick="CancelEditItem">Cancel</button>
+                                        </div>
+                                    </div>
                                 }
-
-                                <div>
-                                    <strong>@item.Name</strong>
-                                    <p>@item.Description</p>
-                                    <span>@item.Price.ToString("0.00") kr</span>
-                                    <small>@item.MenuCategory?.Name</small>
-                                </div>
-
-                                <div class="category-actions">
-                                    <button type="button" @onclick="() => ToggleAvailability(item)">
-                                        @(item.IsAvailable ? "Mark unavailable" : "Mark available")
-                                    </button>
-
-                                    <button class="danger-btn" type="button" @onclick="() => DeleteItem(item)">
-                                        Delete
-                                    </button>
-                                </div>
-
-                                @if (!item.IsAvailable)
+                                else
                                 {
-                                    <small class="hidden-badge">Unavailable</small>
+                                    @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                    {
+                                        <img src="@item.ImageUrl" alt="@item.Name" />
+                                    }
+
+                                    <div>
+                                        <strong>@item.Name</strong>
+
+                                        @if (!string.IsNullOrWhiteSpace(item.Description))
+                                        {
+                                            <p>@item.Description</p>
+                                        }
+
+                                        <span>@item.Price.ToString("0.00") kr</span>
+                                        <small>@item.MenuCategory?.Name</small>
+                                    </div>
+
+                                    <div class="category-actions">
+                                        <button type="button" @onclick="() => StartEditItem(item)">
+                                            Edit
+                                        </button>
+
+                                        <button type="button" @onclick="() => ManageOptions(item.Id)">
+                                            Options
+                                        </button>
+
+                                        <button type="button" @onclick="() => ToggleAvailability(item)">
+                                            @(item.IsAvailable ? "Mark unavailable" : "Mark available")
+                                        </button>
+
+                                        <button class="danger-btn" type="button" @onclick="() => DeleteItem(item)">
+                                            Delete
+                                        </button>
+                                    </div>
+
+                                    @if (!item.IsAvailable)
+                                    {
+                                        <small class="hidden-badge">Unavailable</small>
+                                    }
                                 }
                             </div>
                         }
@@ -143,12 +210,18 @@
     private Restaurant? restaurant;
     private List<MenuCategory> categories = [];
     private List<MenuItem> items = [];
+
     private string? errorMessage;
+    private string? successMessage;
+
+    private int? editingItemId;
 
     private MenuItem newItem = new()
         {
             IsAvailable = true
         };
+
+    private MenuItem editItem = new();
 
     private const long MaxFileSize = 5 * 1024 * 1024;
 
@@ -162,13 +235,7 @@
             .ToListAsync();
 
         await LoadItems();
-
-        newItem = new MenuItem
-            {
-                MenuCategoryId = categories.FirstOrDefault()?.Id ?? 0,
-                IsAvailable = true,
-                SortOrder = items.Count + 1
-            };
+        ResetNewItem();
     }
 
     private async Task LoadItems()
@@ -181,9 +248,20 @@
             .ToListAsync();
     }
 
+    private void ResetNewItem()
+    {
+        newItem = new MenuItem
+            {
+                MenuCategoryId = categories.FirstOrDefault()?.Id ?? 0,
+                IsAvailable = true,
+                SortOrder = items.Count + 1
+            };
+    }
+
     private async Task AddItem()
     {
         errorMessage = null;
+        successMessage = null;
 
         newItem.Name = newItem.Name.Trim();
 
@@ -211,18 +289,102 @@
         await Db.SaveChangesAsync();
 
         await LoadItems();
+        ResetNewItem();
 
-        newItem = new MenuItem
+        successMessage = "Dish added successfully.";
+    }
+
+    private void StartEditItem(MenuItem item)
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        editingItemId = item.Id;
+
+        editItem = new MenuItem
             {
-                MenuCategoryId = categories.FirstOrDefault()?.Id ?? 0,
-                IsAvailable = true,
-                SortOrder = items.Count + 1
+                Id = item.Id,
+                MenuCategoryId = item.MenuCategoryId,
+                Name = item.Name,
+                Description = item.Description,
+                Price = item.Price,
+                ImageUrl = item.ImageUrl,
+                IsAvailable = item.IsAvailable,
+                SortOrder = item.SortOrder
             };
     }
 
-    private async Task UploadItemImage(InputFileChangeEventArgs e)
+    private void CancelEditItem()
+    {
+        editingItemId = null;
+        editItem = new MenuItem();
+        errorMessage = null;
+    }
+
+    private async Task SaveEditItem()
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        if (editingItemId is null)
+            return;
+
+        editItem.Name = editItem.Name.Trim();
+
+        if (editItem.MenuCategoryId <= 0)
+        {
+            errorMessage = "Category is required.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(editItem.Name))
+        {
+            errorMessage = "Dish name is required.";
+            return;
+        }
+
+        if (editItem.Price <= 0)
+        {
+            errorMessage = "Price must be greater than 0.";
+            return;
+        }
+
+        var item = await Db.MenuItems
+            .Include(x => x.MenuCategory)
+            .FirstOrDefaultAsync(x =>
+                x.Id == editingItemId.Value &&
+                x.MenuCategory != null &&
+                x.MenuCategory.RestaurantId == RestaurantId);
+
+        if (item is null)
+        {
+            errorMessage = "Dish not found.";
+            return;
+        }
+
+        item.MenuCategoryId = editItem.MenuCategoryId;
+        item.Name = editItem.Name;
+        item.Description = editItem.Description;
+        item.Price = editItem.Price;
+        item.ImageUrl = editItem.ImageUrl;
+        item.IsAvailable = editItem.IsAvailable;
+        item.SortOrder = editItem.SortOrder;
+
+        await Db.SaveChangesAsync();
+        await LoadItems();
+
+        editingItemId = null;
+        successMessage = "Dish updated successfully.";
+    }
+
+    private async Task UploadNewItemImage(InputFileChangeEventArgs e)
     {
         newItem.ImageUrl = await SaveImageAsync(e.File, "products");
+    }
+
+    private async Task UploadEditItemImage(InputFileChangeEventArgs e)
+    {
+        editItem.ImageUrl = await SaveImageAsync(e.File, "products");
     }
 
     private async Task<string> SaveImageAsync(IBrowserFile file, string folderName)
@@ -260,6 +422,7 @@
 
         await readStream.CopyToAsync(writeStream);
 
+        successMessage = "Image uploaded.";
         return relativePath;
     }
 
@@ -274,7 +437,14 @@
     {
         Db.MenuItems.Remove(item);
         await Db.SaveChangesAsync();
+
         await LoadItems();
+        successMessage = "Dish deleted.";
+    }
+
+    private void ManageOptions(int menuItemId)
+    {
+        Navigation.NavigateTo($"/admin/restaurants/{RestaurantId}/items/{menuItemId}/options");
     }
 
     private void GoToCategories()

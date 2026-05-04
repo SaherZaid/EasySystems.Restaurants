@@ -162,8 +162,16 @@
                     <div class="order-items">
                         @foreach (var item in selectedOrder.Items)
                         {
-                            <div>
-                                <span>@item.Quantity × @item.ItemName</span>
+                            <div class="order-item-detail">
+                                <div>
+                                    <span>@item.Quantity × @item.ItemName</span>
+
+                                    @if (!string.IsNullOrWhiteSpace(item.SelectedOptions))
+                                    {
+                                        <small>@item.SelectedOptions</small>
+                                    }
+                                </div>
+
                                 <strong>@item.LineTotal.ToString("0.00") kr</strong>
                             </div>
                         }

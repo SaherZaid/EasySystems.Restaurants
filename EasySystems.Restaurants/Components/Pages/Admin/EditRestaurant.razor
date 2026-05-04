@@ -1,0 +1,369 @@
+﻿@page "/admin/restaurants/{RestaurantId:int}/edit"
+@rendermode InteractiveServer
+
+@using EasySystems.Restaurants.Data
+@using EasySystems.Restaurants.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject ApplicationDbContext Db
+@inject NavigationManager Navigation
+@inject IWebHostEnvironment Environment
+
+<PageTitle>Edit Restaurant</PageTitle>
+
+<div class="admin-page">
+    <div class="admin-header">
+        <div>
+            <p class="eyebrow">Edit Restaurant</p>
+            <h1>@(restaurant?.Name ?? "Restaurant")</h1>
+            <p class="subtitle">Update restaurant details, branding, contact information and settings.</p>
+        </div>
+    </div>
+
+    @if (restaurant is null)
+    {
+        <div class="form-card admin-center-card">
+            <h2>Restaurant not found</h2>
+        </div>
+    }
+    else
+    {
+        <EditForm Model="restaurant" OnValidSubmit="SaveRestaurant">
+            <DataAnnotationsValidator />
+
+            <div class="admin-grid">
+                <div class="form-card">
+                    <h2>Restaurant details</h2>
+
+                    <label>Restaurant name</label>
+                    <InputText class="input" @bind-Value="restaurant.Name" />
+
+                    <label>Slug / URL</label>
+                    <InputText class="input" @bind-Value="restaurant.Slug" />
+
+                    <label>Description</label>
+                    <InputTextArea class="input textarea" @bind-Value="restaurant.Description" />
+
+                    <h2>Contact</h2>
+
+                    <div class="two-cols">
+                        <div>
+                            <label>Phone</label>
+                            <InputText class="input" @bind-Value="restaurant.Phone" />
+                        </div>
+
+                        <div>
+                            <label>Email</label>
+                            <InputText class="input" @bind-Value="restaurant.Email" />
+                        </div>
+                    </div>
+
+                    <label>Address</label>
+                    <InputText class="input" @bind-Value="restaurant.Address" />
+
+                    <h2>Social media</h2>
+
+                    <div class="two-cols">
+                        <div>
+                            <label>Instagram URL</label>
+                            <InputText class="input" @bind-Value="restaurant.InstagramUrl" />
+                        </div>
+
+                        <div>
+                            <label>Facebook URL</label>
+                            <InputText class="input" @bind-Value="restaurant.FacebookUrl" />
+                        </div>
+                    </div>
+
+                    <div class="two-cols">
+                        <div>
+                            <label>TikTok URL</label>
+                            <InputText class="input" @bind-Value="restaurant.TikTokUrl" />
+                        </div>
+
+                        <div>
+                            <label>Website URL</label>
+                            <InputText class="input" @bind-Value="restaurant.WebsiteUrl" />
+                        </div>
+                    </div>
+
+                    <h2>Opening hours</h2>
+
+                    <div class="opening-hours-grid">
+                        <div>
+                            <label>Monday</label>
+                            <InputText class="input" @bind-Value="restaurant.MondayHours" />
+                        </div>
+
+                        <div>
+                            <label>Tuesday</label>
+                            <InputText class="input" @bind-Value="restaurant.TuesdayHours" />
+                        </div>
+
+                        <div>
+                            <label>Wednesday</label>
+                            <InputText class="input" @bind-Value="restaurant.WednesdayHours" />
+                        </div>
+
+                        <div>
+                            <label>Thursday</label>
+                            <InputText class="input" @bind-Value="restaurant.ThursdayHours" />
+                        </div>
+
+                        <div>
+                            <label>Friday</label>
+                            <InputText class="input" @bind-Value="restaurant.FridayHours" />
+                        </div>
+
+                        <div>
+                            <label>Saturday</label>
+                            <InputText class="input" @bind-Value="restaurant.SaturdayHours" />
+                        </div>
+
+                        <div>
+                            <label>Sunday</label>
+                            <InputText class="input" @bind-Value="restaurant.SundayHours" />
+                        </div>
+                    </div>
+
+                    <h2>Settings</h2>
+
+                    <div class="option-row">
+                        <label class="checkbox-label">
+                            <InputCheckbox @bind-Value="restaurant.IsPickupEnabled" />
+                            Pickup enabled
+                        </label>
+
+                        <label class="checkbox-label">
+                            <InputCheckbox @bind-Value="restaurant.IsDeliveryEnabled" />
+                            Delivery enabled
+                        </label>
+
+                        <label class="checkbox-label">
+                            <InputCheckbox @bind-Value="restaurant.IsActive" />
+                            Restaurant active
+                        </label>
+                    </div>
+
+                    <h2>Branding</h2>
+
+                    <div class="two-cols">
+                        <div>
+                            <label>Primary color</label>
+                            <InputText class="input" @bind-Value="restaurant.PrimaryColor" />
+                        </div>
+
+                        <div>
+                            <label>Secondary color</label>
+                            <InputText class="input" @bind-Value="restaurant.SecondaryColor" />
+                        </div>
+                    </div>
+
+                    <label>Replace logo</label>
+                    <InputFile class="file-input" OnChange="UploadLogo" accept="image/png,image/jpeg,image/webp" />
+
+                    <label>Replace hero image</label>
+                    <InputFile class="file-input" OnChange="UploadHeroImage" accept="image/png,image/jpeg,image/webp" />
+
+                    <button class="save-btn" type="submit">Save changes</button>
+
+                    @if (!string.IsNullOrWhiteSpace(errorMessage))
+                    {
+                        <div class="error">@errorMessage</div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(successMessage))
+                    {
+                        <div class="upload-success">@successMessage</div>
+                    }
+                </div>
+
+                <div class="preview-card sticky-preview">
+                    <p class="preview-label">Live preview</p>
+
+                    <div class="restaurant-preview" style="--primary:@restaurant.PrimaryColor; --secondary:@restaurant.SecondaryColor;">
+                        <div class="preview-hero" style="@GetHeroBackgroundStyle()">
+                            <div class="preview-logo">
+                                @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
+                                {
+                                    <img src="@restaurant.LogoUrl" />
+                                }
+                                else
+                                {
+                                    <span>@GetInitials()</span>
+                                }
+                            </div>
+
+                            <h2>@DisplayOrFallback(restaurant.Name, "Restaurant name")</h2>
+                            <p>@DisplayOrFallback(restaurant.Description, "Restaurant description")</p>
+
+                            <button type="button">Se meny</button>
+                        </div>
+
+                        <div class="preview-info">
+                            <span>@DisplayOrFallback(restaurant.Phone, "Phone")</span>
+                            <span>@DisplayOrFallback(restaurant.Email, "Email")</span>
+                            <span>@DisplayOrFallback(restaurant.Address, "Address")</span>
+                        </div>
+                    </div>
+
+                    <div class="restaurant-admin-actions" style="margin-top:18px;">
+                        <button type="button" @onclick="ViewRestaurant">View restaurant</button>
+                        <button type="button" @onclick="BackToList">Back to list</button>
+                    </div>
+                </div>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int RestaurantId { get; set; }
+
+    private Restaurant? restaurant;
+    private string? errorMessage;
+    private string? successMessage;
+
+    private const long MaxFileSize = 5 * 1024 * 1024;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        restaurant = await Db.Restaurants
+            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+    }
+
+    private async Task SaveRestaurant()
+    {
+        if (restaurant is null)
+            return;
+
+        errorMessage = null;
+        successMessage = null;
+
+        restaurant.Name = restaurant.Name.Trim();
+        restaurant.Slug = NormalizeSlug(restaurant.Slug);
+
+        if (string.IsNullOrWhiteSpace(restaurant.Name))
+        {
+            errorMessage = "Restaurant name is required.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(restaurant.Slug))
+        {
+            errorMessage = "Slug is required.";
+            return;
+        }
+
+        bool slugExists = await Db.Restaurants
+            .AnyAsync(x => x.Slug == restaurant.Slug && x.Id != restaurant.Id);
+
+        if (slugExists)
+        {
+            errorMessage = "This slug is already used by another restaurant.";
+            return;
+        }
+
+        await Db.SaveChangesAsync();
+        successMessage = "Restaurant updated successfully.";
+    }
+
+    private async Task UploadLogo(InputFileChangeEventArgs e)
+    {
+        if (restaurant is null)
+            return;
+
+        restaurant.LogoUrl = await SaveImageAsync(e.File, "logos");
+    }
+
+    private async Task UploadHeroImage(InputFileChangeEventArgs e)
+    {
+        if (restaurant is null)
+            return;
+
+        restaurant.HeroImageUrl = await SaveImageAsync(e.File, "heroes");
+    }
+
+    private async Task<string> SaveImageAsync(IBrowserFile file, string folderName)
+    {
+        errorMessage = null;
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+
+        if (!allowedExtensions.Contains(extension))
+        {
+            errorMessage = "Only JPG, PNG and WEBP images are allowed.";
+            return string.Empty;
+        }
+
+        if (file.Size > MaxFileSize)
+        {
+            errorMessage = "Image size must be less than 5 MB.";
+            return string.Empty;
+        }
+
+        var uploadFolder = Path.Combine(Environment.WebRootPath, "uploads", folderName);
+
+        if (!Directory.Exists(uploadFolder))
+        {
+            Directory.CreateDirectory(uploadFolder);
+        }
+
+        var fileName = $"{Guid.NewGuid()}{extension}";
+        var fullPath = Path.Combine(uploadFolder, fileName);
+        var relativePath = $"/uploads/{folderName}/{fileName}";
+
+        await using var readStream = file.OpenReadStream(MaxFileSize);
+        await using var writeStream = File.Create(fullPath);
+
+        await readStream.CopyToAsync(writeStream);
+
+        successMessage = "Image uploaded. Remember to save changes.";
+        return relativePath;
+    }
+
+    private void ViewRestaurant()
+    {
+        if (restaurant is not null)
+            Navigation.NavigateTo($"/restaurant/{restaurant.Slug}");
+    }
+
+    private void BackToList()
+    {
+        Navigation.NavigateTo("/admin/restaurants");
+    }
+
+    private string DisplayOrFallback(string value, string fallback)
+        => string.IsNullOrWhiteSpace(value) ? fallback : value;
+
+    private string GetInitials()
+    {
+        if (restaurant is null || string.IsNullOrWhiteSpace(restaurant.Name))
+            return "ES";
+
+        var words = restaurant.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Join("", words.Take(2).Select(x => x[0])).ToUpper();
+    }
+
+    private string GetHeroBackgroundStyle()
+    {
+        if (restaurant is null || string.IsNullOrWhiteSpace(restaurant.HeroImageUrl))
+            return string.Empty;
+
+        return $"background: linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)), url('{restaurant.HeroImageUrl}') center/cover;";
+    }
+
+    private string NormalizeSlug(string value)
+    {
+        return value
+            .Trim()
+            .ToLower()
+            .Replace(" ", "-")
+            .Replace("å", "a")
+            .Replace("ä", "a")
+            .Replace("ö", "o");
+    }
+}

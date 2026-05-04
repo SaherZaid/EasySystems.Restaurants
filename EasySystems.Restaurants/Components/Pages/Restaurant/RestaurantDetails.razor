@@ -9,6 +9,7 @@
 
 @inject ApplicationDbContext Db
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
 
 <PageTitle>@(restaurant?.Name ?? "Restaurant")</PageTitle>
 
@@ -39,13 +40,17 @@ else
                     }
                 </div>
 
-                <p class="restaurant-badge">Göteborg • Online menu</p>
                 <h1>@restaurant.Name</h1>
                 <p class="restaurant-description">@restaurant.Description</p>
 
                 <div class="restaurant-actions">
-                    <a href="#menu" class="primary-action">Se meny</a>
-                    <a href="#contact" class="secondary-action">Kontakt</a>
+                    <button type="button" class="primary-action" @onclick="ScrollToMenu">
+                        Se meny
+                    </button>
+
+                    <a href="/restaurant/@restaurant.Slug/contact" class="secondary-action">
+                        Kontakt & öppettider
+                    </a>
                 </div>
             </div>
         </section>
@@ -124,7 +129,7 @@ else
                                                 <img src="@item.ImageUrl" alt="@item.Name" />
                                             }
 
-                                            <button type="button" @onclick="() => AddToCart(item)">
+                                            <button type="button" @onclick="() => OpenItemOptions(item)">
                                                 Lägg till
                                             </button>
                                         </article>
@@ -137,24 +142,103 @@ else
             }
         </section>
 
-        <section id="contact" class="restaurant-section contact-section">
-            <div>
-                <p class="small-label">Kontakt</p>
-                <h2>Hitta oss</h2>
-            </div>
+        @if (selectedMenuItem is not null)
+        {
+            <div class="cart-overlay">
+                <div class="item-options-panel">
+                    <div class="cart-header">
+                        <div>
+                            <p>Anpassa din rätt</p>
+                            <h2>@selectedMenuItem.Name</h2>
+                        </div>
 
-            <div class="contact-grid">
-                <div>
-                    <strong>Telefon</strong>
-                    <p>@restaurant.Phone</p>
-                </div>
+                        <button type="button" class="cart-close" @onclick="CloseItemOptions">×</button>
+                    </div>
 
-                <div>
-                    <strong>Adress</strong>
-                    <p>@restaurant.Address</p>
+                    <div class="item-options-content">
+                        @if (!string.IsNullOrWhiteSpace(selectedMenuItem.ImageUrl))
+                        {
+                            <img class="option-dish-image" src="@selectedMenuItem.ImageUrl" alt="@selectedMenuItem.Name" />
+                        }
+
+                        <p class="option-dish-description">@selectedMenuItem.Description</p>
+
+                        @{
+                            var includedOptions = selectedItemOptions
+                            .Where(x => x.IsDefaultIncluded)
+                            .OrderBy(x => x.SortOrder)
+                            .ToList();
+
+                            var extraOptions = selectedItemOptions
+                            .Where(x => !x.IsDefaultIncluded)
+                            .OrderBy(x => x.SortOrder)
+                            .ToList();
+                        }
+
+                        @if (includedOptions.Count > 0)
+                        {
+                            <div class="option-list">
+                                <h3>Ingår i rätten</h3>
+                                <p class="option-help">Avmarkera det du inte vill ha.</p>
+
+                                @foreach (var option in includedOptions)
+                                {
+                                    <label class="option-choice">
+                                        <input type="checkbox"
+                                               checked="@selectedOptionIds.Contains(option.Id)"
+                                               @onchange="(e) => ToggleOption(option.Id, (bool)e.Value!)" />
+
+                                        <span>
+                                            <strong>@option.Name</strong>
+                                            <small>Ingår</small>
+                                        </span>
+                                    </label>
+                                }
+                            </div>
+                        }
+
+                        @if (extraOptions.Count > 0)
+                        {
+                            <div class="option-list">
+                                <h3>Extra tillval</h3>
+
+                                @foreach (var option in extraOptions)
+                                {
+                                    <label class="option-choice">
+                                        <input type="checkbox"
+                                               checked="@selectedOptionIds.Contains(option.Id)"
+                                               @onchange="(e) => ToggleOption(option.Id, (bool)e.Value!)" />
+
+                                        <span>
+                                            <strong>@option.Name</strong>
+                                            <small>+@option.ExtraPrice.ToString("0.00") kr</small>
+                                        </span>
+                                    </label>
+                                }
+                            </div>
+                        }
+
+                        @if (includedOptions.Count == 0 && extraOptions.Count == 0)
+                        {
+                            <div class="empty-category">
+                                Inga anpassningar för denna rätt.
+                            </div>
+                        }
+                    </div>
+
+                    <div class="item-options-footer">
+                        <div class="cart-total">
+                            <span>Pris</span>
+                            <strong>@SelectedItemTotal.ToString("0.00") kr</strong>
+                        </div>
+
+                        <button type="button" class="checkout-btn" @onclick="AddSelectedItemToCart">
+                            Lägg till i varukorg
+                        </button>
+                    </div>
                 </div>
             </div>
-        </section>
+        }
 
         @if (CartCount > 0 && !showCart)
         {
@@ -203,6 +287,11 @@ else
                                     <div>
                                         <strong>@item.Name</strong>
                                         <span>@item.UnitPrice.ToString("0.00") kr</span>
+
+                                        @if (!string.IsNullOrWhiteSpace(item.SelectedOptions))
+                                        {
+                                            <small class="cart-options">@item.SelectedOptions</small>
+                                        }
                                     </div>
 
                                     <div class="quantity-controls">
@@ -271,12 +360,17 @@ else
 
     private List<MenuCategory> categories = [];
     private List<MenuItem> items = [];
+    private List<MenuItemOption> itemOptions = [];
 
     private List<CartItem> cart = [];
 
     private bool showCart;
     private bool showCheckout;
     private bool cartLoaded;
+
+    private MenuItem? selectedMenuItem;
+    private List<MenuItemOption> selectedItemOptions = [];
+    private HashSet<int> selectedOptionIds = [];
 
     private string customerName = string.Empty;
     private string customerPhone = string.Empty;
@@ -290,10 +384,18 @@ else
     private decimal CartTotal => cart.Sum(x => x.UnitPrice * x.Quantity);
     private int CartCount => cart.Sum(x => x.Quantity);
 
+    private decimal SelectedItemTotal =>
+        selectedMenuItem is null
+            ? 0
+            : selectedMenuItem.Price + selectedItemOptions
+                .Where(x => !x.IsDefaultIncluded && selectedOptionIds.Contains(x.Id))
+                .Sum(x => x.ExtraPrice);
+
     private class CartItem
     {
         public int MenuItemId { get; set; }
         public string Name { get; set; } = string.Empty;
+        public string SelectedOptions { get; set; } = string.Empty;
         public decimal UnitPrice { get; set; }
         public int Quantity { get; set; }
     }
@@ -324,6 +426,14 @@ else
                     x.MenuCategory.IsVisible)
                 .OrderBy(x => x.MenuCategory!.SortOrder)
                 .ThenBy(x => x.SortOrder)
+                .ToListAsync();
+
+            var itemIds = items.Select(i => i.Id).ToList();
+
+            itemOptions = await Db.MenuItemOptions
+                .AsNoTracking()
+                .Where(x => x.IsAvailable && itemIds.Contains(x.MenuItemId))
+                .OrderBy(x => x.SortOrder)
                 .ToListAsync();
         }
 
@@ -359,17 +469,79 @@ else
         await JS.InvokeVoidAsync("easyCart.set", CartStorageKey, json);
     }
 
-    private async Task AddToCart(MenuItem item)
+    private void OpenItemOptions(MenuItem item)
     {
-        var existing = cart.FirstOrDefault(x => x.MenuItemId == item.Id);
+        selectedMenuItem = item;
+
+        selectedItemOptions = itemOptions
+            .Where(x => x.MenuItemId == item.Id)
+            .OrderBy(x => x.SortOrder)
+            .ToList();
+
+        selectedOptionIds = selectedItemOptions
+            .Where(x => x.IsDefaultIncluded)
+            .Select(x => x.Id)
+            .ToHashSet();
+    }
+
+    private void CloseItemOptions()
+    {
+        selectedMenuItem = null;
+        selectedItemOptions = [];
+        selectedOptionIds = [];
+    }
+
+    private void ToggleOption(int optionId, bool isSelected)
+    {
+        if (isSelected)
+        {
+            selectedOptionIds.Add(optionId);
+        }
+        else
+        {
+            selectedOptionIds.Remove(optionId);
+        }
+    }
+
+    private async Task AddSelectedItemToCart()
+    {
+        if (selectedMenuItem is null)
+            return;
+
+        var removedIncludedOptions = selectedItemOptions
+            .Where(x => x.IsDefaultIncluded && !selectedOptionIds.Contains(x.Id))
+            .ToList();
+
+        var selectedExtraOptions = selectedItemOptions
+            .Where(x => !x.IsDefaultIncluded && selectedOptionIds.Contains(x.Id))
+            .ToList();
+
+        var removedText = removedIncludedOptions.Count == 0
+            ? string.Empty
+            : "Utan: " + string.Join(", ", removedIncludedOptions.Select(x => x.Name));
+
+        var extraText = selectedExtraOptions.Count == 0
+            ? string.Empty
+            : "Extra: " + string.Join(", ", selectedExtraOptions.Select(x => x.Name));
+
+        var optionText = string.Join(" | ",
+            new[] { removedText, extraText }
+                .Where(x => !string.IsNullOrWhiteSpace(x)));
+
+        var finalPrice = selectedMenuItem.Price + selectedExtraOptions.Sum(x => x.ExtraPrice);
+
+        var existing = cart.FirstOrDefault(x =>
+            x.MenuItemId == selectedMenuItem.Id &&
+            x.SelectedOptions == optionText);
 
         if (existing is null)
         {
             cart.Add(new CartItem
                 {
-                    MenuItemId = item.Id,
-                    Name = item.Name,
-                    UnitPrice = item.Price,
+                    MenuItemId = selectedMenuItem.Id,
+                    Name = selectedMenuItem.Name,
+                    SelectedOptions = optionText,
+                    UnitPrice = finalPrice,
                     Quantity = 1
                 });
         }
@@ -379,6 +551,7 @@ else
         }
 
         await SaveCart();
+        CloseItemOptions();
     }
 
     private async Task RemoveFromCart(CartItem item)
@@ -479,6 +652,7 @@ else
                 {
                     MenuItemId = x.MenuItemId,
                     ItemName = x.Name,
+                    SelectedOptions = x.SelectedOptions,
                     UnitPrice = x.UnitPrice,
                     Quantity = x.Quantity,
                     LineTotal = x.UnitPrice * x.Quantity
@@ -498,6 +672,11 @@ else
         showCheckout = false;
 
         await JS.InvokeVoidAsync("easyCart.remove", CartStorageKey);
+    }
+
+    private async Task ScrollToMenu()
+    {
+        await JS.InvokeVoidAsync("scrollToElementById", "menu");
     }
 
     private async Task ScrollToCategory(int categoryId)

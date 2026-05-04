@@ -1,0 +1,120 @@
+﻿@page "/restaurant/{Slug}/contact"
+@rendermode InteractiveServer
+
+@using EasySystems.Restaurants.Data
+@using EasySystems.Restaurants.Models
+@using Microsoft.EntityFrameworkCore
+
+@inject ApplicationDbContext Db
+
+<PageTitle>Contact</PageTitle>
+
+@if (isLoading)
+{
+    <div class="public-loading">Loading...</div>
+}
+else if (restaurant is null)
+{
+    <div class="public-not-found">
+        <h1>Restaurant not found</h1>
+    </div>
+}
+else
+{
+    <main class="restaurant-public"
+          style="--primary:@restaurant.PrimaryColor; --secondary:@restaurant.SecondaryColor;">
+
+        <section class="restaurant-hero-public" style="@GetHeroStyle()">
+            <div class="restaurant-hero-overlay">
+                <h1>Kontakt</h1>
+                <p>@restaurant.Name</p>
+
+                <div class="restaurant-actions">
+                    <a href="/restaurant/@restaurant.Slug" class="primary-action">
+                        Till meny
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="restaurant-section">
+            <div class="section-heading">
+                <p>Kontakt</p>
+                <h2>Hitta oss</h2>
+            </div>
+
+            <div class="contact-grid">
+                <div>
+                    <strong>Telefon</strong>
+                    <p>@restaurant.Phone</p>
+                </div>
+
+                <div>
+                    <strong>Email</strong>
+                    <p>@restaurant.Email</p>
+                </div>
+
+                <div>
+                    <strong>Adress</strong>
+                    <p>@restaurant.Address</p>
+                </div>
+
+                <div>
+                    <strong>Beställning</strong>
+                    <p>@(restaurant.IsPickupEnabled ? "Pickup available" : "Kontakta restaurangen")</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="restaurant-section">
+            <div class="section-heading">
+                <p>Öppettider</p>
+                <h2>Vi har öppet</h2>
+            </div>
+
+            <div class="hours-grid">
+                <div><span>Måndag</span><strong>@restaurant.MondayHours</strong></div>
+                <div><span>Tisdag</span><strong>@restaurant.TuesdayHours</strong></div>
+                <div><span>Onsdag</span><strong>@restaurant.WednesdayHours</strong></div>
+                <div><span>Torsdag</span><strong>@restaurant.ThursdayHours</strong></div>
+                <div><span>Fredag</span><strong>@restaurant.FridayHours</strong></div>
+                <div><span>Lördag</span><strong>@restaurant.SaturdayHours</strong></div>
+                <div><span>Söndag</span><strong>@restaurant.SundayHours</strong></div>
+            </div>
+        </section>
+
+        <footer class="legal-footer">
+            <a href="/restaurant/@restaurant.Slug">Menu</a>
+            <a href="/restaurant/@restaurant.Slug/privacy">Privacy</a>
+            <a href="/restaurant/@restaurant.Slug/terms">Terms</a>
+        </footer>
+
+    </main>
+}
+
+@code {
+    [Parameter]
+    public string Slug { get; set; } = "";
+
+    private Restaurant? restaurant;
+    private bool isLoading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+
+        restaurant = await Db.Restaurants
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Slug == Slug && x.IsActive);
+
+        isLoading = false;
+    }
+
+    private string GetHeroStyle()
+    {
+        if (restaurant is null || string.IsNullOrWhiteSpace(restaurant.HeroImageUrl))
+            return "background: linear-gradient(135deg, var(--primary), #111827);";
+
+        return $"background:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.55)),url('{restaurant.HeroImageUrl}') center/cover;";
+    }
+}

@@ -12,6 +12,7 @@ namespace EasySystems.Restaurants.Data
         public DbSet<Order> Orders { get; set; } = null!;
         public DbSet<OrderItem> OrderItems { get; set; } = null!;
         public DbSet<RestaurantLegalPage> RestaurantLegalPages { get; set; } = null!;
+        public DbSet<MenuItemOption> MenuItemOptions { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -32,6 +33,10 @@ namespace EasySystems.Restaurants.Data
             builder.Entity<OrderItem>()
                 .Property(x => x.LineTotal)
                 .HasPrecision(18, 2);
+
+            builder.Entity<MenuItemOption>()
+               .Property(x => x.ExtraPrice)
+               .HasPrecision(18, 2);
         }
     }
 }

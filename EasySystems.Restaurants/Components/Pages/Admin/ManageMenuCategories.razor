@@ -1,7 +1,10 @@
 ﻿@page "/admin/restaurants/{RestaurantId:int}/categories"
+@rendermode InteractiveServer
+
 @using EasySystems.Restaurants.Data
 @using EasySystems.Restaurants.Models
 @using Microsoft.EntityFrameworkCore
+
 @inject ApplicationDbContext Db
 @inject NavigationManager Navigation
 
@@ -12,7 +15,7 @@
         <div>
             <p class="eyebrow">Menu Builder</p>
             <h1>Manage menu categories</h1>
-            <p class="subtitle">Add, rename, hide, delete and reorder restaurant menu sections.</p>
+            <p class="subtitle">Add, edit, hide, delete and reorder restaurant menu sections.</p>
         </div>
     </div>
 
@@ -38,16 +41,23 @@
                 <label>Sort order</label>
                 <InputNumber class="input" @bind-Value="newCategory.SortOrder" />
 
-                <button class="save-btn" type="button" @onclick="AddCategory">Add category</button>
+                <button class="save-btn" type="button" @onclick="AddCategory">
+                    Add category
+                </button>
 
                 @if (!string.IsNullOrWhiteSpace(errorMessage))
                 {
                     <div class="error">@errorMessage</div>
                 }
+
+                @if (!string.IsNullOrWhiteSpace(successMessage))
+                {
+                    <div class="upload-success">@successMessage</div>
+                }
             </div>
 
             <div class="preview-card">
-                <p class="preview-label">@restaurant.Name</p>
+                <p class="preview-label">@restaurant.Name categories</p>
 
                 @if (categories.Count == 0)
                 {
@@ -62,33 +72,73 @@
                         @foreach (var category in categories)
                         {
                             <div class="category-admin-item">
-                                <div>
-                                    <strong>@category.Name</strong>
-                                    <p>@category.Description</p>
-                                    <span>Order: @category.SortOrder</span>
-                                </div>
-
-                                <div class="category-actions">
-                                    <button type="button" @onclick="() => ToggleVisibility(category)">
-                                        @(category.IsVisible ? "Hide" : "Show")
-                                    </button>
-
-                                    <button type="button" @onclick="() => MoveUp(category)">
-                                        ↑
-                                    </button>
-
-                                    <button type="button" @onclick="() => MoveDown(category)">
-                                        ↓
-                                    </button>
-
-                                    <button class="danger-btn" type="button" @onclick="() => DeleteCategory(category)">
-                                        Delete
-                                    </button>
-                                </div>
-
-                                @if (!category.IsVisible)
+                                @if (editingCategoryId == category.Id)
                                 {
-                                    <small class="hidden-badge">Hidden</small>
+                                    <div class="edit-category-form">
+                                        <label>Name</label>
+                                        <InputText class="input" @bind-Value="editCategory.Name" />
+
+                                        <label>Description</label>
+                                        <InputTextArea class="input textarea" @bind-Value="editCategory.Description" />
+
+                                        <label>Sort order</label>
+                                        <InputNumber class="input" @bind-Value="editCategory.SortOrder" />
+
+                                        <label class="checkbox-label">
+                                            <InputCheckbox @bind-Value="editCategory.IsVisible" />
+                                            Visible
+                                        </label>
+
+                                        <div class="category-actions">
+                                            <button type="button" @onclick="SaveEditCategory">
+                                                Save
+                                            </button>
+
+                                            <button type="button" @onclick="CancelEditCategory">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div>
+                                        <strong>@category.Name</strong>
+
+                                        @if (!string.IsNullOrWhiteSpace(category.Description))
+                                        {
+                                            <p>@category.Description</p>
+                                        }
+
+                                        <span>Order: @category.SortOrder</span>
+                                    </div>
+
+                                    <div class="category-actions">
+                                        <button type="button" @onclick="() => StartEditCategory(category)">
+                                            Edit
+                                        </button>
+
+                                        <button type="button" @onclick="() => ToggleVisibility(category)">
+                                            @(category.IsVisible ? "Hide" : "Show")
+                                        </button>
+
+                                        <button type="button" @onclick="() => MoveUp(category)">
+                                            ↑
+                                        </button>
+
+                                        <button type="button" @onclick="() => MoveDown(category)">
+                                            ↓
+                                        </button>
+
+                                        <button class="danger-btn" type="button" @onclick="() => DeleteCategory(category)">
+                                            Delete
+                                        </button>
+                                    </div>
+
+                                    @if (!category.IsVisible)
+                                    {
+                                        <small class="hidden-badge">Hidden</small>
+                                    }
                                 }
                             </div>
                         }
@@ -109,12 +159,18 @@
 
     private Restaurant? restaurant;
     private List<MenuCategory> categories = [];
+
     private string? errorMessage;
+    private string? successMessage;
+
+    private int? editingCategoryId;
 
     private MenuCategory newCategory = new()
         {
             IsVisible = true
         };
+
+    private MenuCategory editCategory = new();
 
     protected override async Task OnParametersSetAsync()
     {
@@ -123,8 +179,7 @@
 
         await LoadCategories();
 
-        newCategory.RestaurantId = RestaurantId;
-        newCategory.SortOrder = categories.Count + 1;
+        ResetNewCategory();
     }
 
     private async Task LoadCategories()
@@ -135,9 +190,20 @@
             .ToListAsync();
     }
 
+    private void ResetNewCategory()
+    {
+        newCategory = new MenuCategory
+            {
+                RestaurantId = RestaurantId,
+                IsVisible = true,
+                SortOrder = categories.Count + 1
+            };
+    }
+
     private async Task AddCategory()
     {
         errorMessage = null;
+        successMessage = null;
 
         newCategory.Name = newCategory.Name.Trim();
 
@@ -153,14 +219,72 @@
         Db.MenuCategories.Add(newCategory);
         await Db.SaveChangesAsync();
 
-        newCategory = new MenuCategory
-            {
-                RestaurantId = RestaurantId,
-                IsVisible = true,
-                SortOrder = categories.Count + 2
-            };
-
         await LoadCategories();
+        ResetNewCategory();
+
+        successMessage = "Category added successfully.";
+    }
+
+    private void StartEditCategory(MenuCategory category)
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        editingCategoryId = category.Id;
+
+        editCategory = new MenuCategory
+            {
+                Id = category.Id,
+                RestaurantId = category.RestaurantId,
+                Name = category.Name,
+                Description = category.Description,
+                SortOrder = category.SortOrder,
+                IsVisible = category.IsVisible
+            };
+    }
+
+    private void CancelEditCategory()
+    {
+        editingCategoryId = null;
+        editCategory = new MenuCategory();
+        errorMessage = null;
+    }
+
+    private async Task SaveEditCategory()
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        if (editingCategoryId is null)
+            return;
+
+        editCategory.Name = editCategory.Name.Trim();
+
+        if (string.IsNullOrWhiteSpace(editCategory.Name))
+        {
+            errorMessage = "Category name is required.";
+            return;
+        }
+
+        var category = await Db.MenuCategories
+            .FirstOrDefaultAsync(x => x.Id == editingCategoryId.Value && x.RestaurantId == RestaurantId);
+
+        if (category is null)
+        {
+            errorMessage = "Category not found.";
+            return;
+        }
+
+        category.Name = editCategory.Name;
+        category.Description = editCategory.Description;
+        category.SortOrder = editCategory.SortOrder;
+        category.IsVisible = editCategory.IsVisible;
+
+        await Db.SaveChangesAsync();
+        await LoadCategories();
+
+        editingCategoryId = null;
+        successMessage = "Category updated successfully.";
     }
 
     private async Task ToggleVisibility(MenuCategory category)
@@ -191,7 +315,9 @@
     {
         Db.MenuCategories.Remove(category);
         await Db.SaveChangesAsync();
+
         await LoadCategories();
+        successMessage = "Category deleted.";
     }
 
     private void GoToRestaurant()
