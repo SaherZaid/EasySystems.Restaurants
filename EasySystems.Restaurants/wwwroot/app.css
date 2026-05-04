@@ -2092,3 +2092,8 @@ html {
         gap: 6px;
     }
 }
+
+.restaurant-actions button.primary-action {
+    border: none;
+    cursor: pointer;
+}
