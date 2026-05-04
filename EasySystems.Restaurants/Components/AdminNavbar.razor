@@ -1,0 +1,69 @@
+﻿@using Microsoft.AspNetCore.Components.Routing
+
+<nav class="admin-navbar">
+    <div class="admin-navbar-inner">
+
+        <div class="admin-brand">
+            <span>RA</span>
+            <strong>Restaurant Admin</strong>
+        </div>
+
+        <button type="button" class="admin-menu-toggle" @onclick="ToggleMenu">
+            ☰
+        </button>
+
+        <div class="admin-nav-links @(isOpen ? "open" : "")">
+
+            @if (!string.IsNullOrWhiteSpace(RestaurantSlug))
+            {
+                <a class="admin-home-link" href="@($"/restaurant/{RestaurantSlug}")" @onclick="CloseMenu">
+                    Home
+                </a>
+            }
+
+            @if (RestaurantId is not null)
+            {
+                <NavLink href="@($"/admin/restaurants/{RestaurantId}/edit")" @onclick="CloseMenu">
+                    Edit
+                </NavLink>
+
+                <NavLink href="@($"/admin/restaurants/{RestaurantId}/categories")" @onclick="CloseMenu">
+                    Categories
+                </NavLink>
+
+                <NavLink href="@($"/admin/restaurants/{RestaurantId}/items")" @onclick="CloseMenu">
+                    Items
+                </NavLink>
+
+                <NavLink href="@($"/admin/restaurants/{RestaurantId}/orders")" @onclick="CloseMenu">
+                    Orders
+                </NavLink>
+
+                <NavLink href="@($"/admin/restaurants/{RestaurantId}/legal")" @onclick="CloseMenu">
+                    Legal
+                </NavLink>
+            }
+
+        </div>
+    </div>
+</nav>
+
+@code {
+    [Parameter]
+    public int? RestaurantId { get; set; }
+
+    [Parameter]
+    public string? RestaurantSlug { get; set; }
+
+    private bool isOpen;
+
+    private void ToggleMenu()
+    {
+        isOpen = !isOpen;
+    }
+
+    private void CloseMenu()
+    {
+        isOpen = false;
+    }
+}

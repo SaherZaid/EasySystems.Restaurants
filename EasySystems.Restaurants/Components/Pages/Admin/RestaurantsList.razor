@@ -10,6 +10,13 @@
 
 <PageTitle>Restaurants</PageTitle>
 
+@if (restaurants.Count > 0)
+{
+    var restaurant = restaurants.First();
+
+    <AdminNavbar RestaurantId="restaurant.Id" RestaurantSlug="@restaurant.Slug" />
+}
+
 <div class="admin-page">
     <div class="admin-header admin-header-row">
         <div>
@@ -68,10 +75,11 @@
                             </div>
 
                             <div class="restaurant-admin-actions">
+                                <button type="button" @onclick="() => GoToEdit(restaurant.Id)">Edit</button>
                                 <button type="button" @onclick="() => GoToCategories(restaurant.Id)">Categories</button>
                                 <button type="button" @onclick="() => GoToItems(restaurant.Id)">Items</button>
                                 <button type="button" @onclick="() => GoToOrders(restaurant.Id)">Orders</button>
-                                <button type="button" @onclick="() => GoToEdit(restaurant.Id)">Edit</button>
+                                <button type="button" @onclick="() => GoToLegal(restaurant.Id)">Legal</button>
                                 <button type="button" @onclick="() => ViewRestaurant(restaurant.Slug)">View</button>
                             </div>
                         </div>
@@ -85,11 +93,6 @@
 @code {
     private List<Restaurant> restaurants = [];
 
-    private void GoToEdit(int restaurantId)
-    {
-        Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/edit");
-    }
-
     protected override async Task OnInitializedAsync()
     {
         restaurants = await Db.Restaurants
@@ -100,6 +103,11 @@
     private void CreateRestaurant()
     {
         Navigation.NavigateTo("/admin/restaurants/create");
+    }
+
+    private void GoToEdit(int restaurantId)
+    {
+        Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/edit");
     }
 
     private void GoToCategories(int restaurantId)
@@ -115,6 +123,11 @@
     private void GoToOrders(int restaurantId)
     {
         Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/orders");
+    }
+
+    private void GoToLegal(int restaurantId)
+    {
+        Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/legal");
     }
 
     private void ViewRestaurant(string slug)
