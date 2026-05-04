@@ -1,0 +1,57 @@
+﻿@using EasySystems.Restaurants.Models
+@using Microsoft.AspNetCore.Components.Routing
+
+<nav class="restaurant-navbar" style="--primary:@Restaurant?.PrimaryColor;">
+    <div class="restaurant-navbar-inner">
+        <a class="restaurant-nav-brand" href="/restaurant/@Restaurant?.Slug">
+            @if (!string.IsNullOrWhiteSpace(Restaurant?.LogoUrl))
+            {
+                <img src="@Restaurant.LogoUrl" alt="@Restaurant.Name logo" />
+            }
+            else
+            {
+                <span>@GetInitials()</span>
+            }
+
+            <strong>@Restaurant?.Name</strong>
+        </a>
+
+        <button type="button" class="restaurant-nav-toggle" @onclick="ToggleMenu">
+            ☰
+        </button>
+
+        <div class="restaurant-nav-links @(isOpen ? "open" : "")">
+            <a href="/restaurant/@Restaurant?.Slug" @onclick="CloseMenu">Hem</a>
+            <a href="/restaurant/@Restaurant?.Slug#menu" @onclick="CloseMenu">Meny</a>
+            <a href="/restaurant/@Restaurant?.Slug/contact" @onclick="CloseMenu">Kontakt & öppettider</a>
+            <a href="/restaurant/@Restaurant?.Slug/privacy" @onclick="CloseMenu">Privacy</a>
+            <a href="/restaurant/@Restaurant?.Slug/terms" @onclick="CloseMenu">Terms</a>
+        </div>
+    </div>
+</nav>
+
+@code {
+    [Parameter]
+    public Restaurant? Restaurant { get; set; }
+
+    private bool isOpen;
+
+    private void ToggleMenu()
+    {
+        isOpen = !isOpen;
+    }
+
+    private void CloseMenu()
+    {
+        isOpen = false;
+    }
+
+    private string GetInitials()
+    {
+        if (Restaurant is null || string.IsNullOrWhiteSpace(Restaurant.Name))
+            return "R";
+
+        var words = Restaurant.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Join("", words.Take(2).Select(x => x[0])).ToUpper();
+    }
+}

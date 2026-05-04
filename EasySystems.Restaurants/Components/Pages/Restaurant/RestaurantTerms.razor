@@ -20,6 +20,8 @@ else if (restaurant is null || legalPage is null || !legalPage.IsPublished)
 }
 else
 {
+    <RestaurantNavbar Restaurant="restaurant" />
+
     <main class="legal-public-page"
           style="--primary:@restaurant.PrimaryColor; --secondary:@restaurant.SecondaryColor;">
 
