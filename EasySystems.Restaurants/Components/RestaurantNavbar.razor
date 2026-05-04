@@ -1,7 +1,8 @@
 ﻿@using EasySystems.Restaurants.Models
 @using Microsoft.AspNetCore.Components.Routing
 
-<nav class="restaurant-navbar" style="--primary:@Restaurant?.PrimaryColor;">
+<nav class="restaurant-navbar"
+     style="--nav-bg:@GetNavBackground(); --nav-text:@GetNavText(); --primary:@GetPrimary();">
     <div class="restaurant-navbar-inner">
         <a class="restaurant-nav-brand" href="/restaurant/@Restaurant?.Slug">
             @if (!string.IsNullOrWhiteSpace(Restaurant?.LogoUrl))
@@ -45,6 +46,21 @@
     {
         isOpen = false;
     }
+
+    private string GetNavBackground()
+        => string.IsNullOrWhiteSpace(Restaurant?.NavbarBackgroundColor)
+            ? "#FFFFFF"
+            : Restaurant.NavbarBackgroundColor;
+
+    private string GetNavText()
+        => string.IsNullOrWhiteSpace(Restaurant?.NavbarTextColor)
+            ? "#111827"
+            : Restaurant.NavbarTextColor;
+
+    private string GetPrimary()
+        => string.IsNullOrWhiteSpace(Restaurant?.PrimaryColor)
+            ? "#111827"
+            : Restaurant.PrimaryColor;
 
     private string GetInitials()
     {

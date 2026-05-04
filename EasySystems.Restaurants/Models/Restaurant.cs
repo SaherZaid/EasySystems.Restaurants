@@ -14,6 +14,11 @@ public class Restaurant
     public string PrimaryColor { get; set; } = "#8B0000";
     public string SecondaryColor { get; set; } = "#FFFFFF";
 
+    public string NavbarBackgroundColor { get; set; } = "#FFFFFF";
+    public string NavbarTextColor { get; set; } = "#111827";
+    public string FooterBackgroundColor { get; set; } = "#111827";
+    public string FooterTextColor { get; set; } = "#FFFFFF";
+
     public string Phone { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;

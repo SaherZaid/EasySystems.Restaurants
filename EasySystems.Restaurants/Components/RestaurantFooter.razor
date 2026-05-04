@@ -1,0 +1,81 @@
+﻿@using EasySystems.Restaurants.Models
+
+<footer class="restaurant-footer"
+        style="--footer-bg:@GetFooterBackground(); --footer-text:@GetFooterText(); --primary:@GetPrimary();">
+    <div class="restaurant-footer-inner">
+        <div class="footer-brand">
+            @if (!string.IsNullOrWhiteSpace(Restaurant?.LogoUrl))
+            {
+                <img src="@Restaurant.LogoUrl" alt="@Restaurant.Name logo" />
+            }
+            else
+            {
+                <span>@GetInitials()</span>
+            }
+
+            <div>
+                <strong>@Restaurant?.Name</strong>
+                <p>@Restaurant?.Address</p>
+            </div>
+        </div>
+
+        <div class="footer-links">
+            <a href="/restaurant/@Restaurant?.Slug">Hem</a>
+            <a href="/restaurant/@Restaurant?.Slug#menu">Meny</a>
+            <a href="/restaurant/@Restaurant?.Slug/contact">Kontakt & öppettider</a>
+            <a href="/restaurant/@Restaurant?.Slug/privacy">Privacy</a>
+            <a href="/restaurant/@Restaurant?.Slug/terms">Terms</a>
+        </div>
+
+        <div class="footer-socials">
+            @if (!string.IsNullOrWhiteSpace(Restaurant?.InstagramUrl))
+            {
+                <a href="@Restaurant.InstagramUrl" target="_blank">Instagram</a>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Restaurant?.FacebookUrl))
+            {
+                <a href="@Restaurant.FacebookUrl" target="_blank">Facebook</a>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Restaurant?.TikTokUrl))
+            {
+                <a href="@Restaurant.TikTokUrl" target="_blank">TikTok</a>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Restaurant?.WebsiteUrl))
+            {
+                <a href="@Restaurant.WebsiteUrl" target="_blank">Website</a>
+            }
+        </div>
+    </div>
+</footer>
+
+@code {
+    [Parameter]
+    public Restaurant? Restaurant { get; set; }
+
+    private string GetFooterBackground()
+        => string.IsNullOrWhiteSpace(Restaurant?.FooterBackgroundColor)
+            ? "#111827"
+            : Restaurant.FooterBackgroundColor;
+
+    private string GetFooterText()
+        => string.IsNullOrWhiteSpace(Restaurant?.FooterTextColor)
+            ? "#FFFFFF"
+            : Restaurant.FooterTextColor;
+
+    private string GetPrimary()
+        => string.IsNullOrWhiteSpace(Restaurant?.PrimaryColor)
+            ? "#111827"
+            : Restaurant.PrimaryColor;
+
+    private string GetInitials()
+    {
+        if (Restaurant is null || string.IsNullOrWhiteSpace(Restaurant.Name))
+            return "R";
+
+        var words = Restaurant.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Join("", words.Take(2).Select(x => x[0])).ToUpper();
+    }
+}

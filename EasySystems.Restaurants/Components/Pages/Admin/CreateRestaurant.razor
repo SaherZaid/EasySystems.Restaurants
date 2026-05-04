@@ -147,6 +147,32 @@
                     </div>
                 </div>
 
+                <h2>Navigation & footer colors</h2>
+
+                <div class="two-cols">
+                    <div>
+                        <label>Navbar background</label>
+                        <InputText class="input" @bind-Value="restaurant.NavbarBackgroundColor" placeholder="#FFFFFF" />
+                    </div>
+
+                    <div>
+                        <label>Navbar text</label>
+                        <InputText class="input" @bind-Value="restaurant.NavbarTextColor" placeholder="#111827" />
+                    </div>
+                </div>
+
+                <div class="two-cols">
+                    <div>
+                        <label>Footer background</label>
+                        <InputText class="input" @bind-Value="restaurant.FooterBackgroundColor" placeholder="#111827" />
+                    </div>
+
+                    <div>
+                        <label>Footer text</label>
+                        <InputText class="input" @bind-Value="restaurant.FooterTextColor" placeholder="#FFFFFF" />
+                    </div>
+                </div>
+
                 <label>Logo</label>
                 <InputFile class="file-input" OnChange="UploadLogo" accept="image/png,image/jpeg,image/webp" />
                 @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
@@ -173,6 +199,13 @@
                 <p class="preview-label">Live preview</p>
 
                 <div class="restaurant-preview" style="--primary:@restaurant.PrimaryColor; --secondary:@restaurant.SecondaryColor;">
+                    <div class="mini-navbar-preview"
+                         style="background:@restaurant.NavbarBackgroundColor; color:@restaurant.NavbarTextColor;">
+                        <strong>@DisplayOrFallback(restaurant.Name, "Restaurant")</strong>
+                        <span>Hem</span>
+                        <span>Meny</span>
+                    </div>
+
                     <div class="preview-hero" style="@GetHeroBackgroundStyle()">
                         <div class="preview-logo">
                             @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
@@ -195,6 +228,12 @@
                         <span>@DisplayOrFallback(restaurant.Phone, "031-123 45 67")</span>
                         <span>@DisplayOrFallback(restaurant.Email, "info@restaurant.se")</span>
                         <span>@DisplayOrFallback(restaurant.Address, "Göteborg, Sverige")</span>
+                    </div>
+
+                    <div class="mini-footer-preview"
+                         style="background:@restaurant.FooterBackgroundColor; color:@restaurant.FooterTextColor;">
+                        <strong>Footer preview</strong>
+                        <span>Privacy • Terms • Contact</span>
                     </div>
                 </div>
 
@@ -228,6 +267,10 @@
         {
             PrimaryColor = "#8B0000",
             SecondaryColor = "#FFF7ED",
+            NavbarBackgroundColor = "#FFFFFF",
+            NavbarTextColor = "#111827",
+            FooterBackgroundColor = "#111827",
+            FooterTextColor = "#FFFFFF",
             MondayHours = "10:00 - 21:00",
             TuesdayHours = "10:00 - 21:00",
             WednesdayHours = "10:00 - 21:00",
