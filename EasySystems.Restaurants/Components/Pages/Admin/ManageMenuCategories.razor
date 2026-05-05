@@ -3,155 +3,181 @@
 
 @using EasySystems.Restaurants.Data
 @using EasySystems.Restaurants.Models
+@using EasySystems.Restaurants.Services
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+
+@attribute [Authorize]
 
 @inject ApplicationDbContext Db
 @inject NavigationManager Navigation
+@inject RestaurantAccessService AccessService
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Manage Menu Categories</PageTitle>
 
-<div class="admin-page">
-    <div class="admin-header">
-        <div>
-            <p class="eyebrow">Menu Builder</p>
-            <h1>Manage menu categories</h1>
-            <p class="subtitle">Add, edit, hide, delete and reorder restaurant menu sections.</p>
-        </div>
+@if (restaurant is not null && isAuthorized)
+{
+    <AdminNavbar RestaurantId="RestaurantId" RestaurantSlug="@restaurant.Slug" />
+}
+
+@if (!checkedAccess)
+{
+    <div class="public-loading">Checking access...</div>
+}
+else if (!isAuthorized)
+{
+    <div class="public-not-found">
+        <h1>Access denied</h1>
+        <p>You do not have permission to manage categories for this restaurant.</p>
     </div>
-
-    @if (restaurant is null)
-    {
-        <div class="form-card admin-center-card">
-            <h2>Restaurant not found</h2>
-            <p>This restaurant does not exist.</p>
-        </div>
-    }
-    else
-    {
-        <div class="admin-grid">
-            <div class="form-card">
-                <h2>Add new category</h2>
-
-                <label>Category name</label>
-                <InputText class="input" @bind-Value="newCategory.Name" placeholder="Burgare, Drycker, Sushi, Mandi..." />
-
-                <label>Description</label>
-                <InputTextArea class="input textarea" @bind-Value="newCategory.Description" placeholder="Short optional description..." />
-
-                <label>Sort order</label>
-                <InputNumber class="input" @bind-Value="newCategory.SortOrder" />
-
-                <button class="save-btn" type="button" @onclick="AddCategory">
-                    Add category
-                </button>
-
-                @if (!string.IsNullOrWhiteSpace(errorMessage))
-                {
-                    <div class="error">@errorMessage</div>
-                }
-
-                @if (!string.IsNullOrWhiteSpace(successMessage))
-                {
-                    <div class="upload-success">@successMessage</div>
-                }
+}
+else
+{
+    <div class="admin-page">
+        <div class="admin-header">
+            <div>
+                <p class="eyebrow">Menu Builder</p>
+                <h1>Manage menu categories</h1>
+                <p class="subtitle">Add, edit, hide, delete and reorder restaurant menu sections.</p>
             </div>
+        </div>
 
-            <div class="preview-card">
-                <p class="preview-label">@restaurant.Name categories</p>
+        @if (restaurant is null)
+        {
+            <div class="form-card admin-center-card">
+                <h2>Restaurant not found</h2>
+                <p>This restaurant does not exist.</p>
+            </div>
+        }
+        else
+        {
+            <div class="admin-grid">
+                <div class="form-card">
+                    <h2>Add new category</h2>
 
-                @if (categories.Count == 0)
-                {
-                    <div class="empty-menu">
-                        <h3>No categories yet</h3>
-                        <p>Add your first menu category.</p>
-                    </div>
-                }
-                else
-                {
-                    <div class="category-list">
-                        @foreach (var category in categories)
-                        {
-                            <div class="category-admin-item">
-                                @if (editingCategoryId == category.Id)
-                                {
-                                    <div class="edit-category-form">
-                                        <label>Name</label>
-                                        <InputText class="input" @bind-Value="editCategory.Name" />
+                    <label>Category name</label>
+                    <InputText class="input" @bind-Value="newCategory.Name" placeholder="Burgare, Drycker, Sushi, Mandi..." />
 
-                                        <label>Description</label>
-                                        <InputTextArea class="input textarea" @bind-Value="editCategory.Description" />
+                    <label>Description</label>
+                    <InputTextArea class="input textarea" @bind-Value="newCategory.Description" placeholder="Short optional description..." />
 
-                                        <label>Sort order</label>
-                                        <InputNumber class="input" @bind-Value="editCategory.SortOrder" />
+                    <label>Sort order</label>
+                    <InputNumber class="input" @bind-Value="newCategory.SortOrder" />
 
-                                        <label class="checkbox-label">
-                                            <InputCheckbox @bind-Value="editCategory.IsVisible" />
-                                            Visible
-                                        </label>
+                    <button class="save-btn" type="button" @onclick="AddCategory">
+                        Add category
+                    </button>
+
+                    @if (!string.IsNullOrWhiteSpace(errorMessage))
+                    {
+                        <div class="error">@errorMessage</div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(successMessage))
+                    {
+                        <div class="upload-success">@successMessage</div>
+                    }
+                </div>
+
+                <div class="preview-card">
+                    <p class="preview-label">@restaurant.Name categories</p>
+
+                    @if (categories.Count == 0)
+                    {
+                        <div class="empty-menu">
+                            <h3>No categories yet</h3>
+                            <p>Add your first menu category.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="category-list">
+                            @foreach (var category in categories)
+                            {
+                                <div class="category-admin-item">
+                                    @if (editingCategoryId == category.Id)
+                                    {
+                                        <div class="edit-category-form">
+                                            <label>Name</label>
+                                            <InputText class="input" @bind-Value="editCategory.Name" />
+
+                                            <label>Description</label>
+                                            <InputTextArea class="input textarea" @bind-Value="editCategory.Description" />
+
+                                            <label>Sort order</label>
+                                            <InputNumber class="input" @bind-Value="editCategory.SortOrder" />
+
+                                            <label class="checkbox-label">
+                                                <InputCheckbox @bind-Value="editCategory.IsVisible" />
+                                                Visible
+                                            </label>
+
+                                            <div class="category-actions">
+                                                <button type="button" @onclick="SaveEditCategory">
+                                                    Save
+                                                </button>
+
+                                                <button type="button" @onclick="CancelEditCategory">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div>
+                                            <strong>@category.Name</strong>
+
+                                            @if (!string.IsNullOrWhiteSpace(category.Description))
+                                            {
+                                                <p>@category.Description</p>
+                                            }
+
+                                            <span>Order: @category.SortOrder</span>
+                                        </div>
 
                                         <div class="category-actions">
-                                            <button type="button" @onclick="SaveEditCategory">
-                                                Save
+                                            <button type="button" @onclick="() => StartEditCategory(category)">
+                                                Edit
                                             </button>
 
-                                            <button type="button" @onclick="CancelEditCategory">
-                                                Cancel
+                                            <button type="button" @onclick="() => ToggleVisibility(category)">
+                                                @(category.IsVisible ? "Hide" : "Show")
+                                            </button>
+
+                                            <button type="button" @onclick="() => MoveUp(category)">
+                                                ↑
+                                            </button>
+
+                                            <button type="button" @onclick="() => MoveDown(category)">
+                                                ↓
+                                            </button>
+
+                                            <button class="danger-btn" type="button" @onclick="() => DeleteCategory(category)">
+                                                Delete
                                             </button>
                                         </div>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div>
-                                        <strong>@category.Name</strong>
 
-                                        @if (!string.IsNullOrWhiteSpace(category.Description))
+                                        @if (!category.IsVisible)
                                         {
-                                            <p>@category.Description</p>
+                                            <small class="hidden-badge">Hidden</small>
                                         }
-
-                                        <span>Order: @category.SortOrder</span>
-                                    </div>
-
-                                    <div class="category-actions">
-                                        <button type="button" @onclick="() => StartEditCategory(category)">
-                                            Edit
-                                        </button>
-
-                                        <button type="button" @onclick="() => ToggleVisibility(category)">
-                                            @(category.IsVisible ? "Hide" : "Show")
-                                        </button>
-
-                                        <button type="button" @onclick="() => MoveUp(category)">
-                                            ↑
-                                        </button>
-
-                                        <button type="button" @onclick="() => MoveDown(category)">
-                                            ↓
-                                        </button>
-
-                                        <button class="danger-btn" type="button" @onclick="() => DeleteCategory(category)">
-                                            Delete
-                                        </button>
-                                    </div>
-
-                                    @if (!category.IsVisible)
-                                    {
-                                        <small class="hidden-badge">Hidden</small>
                                     }
-                                }
-                            </div>
-                        }
-                    </div>
-                }
+                                </div>
+                            }
+                        </div>
+                    }
 
-                <button class="secondary-admin-btn" type="button" @onclick="GoToRestaurant">
-                    View restaurant page
-                </button>
+                    <button class="secondary-admin-btn" type="button" @onclick="GoToRestaurant">
+                        View restaurant page
+                    </button>
+                </div>
             </div>
-        </div>
-    }
-</div>
+        }
+    </div>
+}
 
 @code {
     [Parameter]
@@ -165,6 +191,9 @@
 
     private int? editingCategoryId;
 
+    private bool checkedAccess;
+    private bool isAuthorized;
+
     private MenuCategory newCategory = new()
         {
             IsVisible = true
@@ -174,11 +203,24 @@
 
     protected override async Task OnParametersSetAsync()
     {
+        checkedAccess = false;
+        isAuthorized = false;
+
         restaurant = await Db.Restaurants
             .FirstOrDefaultAsync(x => x.Id == RestaurantId);
 
-        await LoadCategories();
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
 
+        isAuthorized = await AccessService.CanAccessRestaurantAsync(
+            authState.User,
+            RestaurantId);
+
+        checkedAccess = true;
+
+        if (!isAuthorized || restaurant is null)
+            return;
+
+        await LoadCategories();
         ResetNewCategory();
     }
 

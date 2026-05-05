@@ -13,6 +13,7 @@ namespace EasySystems.Restaurants.Data
         public DbSet<OrderItem> OrderItems { get; set; } = null!;
         public DbSet<RestaurantLegalPage> RestaurantLegalPages { get; set; } = null!;
         public DbSet<MenuItemOption> MenuItemOptions { get; set; } = null!;
+        public DbSet<RestaurantUserAccess> RestaurantUserAccesses { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -37,6 +38,22 @@ namespace EasySystems.Restaurants.Data
             builder.Entity<MenuItemOption>()
                .Property(x => x.ExtraPrice)
                .HasPrecision(18, 2);
+
+            builder.Entity<RestaurantUserAccess>()
+               .HasIndex(x => new { x.RestaurantId, x.UserId })
+               .IsUnique();
+
+            builder.Entity<RestaurantUserAccess>()
+                .HasOne(x => x.Restaurant)
+                .WithMany()
+                .HasForeignKey(x => x.RestaurantId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<RestaurantUserAccess>()
+                .HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

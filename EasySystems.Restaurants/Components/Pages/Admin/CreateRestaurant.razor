@@ -5,262 +5,281 @@
 @using EasySystems.Restaurants.Models
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+
+@attribute [Authorize]
 
 @inject ApplicationDbContext Db
 @inject NavigationManager Navigation
 @inject IWebHostEnvironment Environment
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<ApplicationUser> UserManager
 
 <PageTitle>Create Restaurant</PageTitle>
 
-<div class="admin-page">
-    <div class="admin-header">
-        <div>
-            <p class="eyebrow">EasySystems Restaurants</p>
-            <h1>Create new restaurant</h1>
-            <p class="subtitle">Build a complete restaurant website with branding, contact, social links and opening hours.</p>
-        </div>
+@if (!checkedAccess)
+{
+    <div class="public-loading">Checking access...</div>
+}
+else if (!isPlatformSuperAdmin)
+{
+    <div class="public-not-found">
+        <h1>Access denied</h1>
+        <p>Only platform super admin can create restaurants.</p>
     </div>
-
-    <EditForm Model="restaurant" OnValidSubmit="SaveRestaurant">
-        <DataAnnotationsValidator />
-
-        <div class="admin-grid">
-            <div class="form-card">
-                <h2>Restaurant details</h2>
-
-                <label>Restaurant name</label>
-                <InputText class="input" @bind-Value="restaurant.Name" placeholder="Göteborg Mat & Grill" />
-
-                <label>Slug / URL</label>
-                <InputText class="input" @bind-Value="restaurant.Slug" placeholder="goteborg-mat-grill" />
-
-                <label>Description</label>
-                <InputTextArea class="input textarea" @bind-Value="restaurant.Description" placeholder="God mat i hjärtat av Göteborg..." />
-
-                <h2>Contact</h2>
-
-                <div class="two-cols">
-                    <div>
-                        <label>Phone</label>
-                        <InputText class="input" @bind-Value="restaurant.Phone" placeholder="031-123 45 67" />
-                    </div>
-
-                    <div>
-                        <label>Email</label>
-                        <InputText class="input" @bind-Value="restaurant.Email" placeholder="info@restaurant.se" />
-                    </div>
-                </div>
-
-                <label>Address</label>
-                <InputText class="input" @bind-Value="restaurant.Address" placeholder="Avenyn 12, Göteborg" />
-
-                <h2>Social media</h2>
-
-                <div class="two-cols">
-                    <div>
-                        <label>Instagram URL</label>
-                        <InputText class="input" @bind-Value="restaurant.InstagramUrl" placeholder="https://instagram.com/restaurant" />
-                    </div>
-
-                    <div>
-                        <label>Facebook URL</label>
-                        <InputText class="input" @bind-Value="restaurant.FacebookUrl" placeholder="https://facebook.com/restaurant" />
-                    </div>
-                </div>
-
-                <div class="two-cols">
-                    <div>
-                        <label>TikTok URL</label>
-                        <InputText class="input" @bind-Value="restaurant.TikTokUrl" placeholder="https://tiktok.com/restaurant" />
-                    </div>
-
-                    <div>
-                        <label>Website URL</label>
-                        <InputText class="input" @bind-Value="restaurant.WebsiteUrl" placeholder="https://restaurant.se" />
-                    </div>
-                </div>
-
-                <h2>Opening hours</h2>
-
-                <div class="opening-hours-grid">
-                    <div>
-                        <label>Monday</label>
-                        <InputText class="input" @bind-Value="restaurant.MondayHours" placeholder="10:00 - 21:00" />
-                    </div>
-
-                    <div>
-                        <label>Tuesday</label>
-                        <InputText class="input" @bind-Value="restaurant.TuesdayHours" placeholder="10:00 - 21:00" />
-                    </div>
-
-                    <div>
-                        <label>Wednesday</label>
-                        <InputText class="input" @bind-Value="restaurant.WednesdayHours" placeholder="10:00 - 21:00" />
-                    </div>
-
-                    <div>
-                        <label>Thursday</label>
-                        <InputText class="input" @bind-Value="restaurant.ThursdayHours" placeholder="10:00 - 21:00" />
-                    </div>
-
-                    <div>
-                        <label>Friday</label>
-                        <InputText class="input" @bind-Value="restaurant.FridayHours" placeholder="10:00 - 22:00" />
-                    </div>
-
-                    <div>
-                        <label>Saturday</label>
-                        <InputText class="input" @bind-Value="restaurant.SaturdayHours" placeholder="11:00 - 22:00" />
-                    </div>
-
-                    <div>
-                        <label>Sunday</label>
-                        <InputText class="input" @bind-Value="restaurant.SundayHours" placeholder="11:00 - 20:00" />
-                    </div>
-                </div>
-
-                <h2>Order settings</h2>
-
-                <div class="option-row">
-                    <label class="checkbox-label">
-                        <InputCheckbox @bind-Value="restaurant.IsPickupEnabled" />
-                        Pickup enabled
-                    </label>
-
-                    <label class="checkbox-label">
-                        <InputCheckbox @bind-Value="restaurant.IsDeliveryEnabled" />
-                        Delivery enabled
-                    </label>
-                </div>
-
-                <h2>Branding</h2>
-
-                <div class="two-cols">
-                    <div>
-                        <label>Primary color</label>
-                        <InputText class="input" @bind-Value="restaurant.PrimaryColor" placeholder="#8B0000" />
-                    </div>
-
-                    <div>
-                        <label>Secondary color</label>
-                        <InputText class="input" @bind-Value="restaurant.SecondaryColor" placeholder="#FFF7ED" />
-                    </div>
-                </div>
-
-                <h2>Navigation & footer colors</h2>
-
-                <div class="two-cols">
-                    <div>
-                        <label>Navbar background</label>
-                        <InputText class="input" @bind-Value="restaurant.NavbarBackgroundColor" placeholder="#FFFFFF" />
-                    </div>
-
-                    <div>
-                        <label>Navbar text</label>
-                        <InputText class="input" @bind-Value="restaurant.NavbarTextColor" placeholder="#111827" />
-                    </div>
-                </div>
-
-                <div class="two-cols">
-                    <div>
-                        <label>Footer background</label>
-                        <InputText class="input" @bind-Value="restaurant.FooterBackgroundColor" placeholder="#111827" />
-                    </div>
-
-                    <div>
-                        <label>Footer text</label>
-                        <InputText class="input" @bind-Value="restaurant.FooterTextColor" placeholder="#FFFFFF" />
-                    </div>
-                </div>
-
-                <label>Logo</label>
-                <InputFile class="file-input" OnChange="UploadLogo" accept="image/png,image/jpeg,image/webp" />
-                @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
-                {
-                    <p class="upload-success">Logo uploaded successfully</p>
-                }
-
-                <label>Hero image</label>
-                <InputFile class="file-input" OnChange="UploadHeroImage" accept="image/png,image/jpeg,image/webp" />
-                @if (!string.IsNullOrWhiteSpace(restaurant.HeroImageUrl))
-                {
-                    <p class="upload-success">Hero image uploaded successfully</p>
-                }
-
-                <button class="save-btn" type="submit">Create restaurant</button>
-
-                @if (!string.IsNullOrWhiteSpace(errorMessage))
-                {
-                    <div class="error">@errorMessage</div>
-                }
+}
+else
+{
+    <div class="admin-page">
+        <div class="admin-header">
+            <div>
+                <p class="eyebrow">EasySystems Restaurants</p>
+                <h1>Create new restaurant</h1>
+                <p class="subtitle">Build a complete restaurant website with branding, contact, social links and opening hours.</p>
             </div>
+        </div>
 
-            <div class="preview-card sticky-preview">
-                <p class="preview-label">Live preview</p>
+        <EditForm Model="restaurant" OnValidSubmit="SaveRestaurant">
+            <DataAnnotationsValidator />
 
-                <div class="restaurant-preview" style="--primary:@restaurant.PrimaryColor; --secondary:@restaurant.SecondaryColor;">
-                    <div class="mini-navbar-preview"
-                         style="background:@restaurant.NavbarBackgroundColor; color:@restaurant.NavbarTextColor;">
-                        <strong>@DisplayOrFallback(restaurant.Name, "Restaurant")</strong>
-                        <span>Hem</span>
-                        <span>Meny</span>
-                    </div>
+            <div class="admin-grid">
+                <div class="form-card">
+                    <h2>Restaurant details</h2>
 
-                    <div class="preview-hero" style="@GetHeroBackgroundStyle()">
-                        <div class="preview-logo">
-                            @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
-                            {
-                                <img src="@restaurant.LogoUrl" />
-                            }
-                            else
-                            {
-                                <span>@GetInitials()</span>
-                            }
+                    <label>Restaurant name</label>
+                    <InputText class="input" @bind-Value="restaurant.Name" placeholder="Göteborg Mat & Grill" />
+
+                    <label>Slug / URL</label>
+                    <InputText class="input" @bind-Value="restaurant.Slug" placeholder="goteborg-mat-grill" />
+
+                    <label>Description</label>
+                    <InputTextArea class="input textarea" @bind-Value="restaurant.Description" placeholder="God mat i hjärtat av Göteborg..." />
+
+                    <h2>Contact</h2>
+
+                    <div class="two-cols">
+                        <div>
+                            <label>Phone</label>
+                            <InputText class="input" @bind-Value="restaurant.Phone" placeholder="031-123 45 67" />
                         </div>
 
-                        <h2>@DisplayOrFallback(restaurant.Name, "Göteborg Mat & Grill")</h2>
-                        <p>@DisplayOrFallback(restaurant.Description, "God mat i hjärtat av Göteborg. Beställ snabbt och enkelt online.")</p>
-
-                        <button type="button">Se meny</button>
+                        <div>
+                            <label>Email</label>
+                            <InputText class="input" @bind-Value="restaurant.Email" placeholder="info@restaurant.se" />
+                        </div>
                     </div>
 
-                    <div class="preview-info">
-                        <span>@DisplayOrFallback(restaurant.Phone, "031-123 45 67")</span>
-                        <span>@DisplayOrFallback(restaurant.Email, "info@restaurant.se")</span>
-                        <span>@DisplayOrFallback(restaurant.Address, "Göteborg, Sverige")</span>
+                    <label>Address</label>
+                    <InputText class="input" @bind-Value="restaurant.Address" placeholder="Avenyn 12, Göteborg" />
+
+                    <h2>Social media</h2>
+
+                    <div class="two-cols">
+                        <div>
+                            <label>Instagram URL</label>
+                            <InputText class="input" @bind-Value="restaurant.InstagramUrl" placeholder="https://instagram.com/restaurant" />
+                        </div>
+
+                        <div>
+                            <label>Facebook URL</label>
+                            <InputText class="input" @bind-Value="restaurant.FacebookUrl" placeholder="https://facebook.com/restaurant" />
+                        </div>
                     </div>
 
-                    <div class="mini-footer-preview"
-                         style="background:@restaurant.FooterBackgroundColor; color:@restaurant.FooterTextColor;">
-                        <strong>Footer preview</strong>
-                        <span>Privacy • Terms • Contact</span>
+                    <div class="two-cols">
+                        <div>
+                            <label>TikTok URL</label>
+                            <InputText class="input" @bind-Value="restaurant.TikTokUrl" placeholder="https://tiktok.com/restaurant" />
+                        </div>
+
+                        <div>
+                            <label>Website URL</label>
+                            <InputText class="input" @bind-Value="restaurant.WebsiteUrl" placeholder="https://restaurant.se" />
+                        </div>
                     </div>
+
+                    <h2>Opening hours</h2>
+
+                    <div class="opening-hours-grid">
+                        <div>
+                            <label>Monday</label>
+                            <InputText class="input" @bind-Value="restaurant.MondayHours" placeholder="10:00 - 21:00" />
+                        </div>
+
+                        <div>
+                            <label>Tuesday</label>
+                            <InputText class="input" @bind-Value="restaurant.TuesdayHours" placeholder="10:00 - 21:00" />
+                        </div>
+
+                        <div>
+                            <label>Wednesday</label>
+                            <InputText class="input" @bind-Value="restaurant.WednesdayHours" placeholder="10:00 - 21:00" />
+                        </div>
+
+                        <div>
+                            <label>Thursday</label>
+                            <InputText class="input" @bind-Value="restaurant.ThursdayHours" placeholder="10:00 - 21:00" />
+                        </div>
+
+                        <div>
+                            <label>Friday</label>
+                            <InputText class="input" @bind-Value="restaurant.FridayHours" placeholder="10:00 - 22:00" />
+                        </div>
+
+                        <div>
+                            <label>Saturday</label>
+                            <InputText class="input" @bind-Value="restaurant.SaturdayHours" placeholder="11:00 - 22:00" />
+                        </div>
+
+                        <div>
+                            <label>Sunday</label>
+                            <InputText class="input" @bind-Value="restaurant.SundayHours" placeholder="11:00 - 20:00" />
+                        </div>
+                    </div>
+
+                    <h2>Order settings</h2>
+
+                    <div class="option-row">
+                        <label class="checkbox-label">
+                            <InputCheckbox @bind-Value="restaurant.IsPickupEnabled" />
+                            Pickup enabled
+                        </label>
+
+                        <label class="checkbox-label">
+                            <InputCheckbox @bind-Value="restaurant.IsDeliveryEnabled" />
+                            Delivery enabled
+                        </label>
+                    </div>
+
+                    <h2>Branding</h2>
+
+                    <div class="two-cols">
+                        <div>
+                            <label>Primary color</label>
+                            <InputText class="input" @bind-Value="restaurant.PrimaryColor" placeholder="#8B0000" />
+                        </div>
+
+                        <div>
+                            <label>Secondary color</label>
+                            <InputText class="input" @bind-Value="restaurant.SecondaryColor" placeholder="#FFF7ED" />
+                        </div>
+                    </div>
+
+                    <h2>Navigation & footer colors</h2>
+
+                    <div class="two-cols">
+                        <div>
+                            <label>Navbar background</label>
+                            <InputText class="input" @bind-Value="restaurant.NavbarBackgroundColor" placeholder="#FFFFFF" />
+                        </div>
+
+                        <div>
+                            <label>Navbar text</label>
+                            <InputText class="input" @bind-Value="restaurant.NavbarTextColor" placeholder="#111827" />
+                        </div>
+                    </div>
+
+                    <div class="two-cols">
+                        <div>
+                            <label>Footer background</label>
+                            <InputText class="input" @bind-Value="restaurant.FooterBackgroundColor" placeholder="#111827" />
+                        </div>
+
+                        <div>
+                            <label>Footer text</label>
+                            <InputText class="input" @bind-Value="restaurant.FooterTextColor" placeholder="#FFFFFF" />
+                        </div>
+                    </div>
+
+                    <label>Logo</label>
+                    <InputFile class="file-input" OnChange="UploadLogo" accept="image/png,image/jpeg,image/webp" />
+                    @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
+                    {
+                        <p class="upload-success">Logo uploaded successfully</p>
+                    }
+
+                    <label>Hero image</label>
+                    <InputFile class="file-input" OnChange="UploadHeroImage" accept="image/png,image/jpeg,image/webp" />
+                    @if (!string.IsNullOrWhiteSpace(restaurant.HeroImageUrl))
+                    {
+                        <p class="upload-success">Hero image uploaded successfully</p>
+                    }
+
+                    <button class="save-btn" type="submit">Create restaurant</button>
+
+                    @if (!string.IsNullOrWhiteSpace(errorMessage))
+                    {
+                        <div class="error">@errorMessage</div>
+                    }
                 </div>
 
-                <div class="preview-mini-section">
-                    <strong>Opening hours</strong>
-                    <div>
-                        <span>Mån</span>
-                        <p>@DisplayOrFallback(restaurant.MondayHours, "10:00 - 21:00")</p>
-                    </div>
-                    <div>
-                        <span>Fre</span>
-                        <p>@DisplayOrFallback(restaurant.FridayHours, "10:00 - 22:00")</p>
-                    </div>
-                    <div>
-                        <span>Sön</span>
-                        <p>@DisplayOrFallback(restaurant.SundayHours, "11:00 - 20:00")</p>
-                    </div>
-                </div>
+                <div class="preview-card sticky-preview">
+                    <p class="preview-label">Live preview</p>
 
-                <div class="tip-box">
-                    <strong>Professional setup</strong>
-                    <p>This profile includes contact, social links, opening hours, branding and order settings.</p>
+                    <div class="restaurant-preview" style="--primary:@restaurant.PrimaryColor; --secondary:@restaurant.SecondaryColor;">
+                        <div class="mini-navbar-preview" style="@GetMiniNavbarStyle()">
+                            <strong>@DisplayOrFallback(restaurant.Name, "Restaurant")</strong>
+                            <span>Hem</span>
+                            <span>Meny</span>
+                        </div>
+
+                        <div class="preview-hero" style="@GetHeroBackgroundStyle()">
+                            <div class="preview-logo">
+                                @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
+                                {
+                                    <img src="@restaurant.LogoUrl" />
+                                }
+                                else
+                                {
+                                    <span>@GetInitials()</span>
+                                }
+                            </div>
+
+                            <h2>@DisplayOrFallback(restaurant.Name, "Göteborg Mat & Grill")</h2>
+                            <p>@DisplayOrFallback(restaurant.Description, "God mat i hjärtat av Göteborg. Beställ snabbt och enkelt online.")</p>
+
+                            <button type="button">Se meny</button>
+                        </div>
+
+                        <div class="preview-info">
+                            <span>@DisplayOrFallback(restaurant.Phone, "031-123 45 67")</span>
+                            <span>@DisplayOrFallback(restaurant.Email, "info@restaurant.se")</span>
+                            <span>@DisplayOrFallback(restaurant.Address, "Göteborg, Sverige")</span>
+                        </div>
+
+                        <div class="mini-footer-preview" style="@GetMiniFooterStyle()">
+                            <strong>Footer preview</strong>
+                            <span>Privacy • Terms • Contact</span>
+                        </div>
+                    </div>
+
+                    <div class="preview-mini-section">
+                        <strong>Opening hours</strong>
+                        <div>
+                            <span>Mån</span>
+                            <p>@DisplayOrFallback(restaurant.MondayHours, "10:00 - 21:00")</p>
+                        </div>
+                        <div>
+                            <span>Fre</span>
+                            <p>@DisplayOrFallback(restaurant.FridayHours, "10:00 - 22:00")</p>
+                        </div>
+                        <div>
+                            <span>Sön</span>
+                            <p>@DisplayOrFallback(restaurant.SundayHours, "11:00 - 20:00")</p>
+                        </div>
+                    </div>
+
+                    <div class="tip-box">
+                        <strong>Professional setup</strong>
+                        <p>This profile includes contact, social links, opening hours, branding and order settings.</p>
+                    </div>
                 </div>
             </div>
-        </div>
-    </EditForm>
-</div>
+        </EditForm>
+    </div>
+}
 
 @code {
     private Restaurant restaurant = new()
@@ -284,10 +303,27 @@
         };
 
     private string? errorMessage;
+    private bool checkedAccess;
+    private bool isPlatformSuperAdmin;
+
     private const long MaxFileSize = 5 * 1024 * 1024;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = await UserManager.GetUserAsync(authState.User);
+
+        isPlatformSuperAdmin = user is not null &&
+            await UserManager.IsInRoleAsync(user, "PlatformSuperAdmin");
+
+        checkedAccess = true;
+    }
 
     private async Task SaveRestaurant()
     {
+        if (!isPlatformSuperAdmin)
+            return;
+
         errorMessage = null;
 
         restaurant.Name = restaurant.Name.Trim();
@@ -331,6 +367,9 @@
 
     private async Task<string> SaveImageAsync(IBrowserFile file, string folderName)
     {
+        if (!isPlatformSuperAdmin)
+            return string.Empty;
+
         errorMessage = null;
 
         var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
@@ -385,6 +424,16 @@
             return string.Empty;
 
         return $"background: linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)), url('{restaurant.HeroImageUrl}') center/cover;";
+    }
+
+    private string GetMiniNavbarStyle()
+    {
+        return $"background:{restaurant.NavbarBackgroundColor}; color:{restaurant.NavbarTextColor};";
+    }
+
+    private string GetMiniFooterStyle()
+    {
+        return $"background:{restaurant.FooterBackgroundColor}; color:{restaurant.FooterTextColor};";
     }
 
     private string NormalizeSlug(string value)

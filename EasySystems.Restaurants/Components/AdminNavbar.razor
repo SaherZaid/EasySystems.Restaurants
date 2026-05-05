@@ -23,6 +23,10 @@
 
             @if (RestaurantId is not null)
             {
+                <NavLink href="@($"/admin/restaurants/{RestaurantId}/owner")" @onclick="CloseMenu">
+                    Owner 👑
+                </NavLink>
+
                 <NavLink href="@($"/admin/restaurants/{RestaurantId}/edit")" @onclick="CloseMenu">
                     Edit
                 </NavLink>

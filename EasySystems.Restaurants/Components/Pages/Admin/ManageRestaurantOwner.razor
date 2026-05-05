@@ -1,0 +1,444 @@
+﻿@page "/admin/restaurants/{RestaurantId:int}/owner"
+@rendermode InteractiveServer
+
+@using EasySystems.Restaurants.Data
+@using EasySystems.Restaurants.Models
+@using EasySystems.Restaurants.Services
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+
+@attribute [Authorize]
+
+@inject ApplicationDbContext Db
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+@inject RestaurantAccessService AccessService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Restaurant Access</PageTitle>
+
+@if (restaurant is not null && isAuthorized)
+{
+    <AdminNavbar RestaurantId="RestaurantId" RestaurantSlug="@restaurant.Slug" />
+}
+
+@if (!checkedAccess)
+{
+    <div class="public-loading">Checking access...</div>
+}
+else if (!isAuthorized)
+{
+    <div class="public-not-found">
+        <h1>Access denied</h1>
+        <p>You do not have permission to manage users for this restaurant.</p>
+    </div>
+}
+else
+{
+    <div class="admin-page">
+        <div class="admin-header">
+            <div>
+                <p class="eyebrow">Restaurant access</p>
+                <h1>@(restaurant?.Name ?? "Restaurant") users</h1>
+                <p class="subtitle">Search users, assign owners and admins, and manage who can access this restaurant.</p>
+            </div>
+        </div>
+
+        @if (restaurant is null)
+        {
+            <div class="form-card admin-center-card">
+                <h2>Restaurant not found</h2>
+            </div>
+        }
+        else
+        {
+            <div class="access-layout">
+                <div class="form-card">
+                    <h2>Add user access</h2>
+
+                    <label>Search user</label>
+                    <input class="input"
+                           value="@searchText"
+                           @oninput="OnSearchChanged"
+                           placeholder="Search by email, username or phone..." />
+
+                    <div class="user-search-list">
+                        @foreach (var user in FilteredUsers)
+                        {
+                            <button type="button"
+                                    class="user-search-item @(selectedUserId == user.Id ? "selected" : "")"
+                                    @onclick="() => SelectUser(user)">
+                                <div>
+                                    <strong>@DisplayUser(user)</strong>
+                                    <span>@DisplayUserSubText(user)</span>
+                                </div>
+
+                                @if (selectedUserId == user.Id)
+                                {
+                                    <small>Selected</small>
+                                }
+                            </button>
+                        }
+                    </div>
+
+                    <label>Permission</label>
+                    <InputSelect class="input" @bind-Value="selectedAccessRole">
+                        <option value="RestaurantOwner">Restaurant Owner</option>
+                        <option value="RestaurantAdmin">Restaurant Admin</option>
+                    </InputSelect>
+
+                    <button class="save-btn" type="button" @onclick="SaveAccess">
+                        Save access
+                    </button>
+
+                    @if (!string.IsNullOrWhiteSpace(errorMessage))
+                    {
+                        <div class="error">@errorMessage</div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(successMessage))
+                    {
+                        <div class="upload-success">@successMessage</div>
+                    }
+                </div>
+
+                <div class="preview-card">
+                    <p class="preview-label">Current access</p>
+
+                    <div class="owner-highlight">
+                        <span>Main owner</span>
+
+                        @if (currentOwner is null)
+                        {
+                            <strong>No main owner assigned</strong>
+                            <p>Assign a Restaurant Owner to make them the main owner.</p>
+                        }
+                        else
+                        {
+                            <strong>@DisplayUser(currentOwner)</strong>
+                            <p>@currentOwner.Email</p>
+                        }
+                    </div>
+
+                    @if (accesses.Count == 0)
+                    {
+                        <div class="empty-menu">
+                            <h3>No users assigned</h3>
+                            <p>Add an owner or admin to this restaurant.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="access-list">
+                            @foreach (var access in accesses)
+                            {
+                                <div class="access-card">
+                                    <div>
+                                        <strong>@DisplayUser(access.User)</strong>
+                                        <span>@access.User?.Email</span>
+
+                                        <small class="@GetRoleClass(access.Role)">
+                                            @FormatRole(access.Role)
+                                        </small>
+                                    </div>
+
+                                    <div class="access-actions">
+                                        @if (access.Role != "RestaurantOwner")
+                                        {
+                                            <button type="button" @onclick='() => ChangeAccessRole(access, "RestaurantOwner")'>
+                                                Make owner
+                                            </button>
+                                        }
+
+                                        @if (access.Role != "RestaurantAdmin")
+                                        {
+                                            <button type="button" @onclick='() => ChangeAccessRole(access, "RestaurantAdmin")'>
+                                                Make admin
+                                            </button>
+                                        }
+
+                                        <button type="button" class="danger-btn" @onclick="() => RemoveAccess(access)">
+                                            Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <div class="restaurant-admin-actions" style="margin-top:18px;">
+                        <button type="button" @onclick="BackToRestaurants">Back</button>
+                        <button type="button" @onclick="ViewRestaurant">View restaurant</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int RestaurantId { get; set; }
+
+    private Restaurant? restaurant;
+    private ApplicationUser? currentOwner;
+
+    private List<ApplicationUser> users = [];
+    private List<RestaurantUserAccess> accesses = [];
+
+    private string searchText = string.Empty;
+    private string? selectedUserId;
+    private string selectedAccessRole = "RestaurantAdmin";
+
+    private string? errorMessage;
+    private string? successMessage;
+
+    private bool checkedAccess;
+    private bool isAuthorized;
+
+    private IEnumerable<ApplicationUser> FilteredUsers
+    {
+        get
+        {
+            var query = users.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                var text = searchText.Trim().ToLower();
+
+                query = query.Where(x =>
+                    (!string.IsNullOrWhiteSpace(x.Email) && x.Email.ToLower().Contains(text)) ||
+                    (!string.IsNullOrWhiteSpace(x.UserName) && x.UserName.ToLower().Contains(text)) ||
+                    (!string.IsNullOrWhiteSpace(x.PhoneNumber) && x.PhoneNumber.ToLower().Contains(text)));
+            }
+
+            return query.Take(12);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        checkedAccess = false;
+        isAuthorized = false;
+
+        restaurant = await Db.Restaurants
+            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+        isAuthorized = await AccessService.CanManageRestaurantUsersAsync(
+            authState.User,
+            RestaurantId);
+
+        checkedAccess = true;
+
+        if (!isAuthorized || restaurant is null)
+            return;
+
+        users = await UserManager.Users
+            .OrderBy(x => x.Email)
+            .ToListAsync();
+
+        await LoadAccesses();
+    }
+
+    private async Task LoadAccesses()
+    {
+        accesses = await Db.RestaurantUserAccesses
+            .Include(x => x.User)
+            .Where(x => x.RestaurantId == RestaurantId)
+            .OrderBy(x => x.Role)
+            .ThenBy(x => x.User!.Email)
+            .ToListAsync();
+
+        currentOwner = null;
+
+        if (restaurant is not null && !string.IsNullOrWhiteSpace(restaurant.OwnerUserId))
+        {
+            currentOwner = await UserManager.FindByIdAsync(restaurant.OwnerUserId);
+        }
+    }
+
+    private void SelectUser(ApplicationUser user)
+    {
+        selectedUserId = user.Id;
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        searchText = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private async Task SaveAccess()
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        if (restaurant is null)
+        {
+            errorMessage = "Restaurant not found.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(selectedUserId))
+        {
+            errorMessage = "Choose a user first.";
+            return;
+        }
+
+        var user = await UserManager.FindByIdAsync(selectedUserId);
+
+        if (user is null)
+        {
+            errorMessage = "User not found.";
+            return;
+        }
+
+        var existingAccess = await Db.RestaurantUserAccesses
+            .FirstOrDefaultAsync(x => x.RestaurantId == RestaurantId && x.UserId == user.Id);
+
+        if (existingAccess is null)
+        {
+            existingAccess = new RestaurantUserAccess
+            {
+                RestaurantId = RestaurantId,
+                UserId = user.Id,
+                Role = selectedAccessRole,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            Db.RestaurantUserAccesses.Add(existingAccess);
+        }
+        else
+        {
+            existingAccess.Role = selectedAccessRole;
+        }
+
+        if (!await UserManager.IsInRoleAsync(user, selectedAccessRole))
+        {
+            await UserManager.AddToRoleAsync(user, selectedAccessRole);
+        }
+
+        if (selectedAccessRole == "RestaurantOwner")
+        {
+            restaurant.OwnerUserId = user.Id;
+        }
+
+        await Db.SaveChangesAsync();
+        await LoadAccesses();
+
+        selectedUserId = null;
+        searchText = string.Empty;
+        selectedAccessRole = "RestaurantAdmin";
+
+        successMessage = "User access saved successfully.";
+    }
+
+    private async Task ChangeAccessRole(RestaurantUserAccess access, string role)
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        if (restaurant is null || access.User is null)
+            return;
+
+        access.Role = role;
+
+        if (!await UserManager.IsInRoleAsync(access.User, role))
+        {
+            await UserManager.AddToRoleAsync(access.User, role);
+        }
+
+        if (role == "RestaurantOwner")
+        {
+            restaurant.OwnerUserId = access.UserId;
+        }
+
+        await Db.SaveChangesAsync();
+        await LoadAccesses();
+
+        successMessage = "Access updated.";
+    }
+
+    private async Task RemoveAccess(RestaurantUserAccess access)
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        if (restaurant is null)
+            return;
+
+        if (restaurant.OwnerUserId == access.UserId)
+        {
+            restaurant.OwnerUserId = null;
+        }
+
+        Db.RestaurantUserAccesses.Remove(access);
+        await Db.SaveChangesAsync();
+
+        await LoadAccesses();
+
+        successMessage = "Access removed.";
+    }
+
+    private string DisplayUser(ApplicationUser? user)
+    {
+        if (user is null)
+            return "Unknown user";
+
+        if (!string.IsNullOrWhiteSpace(user.Email))
+            return user.Email;
+
+        if (!string.IsNullOrWhiteSpace(user.UserName))
+            return user.UserName;
+
+        return user.Id;
+    }
+
+    private string DisplayUserSubText(ApplicationUser user)
+    {
+        if (!string.IsNullOrWhiteSpace(user.PhoneNumber))
+            return user.PhoneNumber;
+
+        if (!string.IsNullOrWhiteSpace(user.UserName))
+            return user.UserName;
+
+        return user.Id;
+    }
+
+    private string FormatRole(string role)
+    {
+        return role switch
+        {
+            "RestaurantOwner" => "Owner",
+            "RestaurantAdmin" => "Admin",
+            _ => role
+        };
+    }
+
+    private string GetRoleClass(string role)
+    {
+        return role switch
+        {
+            "RestaurantOwner" => "access-role-owner",
+            "RestaurantAdmin" => "access-role-admin",
+            _ => "access-role-admin"
+        };
+    }
+
+    private void BackToRestaurants()
+    {
+        Navigation.NavigateTo("/admin/restaurants");
+    }
+
+    private void ViewRestaurant()
+    {
+        if (restaurant is not null)
+            Navigation.NavigateTo($"/restaurant/{restaurant.Slug}");
+    }
+}

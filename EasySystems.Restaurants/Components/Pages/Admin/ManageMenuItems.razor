@@ -3,205 +3,231 @@
 
 @using EasySystems.Restaurants.Data
 @using EasySystems.Restaurants.Models
+@using EasySystems.Restaurants.Services
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+
+@attribute [Authorize]
 
 @inject ApplicationDbContext Db
 @inject NavigationManager Navigation
 @inject IWebHostEnvironment Environment
+@inject RestaurantAccessService AccessService
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Manage Menu Items</PageTitle>
 
-<div class="admin-page">
-    <div class="admin-header">
-        <div>
-            <p class="eyebrow">Menu Items</p>
-            <h1>Manage dishes</h1>
-            <p class="subtitle">Add dishes, edit them, manage options and control availability.</p>
-        </div>
+@if (restaurant is not null && isAuthorized)
+{
+    <AdminNavbar RestaurantId="RestaurantId" RestaurantSlug="@restaurant.Slug" />
+}
+
+@if (!checkedAccess)
+{
+    <div class="public-loading">Checking access...</div>
+}
+else if (!isAuthorized)
+{
+    <div class="public-not-found">
+        <h1>Access denied</h1>
+        <p>You do not have permission to manage dishes for this restaurant.</p>
     </div>
-
-    @if (restaurant is null)
-    {
-        <div class="form-card admin-center-card">
-            <h2>Restaurant not found</h2>
-            <p>This restaurant does not exist.</p>
+}
+else
+{
+    <div class="admin-page">
+        <div class="admin-header">
+            <div>
+                <p class="eyebrow">Menu Items</p>
+                <h1>Manage dishes</h1>
+                <p class="subtitle">Add dishes, edit them, manage options and control availability.</p>
+            </div>
         </div>
-    }
-    else if (categories.Count == 0)
-    {
-        <div class="form-card admin-center-card">
-            <h2>No categories yet</h2>
-            <p>You need to create menu categories before adding dishes.</p>
-            <button class="save-btn" type="button" @onclick="GoToCategories">Create categories</button>
-        </div>
-    }
-    else
-    {
-        <div class="admin-grid">
-            <div class="form-card">
-                <h2>Add new dish</h2>
 
-                <label>Category</label>
-                <InputSelect class="input" @bind-Value="newItem.MenuCategoryId">
-                    @foreach (var category in categories)
+        @if (restaurant is null)
+        {
+            <div class="form-card admin-center-card">
+                <h2>Restaurant not found</h2>
+                <p>This restaurant does not exist.</p>
+            </div>
+        }
+        else if (categories.Count == 0)
+        {
+            <div class="form-card admin-center-card">
+                <h2>No categories yet</h2>
+                <p>You need to create menu categories before adding dishes.</p>
+                <button class="save-btn" type="button" @onclick="GoToCategories">Create categories</button>
+            </div>
+        }
+        else
+        {
+            <div class="admin-grid">
+                <div class="form-card">
+                    <h2>Add new dish</h2>
+
+                    <label>Category</label>
+                    <InputSelect class="input" @bind-Value="newItem.MenuCategoryId">
+                        @foreach (var category in categories)
+                        {
+                            <option value="@category.Id">@category.Name</option>
+                        }
+                    </InputSelect>
+
+                    <label>Dish name</label>
+                    <InputText class="input" @bind-Value="newItem.Name" placeholder="Kyckling Kebab Tallrik" />
+
+                    <label>Description</label>
+                    <InputTextArea class="input textarea" @bind-Value="newItem.Description" placeholder="Serveras med ris, sallad och valfri sås..." />
+
+                    <div class="two-cols">
+                        <div>
+                            <label>Price</label>
+                            <InputNumber class="input" @bind-Value="newItem.Price" />
+                        </div>
+
+                        <div>
+                            <label>Sort order</label>
+                            <InputNumber class="input" @bind-Value="newItem.SortOrder" />
+                        </div>
+                    </div>
+
+                    <label>Dish image</label>
+                    <InputFile class="file-input" OnChange="UploadNewItemImage" accept="image/png,image/jpeg,image/webp" />
+
+                    @if (!string.IsNullOrWhiteSpace(newItem.ImageUrl))
                     {
-                        <option value="@category.Id">@category.Name</option>
+                        <p class="upload-success">Dish image uploaded successfully</p>
                     }
-                </InputSelect>
 
-                <label>Dish name</label>
-                <InputText class="input" @bind-Value="newItem.Name" placeholder="Kyckling Kebab Tallrik" />
+                    <button class="save-btn" type="button" @onclick="AddItem">Add dish</button>
 
-                <label>Description</label>
-                <InputTextArea class="input textarea" @bind-Value="newItem.Description" placeholder="Serveras med ris, sallad och valfri sås..." />
+                    @if (!string.IsNullOrWhiteSpace(errorMessage))
+                    {
+                        <div class="error">@errorMessage</div>
+                    }
 
-                <div class="two-cols">
-                    <div>
-                        <label>Price</label>
-                        <InputNumber class="input" @bind-Value="newItem.Price" />
-                    </div>
-
-                    <div>
-                        <label>Sort order</label>
-                        <InputNumber class="input" @bind-Value="newItem.SortOrder" />
-                    </div>
+                    @if (!string.IsNullOrWhiteSpace(successMessage))
+                    {
+                        <div class="upload-success">@successMessage</div>
+                    }
                 </div>
 
-                <label>Dish image</label>
-                <InputFile class="file-input" OnChange="UploadNewItemImage" accept="image/png,image/jpeg,image/webp" />
+                <div class="preview-card">
+                    <p class="preview-label">@restaurant.Name dishes</p>
 
-                @if (!string.IsNullOrWhiteSpace(newItem.ImageUrl))
-                {
-                    <p class="upload-success">Dish image uploaded successfully</p>
-                }
-
-                <button class="save-btn" type="button" @onclick="AddItem">Add dish</button>
-
-                @if (!string.IsNullOrWhiteSpace(errorMessage))
-                {
-                    <div class="error">@errorMessage</div>
-                }
-
-                @if (!string.IsNullOrWhiteSpace(successMessage))
-                {
-                    <div class="upload-success">@successMessage</div>
-                }
-            </div>
-
-            <div class="preview-card">
-                <p class="preview-label">@restaurant.Name dishes</p>
-
-                @if (items.Count == 0)
-                {
-                    <div class="empty-menu">
-                        <h3>No dishes yet</h3>
-                        <p>Add your first dish to the menu.</p>
-                    </div>
-                }
-                else
-                {
-                    <div class="item-admin-list">
-                        @foreach (var item in items)
-                        {
-                            <div class="item-admin-card">
-                                @if (editingItemId == item.Id)
-                                {
-                                    <div class="edit-item-form">
-                                        <label>Category</label>
-                                        <InputSelect class="input" @bind-Value="editItem.MenuCategoryId">
-                                            @foreach (var category in categories)
-                                            {
-                                                <option value="@category.Id">@category.Name</option>
-                                            }
-                                        </InputSelect>
-
-                                        <label>Dish name</label>
-                                        <InputText class="input" @bind-Value="editItem.Name" />
-
-                                        <label>Description</label>
-                                        <InputTextArea class="input textarea" @bind-Value="editItem.Description" />
-
-                                        <div class="two-cols">
-                                            <div>
-                                                <label>Price</label>
-                                                <InputNumber class="input" @bind-Value="editItem.Price" />
-                                            </div>
-
-                                            <div>
-                                                <label>Sort order</label>
-                                                <InputNumber class="input" @bind-Value="editItem.SortOrder" />
-                                            </div>
-                                        </div>
-
-                                        <label class="checkbox-label">
-                                            <InputCheckbox @bind-Value="editItem.IsAvailable" />
-                                            Available
-                                        </label>
-
-                                        <label>Replace image</label>
-                                        <InputFile class="file-input" OnChange="UploadEditItemImage" accept="image/png,image/jpeg,image/webp" />
-
-                                        <div class="category-actions">
-                                            <button type="button" @onclick="SaveEditItem">Save</button>
-                                            <button type="button" @onclick="CancelEditItem">Cancel</button>
-                                        </div>
-                                    </div>
-                                }
-                                else
-                                {
-                                    @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                    @if (items.Count == 0)
+                    {
+                        <div class="empty-menu">
+                            <h3>No dishes yet</h3>
+                            <p>Add your first dish to the menu.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="item-admin-list">
+                            @foreach (var item in items)
+                            {
+                                <div class="item-admin-card">
+                                    @if (editingItemId == item.Id)
                                     {
-                                        <img src="@item.ImageUrl" alt="@item.Name" />
+                                        <div class="edit-item-form">
+                                            <label>Category</label>
+                                            <InputSelect class="input" @bind-Value="editItem.MenuCategoryId">
+                                                @foreach (var category in categories)
+                                                {
+                                                    <option value="@category.Id">@category.Name</option>
+                                                }
+                                            </InputSelect>
+
+                                            <label>Dish name</label>
+                                            <InputText class="input" @bind-Value="editItem.Name" />
+
+                                            <label>Description</label>
+                                            <InputTextArea class="input textarea" @bind-Value="editItem.Description" />
+
+                                            <div class="two-cols">
+                                                <div>
+                                                    <label>Price</label>
+                                                    <InputNumber class="input" @bind-Value="editItem.Price" />
+                                                </div>
+
+                                                <div>
+                                                    <label>Sort order</label>
+                                                    <InputNumber class="input" @bind-Value="editItem.SortOrder" />
+                                                </div>
+                                            </div>
+
+                                            <label class="checkbox-label">
+                                                <InputCheckbox @bind-Value="editItem.IsAvailable" />
+                                                Available
+                                            </label>
+
+                                            <label>Replace image</label>
+                                            <InputFile class="file-input" OnChange="UploadEditItemImage" accept="image/png,image/jpeg,image/webp" />
+
+                                            <div class="category-actions">
+                                                <button type="button" @onclick="SaveEditItem">Save</button>
+                                                <button type="button" @onclick="CancelEditItem">Cancel</button>
+                                            </div>
+                                        </div>
                                     }
-
-                                    <div>
-                                        <strong>@item.Name</strong>
-
-                                        @if (!string.IsNullOrWhiteSpace(item.Description))
+                                    else
+                                    {
+                                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
                                         {
-                                            <p>@item.Description</p>
+                                            <img src="@item.ImageUrl" alt="@item.Name" />
                                         }
 
-                                        <span>@item.Price.ToString("0.00") kr</span>
-                                        <small>@item.MenuCategory?.Name</small>
-                                    </div>
+                                        <div>
+                                            <strong>@item.Name</strong>
 
-                                    <div class="category-actions">
-                                        <button type="button" @onclick="() => StartEditItem(item)">
-                                            Edit
-                                        </button>
+                                            @if (!string.IsNullOrWhiteSpace(item.Description))
+                                            {
+                                                <p>@item.Description</p>
+                                            }
 
-                                        <button type="button" @onclick="() => ManageOptions(item.Id)">
-                                            Options
-                                        </button>
+                                            <span>@item.Price.ToString("0.00") kr</span>
+                                            <small>@item.MenuCategory?.Name</small>
+                                        </div>
 
-                                        <button type="button" @onclick="() => ToggleAvailability(item)">
-                                            @(item.IsAvailable ? "Mark unavailable" : "Mark available")
-                                        </button>
+                                        <div class="category-actions">
+                                            <button type="button" @onclick="() => StartEditItem(item)">
+                                                Edit
+                                            </button>
 
-                                        <button class="danger-btn" type="button" @onclick="() => DeleteItem(item)">
-                                            Delete
-                                        </button>
-                                    </div>
+                                            <button type="button" @onclick="() => ManageOptions(item.Id)">
+                                                Options
+                                            </button>
 
-                                    @if (!item.IsAvailable)
-                                    {
-                                        <small class="hidden-badge">Unavailable</small>
+                                            <button type="button" @onclick="() => ToggleAvailability(item)">
+                                                @(item.IsAvailable ? "Mark unavailable" : "Mark available")
+                                            </button>
+
+                                            <button class="danger-btn" type="button" @onclick="() => DeleteItem(item)">
+                                                Delete
+                                            </button>
+                                        </div>
+
+                                        @if (!item.IsAvailable)
+                                        {
+                                            <small class="hidden-badge">Unavailable</small>
+                                        }
                                     }
-                                }
-                            </div>
-                        }
-                    </div>
-                }
+                                </div>
+                            }
+                        </div>
+                    }
 
-                <button class="secondary-admin-btn" type="button" @onclick="GoToRestaurant">
-                    View restaurant page
-                </button>
+                    <button class="secondary-admin-btn" type="button" @onclick="GoToRestaurant">
+                        View restaurant page
+                    </button>
+                </div>
             </div>
-        </div>
-    }
-</div>
+        }
+    </div>
+}
 
 @code {
     [Parameter]
@@ -216,10 +242,13 @@
 
     private int? editingItemId;
 
+    private bool checkedAccess;
+    private bool isAuthorized;
+
     private MenuItem newItem = new()
-        {
-            IsAvailable = true
-        };
+    {
+        IsAvailable = true
+    };
 
     private MenuItem editItem = new();
 
@@ -227,7 +256,22 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        restaurant = await Db.Restaurants.FirstOrDefaultAsync(x => x.Id == RestaurantId);
+        checkedAccess = false;
+        isAuthorized = false;
+
+        restaurant = await Db.Restaurants
+            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+        isAuthorized = await AccessService.CanAccessRestaurantAsync(
+            authState.User,
+            RestaurantId);
+
+        checkedAccess = true;
+
+        if (!isAuthorized || restaurant is null)
+            return;
 
         categories = await Db.MenuCategories
             .Where(x => x.RestaurantId == RestaurantId)
@@ -251,11 +295,11 @@
     private void ResetNewItem()
     {
         newItem = new MenuItem
-            {
-                MenuCategoryId = categories.FirstOrDefault()?.Id ?? 0,
-                IsAvailable = true,
-                SortOrder = items.Count + 1
-            };
+        {
+            MenuCategoryId = categories.FirstOrDefault()?.Id ?? 0,
+            IsAvailable = true,
+            SortOrder = items.Count + 1
+        };
     }
 
     private async Task AddItem()
@@ -302,16 +346,16 @@
         editingItemId = item.Id;
 
         editItem = new MenuItem
-            {
-                Id = item.Id,
-                MenuCategoryId = item.MenuCategoryId,
-                Name = item.Name,
-                Description = item.Description,
-                Price = item.Price,
-                ImageUrl = item.ImageUrl,
-                IsAvailable = item.IsAvailable,
-                SortOrder = item.SortOrder
-            };
+        {
+            Id = item.Id,
+            MenuCategoryId = item.MenuCategoryId,
+            Name = item.Name,
+            Description = item.Description,
+            Price = item.Price,
+            ImageUrl = item.ImageUrl,
+            IsAvailable = item.IsAvailable,
+            SortOrder = item.SortOrder
+        };
     }
 
     private void CancelEditItem()

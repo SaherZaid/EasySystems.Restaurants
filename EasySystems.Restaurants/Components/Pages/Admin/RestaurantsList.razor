@@ -3,106 +3,198 @@
 
 @using EasySystems.Restaurants.Data
 @using EasySystems.Restaurants.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
+
+@attribute [Authorize]
 
 @inject ApplicationDbContext Db
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<ApplicationUser> UserManager
 
 <PageTitle>Restaurants</PageTitle>
 
 @if (restaurants.Count > 0)
 {
-    var restaurant = restaurants.First();
+    var firstRestaurant = restaurants.First();
 
-    <AdminNavbar RestaurantId="restaurant.Id" RestaurantSlug="@restaurant.Slug" />
+    <AdminNavbar RestaurantId="firstRestaurant.Id" RestaurantSlug="@firstRestaurant.Slug" />
 }
 
-<div class="admin-page">
-    <div class="admin-header admin-header-row">
-        <div>
-            <p class="eyebrow">EasySystems Restaurants</p>
-            <h1>Restaurants</h1>
-            <p class="subtitle">Manage all restaurant websites from one place.</p>
+@if (!checkedAccess)
+{
+    <div class="public-loading">Loading...</div>
+}
+else if (currentUser is null)
+{
+    <div class="public-not-found">
+        <h1>Access denied</h1>
+        <p>You need to login first.</p>
+    </div>
+}
+else
+{
+    <div class="admin-page">
+        <div class="admin-header admin-header-row">
+            <div>
+                <p class="eyebrow">Restaurant Admin</p>
+                <h1>@(isPlatformSuperAdmin ? "Restaurants" : "My restaurant")</h1>
+                <p class="subtitle">
+                    @(isPlatformSuperAdmin
+                        ? "Manage all restaurant websites from one place."
+                        : "Manage your restaurant website, menu, orders and settings.")
+                </p>
+            </div>
+
+            @if (isPlatformSuperAdmin)
+            {
+                <button class="admin-primary-btn" type="button" @onclick="CreateRestaurant">
+                    Create restaurant
+                </button>
+            }
         </div>
 
-        <button class="admin-primary-btn" type="button" @onclick="CreateRestaurant">
-            Create restaurant
-        </button>
-    </div>
-
-    <div class="restaurants-list-card">
-        @if (restaurants.Count == 0)
-        {
-            <div class="empty-menu">
-                <h3>No restaurants yet</h3>
-                <p>Create your first restaurant website.</p>
-            </div>
-        }
-        else
-        {
-            <div class="restaurants-grid">
-                @foreach (var restaurant in restaurants)
-                {
-                    <div class="restaurant-admin-card">
-                        <div class="restaurant-admin-cover" style="@GetCoverStyle(restaurant)">
-                            <div class="restaurant-admin-logo">
-                                @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
-                                {
-                                    <img src="@restaurant.LogoUrl" alt="@restaurant.Name logo" />
-                                }
-                                else
-                                {
-                                    <span>@GetInitials(restaurant.Name)</span>
-                                }
+        <div class="restaurants-list-card">
+            @if (restaurants.Count == 0)
+            {
+                <div class="empty-menu">
+                    <h3>No restaurant access yet</h3>
+                    <p>You do not have access to any restaurant yet.</p>
+                </div>
+            }
+            else
+            {
+                <div class="restaurants-grid">
+                    @foreach (var restaurant in restaurants)
+                    {
+                        <div class="restaurant-admin-card">
+                            <div class="restaurant-admin-cover" style="@GetCoverStyle(restaurant)">
+                                <div class="restaurant-admin-logo">
+                                    @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
+                                    {
+                                        <img src="@restaurant.LogoUrl" alt="@restaurant.Name logo" />
+                                    }
+                                    else
+                                    {
+                                        <span>@GetInitials(restaurant.Name)</span>
+                                    }
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="restaurant-admin-body">
-                            <div class="restaurant-admin-title">
-                                <div>
-                                    <h2>@restaurant.Name</h2>
-                                    <p>/restaurant/@restaurant.Slug</p>
+                            <div class="restaurant-admin-body">
+                                <div class="restaurant-admin-title">
+                                    <div>
+                                        <h2>@restaurant.Name</h2>
+                                        <p>/restaurant/@restaurant.Slug</p>
+                                    </div>
+
+                                    <span class="restaurant-state @(restaurant.IsActive ? "active" : "inactive")">
+                                        @(restaurant.IsActive ? "Active" : "Inactive")
+                                    </span>
                                 </div>
 
-                                <span class="restaurant-state @(restaurant.IsActive ? "active" : "inactive")">
-                                    @(restaurant.IsActive ? "Active" : "Inactive")
-                                </span>
-                            </div>
+                                <div class="restaurant-admin-info">
+                                    @if (!string.IsNullOrWhiteSpace(restaurant.Phone))
+                                    {
+                                        <span>@restaurant.Phone</span>
+                                    }
 
-                            <div class="restaurant-admin-info">
-                                <span>@restaurant.Phone</span>
-                                <span>@restaurant.Address</span>
-                            </div>
+                                    @if (!string.IsNullOrWhiteSpace(restaurant.Address))
+                                    {
+                                        <span>@restaurant.Address</span>
+                                    }
+                                </div>
 
-                            <div class="restaurant-admin-actions">
-                                <button type="button" @onclick="() => GoToEdit(restaurant.Id)">Edit</button>
-                                <button type="button" @onclick="() => GoToCategories(restaurant.Id)">Categories</button>
-                                <button type="button" @onclick="() => GoToItems(restaurant.Id)">Items</button>
-                                <button type="button" @onclick="() => GoToOrders(restaurant.Id)">Orders</button>
-                                <button type="button" @onclick="() => GoToLegal(restaurant.Id)">Legal</button>
-                                <button type="button" @onclick="() => ViewRestaurant(restaurant.Slug)">View</button>
+                                <div class="restaurant-admin-actions">
+                                    @if (isPlatformSuperAdmin || IsRestaurantOwner(restaurant.Id))
+                                    {
+                                        <button type="button" @onclick="() => GoToOwner(restaurant.Id)">Users</button>
+                                        <button type="button" @onclick="() => GoToEdit(restaurant.Id)">Edit</button>
+                                        <button type="button" @onclick="() => GoToLegal(restaurant.Id)">Legal</button>
+                                    }
+
+                                    <button type="button" @onclick="() => GoToCategories(restaurant.Id)">Categories</button>
+                                    <button type="button" @onclick="() => GoToItems(restaurant.Id)">Items</button>
+                                    <button type="button" @onclick="() => GoToOrders(restaurant.Id)">Orders</button>
+                                    <button type="button" @onclick="() => ViewRestaurant(restaurant.Slug)">View</button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                }
-            </div>
-        }
+                    }
+                </div>
+            }
+        </div>
     </div>
-</div>
+}
 
 @code {
     private List<Restaurant> restaurants = [];
+    private List<RestaurantUserAccess> myAccesses = [];
+
+    private ApplicationUser? currentUser;
+    private bool isPlatformSuperAdmin;
+    private bool checkedAccess;
 
     protected override async Task OnInitializedAsync()
     {
-        restaurants = await Db.Restaurants
-            .OrderByDescending(x => x.CreatedAt)
-            .ToListAsync();
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        currentUser = await UserManager.GetUserAsync(authState.User);
+
+        if (currentUser is null)
+        {
+            checkedAccess = true;
+            return;
+        }
+
+        isPlatformSuperAdmin = await UserManager.IsInRoleAsync(currentUser, "PlatformSuperAdmin");
+
+        if (isPlatformSuperAdmin)
+        {
+            restaurants = await Db.Restaurants
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
+        }
+        else
+        {
+            myAccesses = await Db.RestaurantUserAccesses
+                .Where(x => x.UserId == currentUser.Id)
+                .ToListAsync();
+
+            var restaurantIds = myAccesses
+                .Select(x => x.RestaurantId)
+                .Distinct()
+                .ToList();
+
+            restaurants = await Db.Restaurants
+                .Where(x => restaurantIds.Contains(x.Id))
+                .OrderBy(x => x.Name)
+                .ToListAsync();
+        }
+
+        checkedAccess = true;
+    }
+
+    private bool IsRestaurantOwner(int restaurantId)
+    {
+        if (isPlatformSuperAdmin)
+            return true;
+
+        return myAccesses.Any(x =>
+            x.RestaurantId == restaurantId &&
+            x.Role == "RestaurantOwner");
     }
 
     private void CreateRestaurant()
     {
         Navigation.NavigateTo("/admin/restaurants/create");
+    }
+
+    private void GoToOwner(int restaurantId)
+    {
+        Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/owner");
     }
 
     private void GoToEdit(int restaurantId)

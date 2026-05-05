@@ -3,78 +3,104 @@
 
 @using EasySystems.Restaurants.Data
 @using EasySystems.Restaurants.Models
+@using EasySystems.Restaurants.Services
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+
+@attribute [Authorize]
 
 @inject ApplicationDbContext Db
+@inject RestaurantAccessService AccessService
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Legal Pages</PageTitle>
 
-<div class="admin-page">
-    <div class="admin-header">
-        <div>
-            <p class="eyebrow">Legal Pages</p>
-            <h1>@(restaurant?.Name ?? "Restaurant")</h1>
-            <p class="subtitle">Manage Privacy Policy and Terms & Conditions.</p>
-        </div>
+@if (restaurant is not null && isAuthorized)
+{
+    <AdminNavbar RestaurantId="RestaurantId" RestaurantSlug="@restaurant.Slug" />
+}
+
+@if (!checkedAccess)
+{
+    <div class="public-loading">Checking access...</div>
+}
+else if (!isAuthorized)
+{
+    <div class="public-not-found">
+        <h1>Access denied</h1>
+        <p>You do not have permission to manage legal pages for this restaurant.</p>
     </div>
-
-    @if (restaurant is null)
-    {
-        <div class="form-card">
-            <h2>Restaurant not found</h2>
+}
+else
+{
+    <div class="admin-page">
+        <div class="admin-header">
+            <div>
+                <p class="eyebrow">Legal Pages</p>
+                <h1>@(restaurant?.Name ?? "Restaurant")</h1>
+                <p class="subtitle">Manage Privacy Policy and Terms & Conditions.</p>
+            </div>
         </div>
-    }
-    else
-    {
-        <EditForm Model="privacy" OnValidSubmit="SavePages">
-            <div class="admin-grid">
 
-                <div class="form-card">
-                    <h2>Privacy Policy</h2>
+        @if (restaurant is null)
+        {
+            <div class="form-card">
+                <h2>Restaurant not found</h2>
+            </div>
+        }
+        else
+        {
+            <EditForm Model="privacy" OnValidSubmit="SavePages">
+                <div class="admin-grid">
 
-                    <label>Title</label>
-                    <InputText class="input" @bind-Value="privacy.Title" />
+                    <div class="form-card">
+                        <h2>Privacy Policy</h2>
 
-                    <label>Content</label>
-                    <InputTextArea class="input textarea legal-area"
-                                   @bind-Value="privacy.Content" />
+                        <label>Title</label>
+                        <InputText class="input" @bind-Value="privacy.Title" />
 
-                    <label class="checkbox-label">
-                        <InputCheckbox @bind-Value="privacy.IsPublished" />
-                        Published
-                    </label>
+                        <label>Content</label>
+                        <InputTextArea class="input textarea legal-area"
+                                       @bind-Value="privacy.Content" />
+
+                        <label class="checkbox-label">
+                            <InputCheckbox @bind-Value="privacy.IsPublished" />
+                            Published
+                        </label>
+                    </div>
+
+                    <div class="form-card">
+                        <h2>Terms & Conditions</h2>
+
+                        <label>Title</label>
+                        <InputText class="input" @bind-Value="terms.Title" />
+
+                        <label>Content</label>
+                        <InputTextArea class="input textarea legal-area"
+                                       @bind-Value="terms.Content" />
+
+                        <label class="checkbox-label">
+                            <InputCheckbox @bind-Value="terms.IsPublished" />
+                            Published
+                        </label>
+                    </div>
                 </div>
 
-                <div class="form-card">
-                    <h2>Terms & Conditions</h2>
+                <div class="form-card" style="margin-top:20px;">
+                    <button class="save-btn" type="submit">
+                        Save legal pages
+                    </button>
 
-                    <label>Title</label>
-                    <InputText class="input" @bind-Value="terms.Title" />
-
-                    <label>Content</label>
-                    <InputTextArea class="input textarea legal-area"
-                                   @bind-Value="terms.Content" />
-
-                    <label class="checkbox-label">
-                        <InputCheckbox @bind-Value="terms.IsPublished" />
-                        Published
-                    </label>
+                    @if (!string.IsNullOrWhiteSpace(message))
+                    {
+                        <div class="upload-success">@message</div>
+                    }
                 </div>
-            </div>
-
-            <div class="form-card" style="margin-top:20px;">
-                <button class="save-btn" type="submit">
-                    Save legal pages
-                </button>
-
-                @if (!string.IsNullOrWhiteSpace(message))
-                {
-                    <div class="upload-success">@message</div>
-                }
-            </div>
-        </EditForm>
-    }
-</div>
+            </EditForm>
+        }
+    </div>
+}
 
 @code {
     [Parameter]
@@ -96,12 +122,26 @@
 
     private string? message;
 
+    private bool checkedAccess;
+    private bool isAuthorized;
+
     protected override async Task OnParametersSetAsync()
     {
+        checkedAccess = false;
+        isAuthorized = false;
+
         restaurant = await Db.Restaurants
             .FirstOrDefaultAsync(x => x.Id == RestaurantId);
 
-        if (restaurant is null)
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+        isAuthorized = await AccessService.CanManageRestaurantUsersAsync(
+            authState.User,
+            RestaurantId);
+
+        checkedAccess = true;
+
+        if (!isAuthorized || restaurant is null)
             return;
 
         var pages = await Db.RestaurantLegalPages
@@ -135,15 +175,15 @@
         terms.RestaurantId = RestaurantId;
         terms.UpdatedAt = DateTime.UtcNow;
 
-        await SaveSinglePage(privacy);
-        await SaveSinglePage(terms);
+        SaveSinglePage(privacy);
+        SaveSinglePage(terms);
 
         await Db.SaveChangesAsync();
 
         message = "Saved successfully.";
     }
 
-    private async Task SaveSinglePage(RestaurantLegalPage page)
+    private void SaveSinglePage(RestaurantLegalPage page)
     {
         if (page.Id == 0)
         {
@@ -153,7 +193,5 @@
         {
             Db.RestaurantLegalPages.Update(page);
         }
-
-        await Task.CompletedTask;
     }
 }

@@ -3,192 +3,218 @@
 
 @using EasySystems.Restaurants.Data
 @using EasySystems.Restaurants.Models
+@using EasySystems.Restaurants.Services
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+
+@attribute [Authorize]
 
 @inject ApplicationDbContext Db
+@inject RestaurantAccessService AccessService
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Orders</PageTitle>
 
-@if (!string.IsNullOrWhiteSpace(successMessage))
+@if (restaurant is not null && isAuthorized)
 {
-    <div class="toast-success">
-        @successMessage
-    </div>
+    <AdminNavbar RestaurantId="RestaurantId" RestaurantSlug="@restaurant.Slug" />
 }
 
-<div class="admin-page">
-    <div class="admin-header">
-        <div>
-            <p class="eyebrow">Orders Dashboard</p>
-            <h1>@(restaurant?.Name ?? "Restaurant") orders</h1>
-            <p class="subtitle">Manage customer orders, follow status and view order details.</p>
-        </div>
+@if (!checkedAccess)
+{
+    <div class="public-loading">Checking access...</div>
+}
+else if (!isAuthorized)
+{
+    <div class="public-not-found">
+        <h1>Access denied</h1>
+        <p>You do not have permission to view orders for this restaurant.</p>
     </div>
-
-    @if (restaurant is null)
+}
+else
+{
+    @if (!string.IsNullOrWhiteSpace(successMessage))
     {
-        <div class="form-card admin-center-card">
-            <h2>Restaurant not found</h2>
+        <div class="toast-success">
+            @successMessage
         </div>
     }
-    else
-    {
-        <div class="orders-dashboard">
-            <div class="order-stats">
-                <div>
-                    <span>New</span>
-                    <strong>@CountByStatus("New")</strong>
-                </div>
 
-                <div>
-                    <span>Preparing</span>
-                    <strong>@CountByStatus("Preparing")</strong>
-                </div>
-
-                <div>
-                    <span>Ready</span>
-                    <strong>@CountByStatus("Ready")</strong>
-                </div>
-
-                <div>
-                    <span>Total sales</span>
-                    <strong>@orders.Sum(x => x.TotalAmount).ToString("0.00") kr</strong>
-                </div>
+    <div class="admin-page">
+        <div class="admin-header">
+            <div>
+                <p class="eyebrow">Orders Dashboard</p>
+                <h1>@(restaurant?.Name ?? "Restaurant") orders</h1>
+                <p class="subtitle">Manage customer orders, follow status and view order details.</p>
             </div>
+        </div>
 
-            <div class="order-filter-tabs">
-                @foreach (var status in filters)
-                {
-                    <button type="button"
-                            class="@(selectedFilter == status ? "active" : "")"
-                            @onclick="() => selectedFilter = status">
-                        @status
-                    </button>
-                }
+        @if (restaurant is null)
+        {
+            <div class="form-card admin-center-card">
+                <h2>Restaurant not found</h2>
             </div>
-
-            <div class="orders-table-card">
-                @if (FilteredOrders.Count == 0)
-                {
-                    <div class="empty-menu">
-                        <h3>No orders found</h3>
-                        <p>Orders matching this filter will appear here.</p>
-                    </div>
-                }
-                else
-                {
-                    <table class="orders-table">
-                        <thead>
-                            <tr>
-                                <th>Order</th>
-                                <th>Customer</th>
-                                <th>Items</th>
-                                <th>Total</th>
-                                <th>Status</th>
-                                <th>Time</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            @foreach (var order in FilteredOrders)
-                            {
-                                <tr class="@(selectedOrder?.Id == order.Id ? "selected-row" : "")">
-                                    <td><strong>#@order.Id</strong></td>
-
-                                    <td>
-                                        <div class="customer-cell">
-                                            <strong>@order.CustomerName</strong>
-                                            <span>@order.CustomerPhone</span>
-                                        </div>
-                                    </td>
-
-                                    <td>@order.Items.Sum(x => x.Quantity)</td>
-
-                                    <td>
-                                        <strong>@order.TotalAmount.ToString("0.00") kr</strong>
-                                    </td>
-
-                                    <td>
-                                        <span class="order-status @GetStatusClass(order.Status)">
-                                            @order.Status
-                                        </span>
-                                    </td>
-
-                                    <td>@order.CreatedAt.ToLocalTime().ToString("HH:mm")</td>
-
-                                    <td>
-                                        <button class="view-order-btn" type="button" @onclick="() => SelectOrder(order)">
-                                            View
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-            </div>
-
-            @if (selectedOrder is not null)
-            {
-                <div class="order-detail-panel">
-                    <div class="order-detail-header">
-                        <div>
-                            <p class="order-number">Order #@selectedOrder.Id</p>
-                            <h2>@selectedOrder.CustomerName</h2>
-                            <span>@selectedOrder.CustomerPhone</span>
-                        </div>
-
-                        <button type="button" class="cart-close" @onclick="() => selectedOrder = null">×</button>
+        }
+        else
+        {
+            <div class="orders-dashboard">
+                <div class="order-stats">
+                    <div>
+                        <span>New</span>
+                        <strong>@CountByStatus("New")</strong>
                     </div>
 
-                    <div class="order-status-big @GetStatusClass(selectedOrder.Status)">
-                        @selectedOrder.Status
+                    <div>
+                        <span>Preparing</span>
+                        <strong>@CountByStatus("Preparing")</strong>
                     </div>
 
-                    <div class="order-meta">
-                        <span>@selectedOrder.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>
-                        <strong>@selectedOrder.TotalAmount.ToString("0.00") kr</strong>
+                    <div>
+                        <span>Ready</span>
+                        <strong>@CountByStatus("Ready")</strong>
                     </div>
 
-                    @if (!string.IsNullOrWhiteSpace(selectedOrder.CustomerNote))
+                    <div>
+                        <span>Total sales</span>
+                        <strong>@orders.Sum(x => x.TotalAmount).ToString("0.00") kr</strong>
+                    </div>
+                </div>
+
+                <div class="order-filter-tabs">
+                    @foreach (var status in filters)
                     {
-                        <div class="customer-note">
-                            <strong>Customer note</strong>
-                            <p>@selectedOrder.CustomerNote</p>
+                        <button type="button"
+                                class="@(selectedFilter == status ? "active" : "")"
+                                @onclick="() => selectedFilter = status">
+                            @status
+                        </button>
+                    }
+                </div>
+
+                <div class="orders-table-card">
+                    @if (FilteredOrders.Count == 0)
+                    {
+                        <div class="empty-menu">
+                            <h3>No orders found</h3>
+                            <p>Orders matching this filter will appear here.</p>
                         </div>
                     }
+                    else
+                    {
+                        <table class="orders-table">
+                            <thead>
+                                <tr>
+                                    <th>Order</th>
+                                    <th>Customer</th>
+                                    <th>Items</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Time</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
 
-                    <div class="order-items">
-                        @foreach (var item in selectedOrder.Items)
+                            <tbody>
+                                @foreach (var order in FilteredOrders)
+                                {
+                                    <tr class="@(selectedOrder?.Id == order.Id ? "selected-row" : "")">
+                                        <td><strong>#@order.Id</strong></td>
+
+                                        <td>
+                                            <div class="customer-cell">
+                                                <strong>@order.CustomerName</strong>
+                                                <span>@order.CustomerPhone</span>
+                                            </div>
+                                        </td>
+
+                                        <td>@order.Items.Sum(x => x.Quantity)</td>
+
+                                        <td>
+                                            <strong>@order.TotalAmount.ToString("0.00") kr</strong>
+                                        </td>
+
+                                        <td>
+                                            <span class="order-status @GetStatusClass(order.Status)">
+                                                @order.Status
+                                            </span>
+                                        </td>
+
+                                        <td>@order.CreatedAt.ToLocalTime().ToString("HH:mm")</td>
+
+                                        <td>
+                                            <button class="view-order-btn" type="button" @onclick="() => SelectOrder(order)">
+                                                View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+
+                @if (selectedOrder is not null)
+                {
+                    <div class="order-detail-panel">
+                        <div class="order-detail-header">
+                            <div>
+                                <p class="order-number">Order #@selectedOrder.Id</p>
+                                <h2>@selectedOrder.CustomerName</h2>
+                                <span>@selectedOrder.CustomerPhone</span>
+                            </div>
+
+                            <button type="button" class="cart-close" @onclick="() => selectedOrder = null">×</button>
+                        </div>
+
+                        <div class="order-status-big @GetStatusClass(selectedOrder.Status)">
+                            @selectedOrder.Status
+                        </div>
+
+                        <div class="order-meta">
+                            <span>@selectedOrder.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>
+                            <strong>@selectedOrder.TotalAmount.ToString("0.00") kr</strong>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(selectedOrder.CustomerNote))
                         {
-                            <div class="order-item-detail">
-                                <div>
-                                    <span>@item.Quantity × @item.ItemName</span>
-
-                                    @if (!string.IsNullOrWhiteSpace(item.SelectedOptions))
-                                    {
-                                        <small>@item.SelectedOptions</small>
-                                    }
-                                </div>
-
-                                <strong>@item.LineTotal.ToString("0.00") kr</strong>
+                            <div class="customer-note">
+                                <strong>Customer note</strong>
+                                <p>@selectedOrder.CustomerNote</p>
                             </div>
                         }
-                    </div>
 
-                    <div class="order-actions">
-                        <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Accepted")'>Accept</button>
-                        <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Preparing")'>Preparing</button>
-                        <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Ready")'>Ready</button>
-                        <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Completed")'>Completed</button>
-                        <button class="danger-btn" type="button" @onclick='() => UpdateStatus(selectedOrder, "Cancelled")'>Cancel</button>
+                        <div class="order-items">
+                            @foreach (var item in selectedOrder.Items)
+                            {
+                                <div class="order-item-detail">
+                                    <div>
+                                        <span>@item.Quantity × @item.ItemName</span>
+
+                                        @if (!string.IsNullOrWhiteSpace(item.SelectedOptions))
+                                        {
+                                            <small>@item.SelectedOptions</small>
+                                        }
+                                    </div>
+
+                                    <strong>@item.LineTotal.ToString("0.00") kr</strong>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="order-actions">
+                            <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Accepted")'>Accept</button>
+                            <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Preparing")'>Preparing</button>
+                            <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Ready")'>Ready</button>
+                            <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Completed")'>Completed</button>
+                            <button class="danger-btn" type="button" @onclick='() => UpdateStatus(selectedOrder, "Cancelled")'>Cancel</button>
+                        </div>
                     </div>
-                </div>
-            }
-        </div>
-    }
-</div>
+                }
+            </div>
+        }
+    </div>
+}
 
 @code {
     [Parameter]
@@ -200,6 +226,9 @@
 
     private string selectedFilter = "All";
     private string? successMessage;
+
+    private bool checkedAccess;
+    private bool isAuthorized;
 
     private readonly string[] filters =
     [
@@ -219,8 +248,22 @@
 
     protected override async Task OnParametersSetAsync()
     {
+        checkedAccess = false;
+        isAuthorized = false;
+
         restaurant = await Db.Restaurants
             .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+        isAuthorized = await AccessService.CanAccessRestaurantAsync(
+            authState.User,
+            RestaurantId);
+
+        checkedAccess = true;
+
+        if (!isAuthorized || restaurant is null)
+            return;
 
         await LoadOrders();
     }

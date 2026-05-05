@@ -1,8 +1,13 @@
-﻿namespace EasySystems.Restaurants.Models;
+﻿using EasySystems.Restaurants.Data;
+
+namespace EasySystems.Restaurants.Models;
 
 public class Restaurant
 {
     public int Id { get; set; }
+
+    public string? OwnerUserId { get; set; }
+    public ApplicationUser? OwnerUser { get; set; }
 
     public string Name { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;

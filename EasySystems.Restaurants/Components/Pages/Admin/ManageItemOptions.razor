@@ -3,171 +3,197 @@
 
 @using EasySystems.Restaurants.Data
 @using EasySystems.Restaurants.Models
+@using EasySystems.Restaurants.Services
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+
+@attribute [Authorize]
 
 @inject ApplicationDbContext Db
 @inject NavigationManager Navigation
+@inject RestaurantAccessService AccessService
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Manage Item Options</PageTitle>
 
-<div class="admin-page">
-    <div class="admin-header">
-        <div>
-            <p class="eyebrow">Dish Ingredients</p>
-            <h1>@(menuItem?.Name ?? "Dish")</h1>
-            <p class="subtitle">Add included ingredients and paid extras for this dish.</p>
-        </div>
+@if (restaurant is not null && isAuthorized)
+{
+    <AdminNavbar RestaurantId="RestaurantId" RestaurantSlug="@restaurant.Slug" />
+}
+
+@if (!checkedAccess)
+{
+    <div class="public-loading">Checking access...</div>
+}
+else if (!isAuthorized)
+{
+    <div class="public-not-found">
+        <h1>Access denied</h1>
+        <p>You do not have permission to manage dish options for this restaurant.</p>
     </div>
-
-    @if (restaurant is null || menuItem is null)
-    {
-        <div class="form-card admin-center-card">
-            <h2>Dish not found</h2>
-            <p>This dish does not exist.</p>
-        </div>
-    }
-    else
-    {
-        <div class="admin-grid">
-            <div class="form-card">
-                <h2>Add ingredient / option</h2>
-
-                <label>Name</label>
-                <InputText class="input" @bind-Value="newOption.Name" placeholder="Sallad, Tomat, Lök, Extra cheese..." />
-
-                <label class="checkbox-label">
-                    <InputCheckbox @bind-Value="newOption.IsDefaultIncluded" />
-                    Included by default
-                </label>
-
-                @if (!newOption.IsDefaultIncluded)
-                {
-                    <label>Extra price</label>
-                    <InputNumber class="input" @bind-Value="newOption.ExtraPrice" />
-                }
-
-                <label>Sort order</label>
-                <InputNumber class="input" @bind-Value="newOption.SortOrder" />
-
-                <label class="checkbox-label">
-                    <InputCheckbox @bind-Value="newOption.IsAvailable" />
-                    Available
-                </label>
-
-                <button class="save-btn" type="button" @onclick="AddOption">
-                    Add
-                </button>
-
-                @if (!string.IsNullOrWhiteSpace(errorMessage))
-                {
-                    <div class="error">@errorMessage</div>
-                }
-
-                @if (!string.IsNullOrWhiteSpace(successMessage))
-                {
-                    <div class="upload-success">@successMessage</div>
-                }
+}
+else
+{
+    <div class="admin-page">
+        <div class="admin-header">
+            <div>
+                <p class="eyebrow">Dish Ingredients</p>
+                <h1>@(menuItem?.Name ?? "Dish")</h1>
+                <p class="subtitle">Add included ingredients and paid extras for this dish.</p>
             </div>
+        </div>
 
-            <div class="preview-card">
-                <p class="preview-label">@menuItem.Name ingredients</p>
+        @if (restaurant is null || menuItem is null)
+        {
+            <div class="form-card admin-center-card">
+                <h2>Dish not found</h2>
+                <p>This dish does not exist.</p>
+            </div>
+        }
+        else
+        {
+            <div class="admin-grid">
+                <div class="form-card">
+                    <h2>Add ingredient / option</h2>
 
-                <div class="dish-option-summary">
-                    <strong>@menuItem.Name</strong>
-                    <span>@menuItem.Price.ToString("0.00") kr</span>
-                    <p>@menuItem.Description</p>
+                    <label>Name</label>
+                    <InputText class="input" @bind-Value="newOption.Name" placeholder="Sallad, Tomat, Lök, Extra cheese..." />
+
+                    <label class="checkbox-label">
+                        <InputCheckbox @bind-Value="newOption.IsDefaultIncluded" />
+                        Included by default
+                    </label>
+
+                    @if (!newOption.IsDefaultIncluded)
+                    {
+                        <label>Extra price</label>
+                        <InputNumber class="input" @bind-Value="newOption.ExtraPrice" />
+                    }
+
+                    <label>Sort order</label>
+                    <InputNumber class="input" @bind-Value="newOption.SortOrder" />
+
+                    <label class="checkbox-label">
+                        <InputCheckbox @bind-Value="newOption.IsAvailable" />
+                        Available
+                    </label>
+
+                    <button class="save-btn" type="button" @onclick="AddOption">
+                        Add
+                    </button>
+
+                    @if (!string.IsNullOrWhiteSpace(errorMessage))
+                    {
+                        <div class="error">@errorMessage</div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(successMessage))
+                    {
+                        <div class="upload-success">@successMessage</div>
+                    }
                 </div>
 
-                @if (options.Count == 0)
-                {
-                    <div class="empty-menu">
-                        <h3>No ingredients or extras yet</h3>
-                        <p>Add included ingredients like salad, tomato, onion, or paid extras like extra cheese.</p>
+                <div class="preview-card">
+                    <p class="preview-label">@menuItem.Name ingredients</p>
+
+                    <div class="dish-option-summary">
+                        <strong>@menuItem.Name</strong>
+                        <span>@menuItem.Price.ToString("0.00") kr</span>
+                        <p>@menuItem.Description</p>
                     </div>
-                }
-                else
-                {
-                    <div class="option-admin-list">
-                        @foreach (var option in options)
-                        {
-                            <div class="option-admin-card">
-                                @if (editingOptionId == option.Id)
-                                {
-                                    <div class="edit-category-form">
-                                        <label>Name</label>
-                                        <InputText class="input" @bind-Value="editOption.Name" />
 
-                                        <label class="checkbox-label">
-                                            <InputCheckbox @bind-Value="editOption.IsDefaultIncluded" />
-                                            Included by default
-                                        </label>
+                    @if (options.Count == 0)
+                    {
+                        <div class="empty-menu">
+                            <h3>No ingredients or extras yet</h3>
+                            <p>Add included ingredients like salad, tomato, onion, or paid extras like extra cheese.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="option-admin-list">
+                            @foreach (var option in options)
+                            {
+                                <div class="option-admin-card">
+                                    @if (editingOptionId == option.Id)
+                                    {
+                                        <div class="edit-category-form">
+                                            <label>Name</label>
+                                            <InputText class="input" @bind-Value="editOption.Name" />
 
-                                        @if (!editOption.IsDefaultIncluded)
-                                        {
-                                            <label>Extra price</label>
-                                            <InputNumber class="input" @bind-Value="editOption.ExtraPrice" />
-                                        }
+                                            <label class="checkbox-label">
+                                                <InputCheckbox @bind-Value="editOption.IsDefaultIncluded" />
+                                                Included by default
+                                            </label>
 
-                                        <label>Sort order</label>
-                                        <InputNumber class="input" @bind-Value="editOption.SortOrder" />
+                                            @if (!editOption.IsDefaultIncluded)
+                                            {
+                                                <label>Extra price</label>
+                                                <InputNumber class="input" @bind-Value="editOption.ExtraPrice" />
+                                            }
 
-                                        <label class="checkbox-label">
-                                            <InputCheckbox @bind-Value="editOption.IsAvailable" />
-                                            Available
-                                        </label>
+                                            <label>Sort order</label>
+                                            <InputNumber class="input" @bind-Value="editOption.SortOrder" />
+
+                                            <label class="checkbox-label">
+                                                <InputCheckbox @bind-Value="editOption.IsAvailable" />
+                                                Available
+                                            </label>
+
+                                            <div class="category-actions">
+                                                <button type="button" @onclick="SaveEditOption">Save</button>
+                                                <button type="button" @onclick="CancelEditOption">Cancel</button>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div>
+                                            <strong>@option.Name</strong>
+
+                                            @if (option.IsDefaultIncluded)
+                                            {
+                                                <span class="included-tag">Included</span>
+                                            }
+                                            else
+                                            {
+                                                <span>+@option.ExtraPrice.ToString("0.00") kr</span>
+                                            }
+
+                                            <small>Order: @option.SortOrder</small>
+                                        </div>
 
                                         <div class="category-actions">
-                                            <button type="button" @onclick="SaveEditOption">Save</button>
-                                            <button type="button" @onclick="CancelEditOption">Cancel</button>
+                                            <button type="button" @onclick="() => StartEditOption(option)">Edit</button>
+
+                                            <button type="button" @onclick="() => ToggleAvailability(option)">
+                                                @(option.IsAvailable ? "Hide" : "Show")
+                                            </button>
+
+                                            <button class="danger-btn" type="button" @onclick="() => DeleteOption(option)">
+                                                Delete
+                                            </button>
                                         </div>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div>
-                                        <strong>@option.Name</strong>
 
-                                        @if (option.IsDefaultIncluded)
+                                        @if (!option.IsAvailable)
                                         {
-                                            <span class="included-tag">Included</span>
+                                            <small class="hidden-badge">Unavailable</small>
                                         }
-                                        else
-                                        {
-                                            <span>+@option.ExtraPrice.ToString("0.00") kr</span>
-                                        }
-
-                                        <small>Order: @option.SortOrder</small>
-                                    </div>
-
-                                    <div class="category-actions">
-                                        <button type="button" @onclick="() => StartEditOption(option)">Edit</button>
-
-                                        <button type="button" @onclick="() => ToggleAvailability(option)">
-                                            @(option.IsAvailable ? "Hide" : "Show")
-                                        </button>
-
-                                        <button class="danger-btn" type="button" @onclick="() => DeleteOption(option)">
-                                            Delete
-                                        </button>
-                                    </div>
-
-                                    @if (!option.IsAvailable)
-                                    {
-                                        <small class="hidden-badge">Unavailable</small>
                                     }
-                                }
-                            </div>
-                        }
-                    </div>
-                }
+                                </div>
+                            }
+                        </div>
+                    }
 
-                <button class="secondary-admin-btn" type="button" @onclick="BackToItems">
-                    Back to dishes
-                </button>
+                    <button class="secondary-admin-btn" type="button" @onclick="BackToItems">
+                        Back to dishes
+                    </button>
+                </div>
             </div>
-        </div>
-    }
-</div>
+        }
+    </div>
+}
 
 @code {
     [Parameter]
@@ -185,6 +211,9 @@
 
     private int? editingOptionId;
 
+    private bool checkedAccess;
+    private bool isAuthorized;
+
     private MenuItemOption newOption = new()
         {
             IsAvailable = true,
@@ -195,8 +224,22 @@
 
     protected override async Task OnParametersSetAsync()
     {
+        checkedAccess = false;
+        isAuthorized = false;
+
         restaurant = await Db.Restaurants
             .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+        isAuthorized = await AccessService.CanAccessRestaurantAsync(
+            authState.User,
+            RestaurantId);
+
+        checkedAccess = true;
+
+        if (!isAuthorized || restaurant is null)
+            return;
 
         menuItem = await Db.MenuItems
             .Include(x => x.MenuCategory)
@@ -204,6 +247,9 @@
                 x.Id == MenuItemId &&
                 x.MenuCategory != null &&
                 x.MenuCategory.RestaurantId == RestaurantId);
+
+        if (menuItem is null)
+            return;
 
         await LoadOptions();
         ResetNewOption();
@@ -234,6 +280,12 @@
     {
         errorMessage = null;
         successMessage = null;
+
+        if (menuItem is null)
+        {
+            errorMessage = "Dish not found.";
+            return;
+        }
 
         newOption.Name = newOption.Name.Trim();
 
@@ -319,7 +371,14 @@
         }
 
         var option = await Db.MenuItemOptions
-            .FirstOrDefaultAsync(x => x.Id == editingOptionId.Value && x.MenuItemId == MenuItemId);
+            .Include(x => x.MenuItem)
+            .ThenInclude(x => x!.MenuCategory)
+            .FirstOrDefaultAsync(x =>
+                x.Id == editingOptionId.Value &&
+                x.MenuItemId == MenuItemId &&
+                x.MenuItem != null &&
+                x.MenuItem.MenuCategory != null &&
+                x.MenuItem.MenuCategory.RestaurantId == RestaurantId);
 
         if (option is null)
         {

@@ -10,11 +10,46 @@
 
 <PageTitle>Confirm email</PageTitle>
 
-<h1>Confirm email</h1>
-<StatusMessage Message="@statusMessage" />
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-brand">
+            <span>ES</span>
+            <div>
+                <strong>EasySystems</strong>
+                <p>Email confirmation</p>
+            </div>
+        </div>
+
+        <StatusMessage Message="@statusMessage" />
+
+        <div class="auth-header">
+            <p class="eyebrow">@statusLabel</p>
+            <h1>@headline</h1>
+            <p>@description</p>
+        </div>
+
+        <div class="auth-links">
+            <a href="/Account/Login">Go to login</a>
+            <a href="/Account/ResendEmailConfirmation">Resend confirmation email</a>
+        </div>
+    </div>
+
+    <div class="auth-side">
+        <div class="auth-side-content">
+            <span class="auth-badge">Account verified</span>
+            <h2>Your account is almost ready.</h2>
+            <p>
+                After confirming your email, you can sign in and continue using EasySystems.
+            </p>
+        </div>
+    </div>
+</div>
 
 @code {
     private string? statusMessage;
+    private string statusLabel = "Checking";
+    private string headline = "Confirming your email";
+    private string description = "Please wait while we verify your account.";
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
@@ -30,19 +65,37 @@
         if (UserId is null || Code is null)
         {
             RedirectManager.RedirectTo("");
+            return;
         }
 
         var user = await UserManager.FindByIdAsync(UserId);
+
         if (user is null)
         {
             HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
+            statusLabel = "Error";
+            headline = "User not found";
+            description = "We could not find the account connected to this confirmation link.";
             statusMessage = $"Error loading user with ID {UserId}";
+            return;
+        }
+
+        var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
+        var result = await UserManager.ConfirmEmailAsync(user, code);
+
+        if (result.Succeeded)
+        {
+            statusLabel = "Success";
+            headline = "Email confirmed";
+            description = "Thank you. Your email has been confirmed and you can now sign in.";
+            statusMessage = "Thank you for confirming your email.";
         }
         else
         {
-            var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
-            var result = await UserManager.ConfirmEmailAsync(user, code);
-            statusMessage = result.Succeeded ? "Thank you for confirming your email." : "Error confirming your email.";
+            statusLabel = "Error";
+            headline = "Confirmation failed";
+            description = "The confirmation link may be invalid or expired. You can request a new confirmation email.";
+            statusMessage = "Error confirming your email.";
         }
     }
 }
