@@ -3,6 +3,8 @@
 
 @using EasySystems.Restaurants.Data
 @using EasySystems.Restaurants.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.JSInterop
 @using System.Text.Json
@@ -10,6 +12,8 @@
 @inject ApplicationDbContext Db
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<ApplicationUser> UserManager
 
 <PageTitle>@(restaurant?.Name ?? "Restaurant")</PageTitle>
 
@@ -275,6 +279,11 @@ else
                             <strong>Tack! Din beställning är mottagen.</strong>
                             <p>Ordernummer: #@createdOrderId</p>
 
+                            @if (currentUser is not null)
+                            {
+                                <p>Beställningen har sparats på ditt konto.</p>
+                            }
+
                             <button type="button" class="checkout-btn" @onclick="CloseCart">
                                 Stäng
                             </button>
@@ -326,6 +335,23 @@ else
                                 <div class="checkout-form">
                                     <h3>Kunduppgifter</h3>
 
+                                    @if (currentUser is null)
+                                    {
+                                        <div class="tip-box">
+                                            <strong>Tips</strong>
+                                            <p>
+                                                Du kan beställa utan konto, men om du loggar in sparas beställningen på ditt konto.
+                                            </p>
+                                            <a href="@GetLoginUrl()">Logga in</a>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="upload-success">
+                                            Inloggad som @GetCurrentUserDisplayName(). Beställningen sparas på ditt konto.
+                                        </div>
+                                    }
+
                                     <label>Namn</label>
                                     <InputText class="input" @bind-Value="customerName" placeholder="Ditt namn" />
 
@@ -352,7 +378,6 @@ else
         }
 
         <RestaurantFooter Restaurant="restaurant" />
-
     </main>
 }
 
@@ -361,12 +386,14 @@ else
     public string Slug { get; set; } = string.Empty;
 
     private Restaurant? restaurant;
+    private ApplicationUser? currentUser;
+
     private bool isLoading = true;
+    private bool userLoaded;
 
     private List<MenuCategory> categories = [];
     private List<MenuItem> items = [];
     private List<MenuItemOption> itemOptions = [];
-
     private List<CartItem> cart = [];
 
     private bool showCart;
@@ -413,6 +440,8 @@ else
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Slug == Slug && x.IsActive);
 
+        await LoadCurrentUser();
+
         if (restaurant is not null)
         {
             categories = await Db.MenuCategories
@@ -452,6 +481,46 @@ else
             cartLoaded = true;
             await LoadCart();
             StateHasChanged();
+        }
+    }
+
+    private async Task LoadCurrentUser()
+    {
+        if (userLoaded)
+            return;
+
+        userLoaded = true;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            currentUser = await UserManager.GetUserAsync(authState.User);
+
+            if (currentUser is not null)
+            {
+                PrefillCustomerFromUser();
+            }
+        }
+    }
+
+    private void PrefillCustomerFromUser()
+    {
+        if (currentUser is null)
+            return;
+
+        var fullName = $"{currentUser.FirstName} {currentUser.LastName}".Trim();
+
+        if (string.IsNullOrWhiteSpace(customerName))
+        {
+            customerName = string.IsNullOrWhiteSpace(fullName)
+                ? currentUser.Email ?? string.Empty
+                : fullName;
+        }
+
+        if (string.IsNullOrWhiteSpace(customerPhone))
+        {
+            customerPhone = currentUser.PhoneNumber ?? string.Empty;
         }
     }
 
@@ -614,6 +683,7 @@ else
     {
         showCheckout = true;
         orderErrorMessage = null;
+        PrefillCustomerFromUser();
     }
 
     private async Task SubmitOrder()
@@ -647,6 +717,7 @@ else
         var order = new Order
             {
                 RestaurantId = restaurant.Id,
+                CustomerUserId = currentUser?.Id,
                 CustomerName = customerName.Trim(),
                 CustomerPhone = customerPhone.Trim(),
                 CustomerNote = customerNote.Trim(),
@@ -676,6 +747,8 @@ else
         customerNote = string.Empty;
         showCheckout = false;
 
+        PrefillCustomerFromUser();
+
         await JS.InvokeVoidAsync("easyCart.remove", CartStorageKey);
     }
 
@@ -704,5 +777,32 @@ else
 
         var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         return string.Join("", words.Take(2).Select(x => x[0])).ToUpper();
+    }
+
+    private string GetCurrentUserDisplayName()
+    {
+        if (currentUser is null)
+            return string.Empty;
+
+        var fullName = $"{currentUser.FirstName} {currentUser.LastName}".Trim();
+
+        if (!string.IsNullOrWhiteSpace(fullName))
+            return fullName;
+
+        return currentUser.Email ?? "your account";
+    }
+
+    private string GetLoginUrl()
+    {
+        var returnUrl = restaurant is null
+            ? "/"
+            : $"/restaurant/{restaurant.Slug}";
+
+        return Navigation.GetUriWithQueryParameters(
+            "/Account/Login",
+            new Dictionary<string, object?>
+                {
+                    ["ReturnUrl"] = returnUrl
+                });
     }
 }

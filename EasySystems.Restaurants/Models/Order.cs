@@ -1,4 +1,6 @@
-﻿namespace EasySystems.Restaurants.Models;
+﻿using EasySystems.Restaurants.Data;
+
+namespace EasySystems.Restaurants.Models;
 
 public class Order
 {
@@ -6,6 +8,9 @@ public class Order
 
     public int RestaurantId { get; set; }
     public Restaurant? Restaurant { get; set; }
+
+    public string? CustomerUserId { get; set; }
+    public ApplicationUser? CustomerUser { get; set; }
 
     public string CustomerName { get; set; } = string.Empty;
     public string CustomerPhone { get; set; } = string.Empty;
