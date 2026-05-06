@@ -1,5 +1,12 @@
 ﻿@using EasySystems.Restaurants.Models
+@using EasySystems.Restaurants.Data
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Components.Routing
+
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
 
 <nav class="restaurant-navbar"
      style="--nav-bg:@GetNavBackground(); --nav-text:@GetNavText(); --primary:@GetPrimary();">
@@ -27,6 +34,25 @@
             <a href="/restaurant/@Restaurant?.Slug/contact" @onclick="CloseMenu">Kontakt & öppettider</a>
             <a href="/restaurant/@Restaurant?.Slug/privacy" @onclick="CloseMenu">Privacy</a>
             <a href="/restaurant/@Restaurant?.Slug/terms" @onclick="CloseMenu">Terms</a>
+
+            @if (currentUser is not null)
+            {
+                <a href="/Account/Orders" @onclick="CloseMenu">Mina beställningar</a>
+
+                <form action="/Account/RestaurantLogout" method="post" class="restaurant-nav-logout">
+                    <AntiforgeryToken />
+                    <input type="hidden" name="returnUrl" value="@GetReturnUrl()" />
+                    <button type="submit">
+                        Logga ut
+                    </button>
+                </form>
+            }
+            else
+            {
+                <a class="restaurant-login-link" href="@GetLoginUrl()" @onclick="CloseMenu">
+                    Logga in
+                </a>
+            }
         </div>
     </div>
 </nav>
@@ -36,6 +62,17 @@
     public Restaurant? Restaurant { get; set; }
 
     private bool isOpen;
+    private ApplicationUser? currentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            currentUser = await UserManager.GetUserAsync(authState.User);
+        }
+    }
 
     private void ToggleMenu()
     {
@@ -45,6 +82,26 @@
     private void CloseMenu()
     {
         isOpen = false;
+    }
+
+    private string GetReturnUrl()
+    {
+        if (Restaurant is null || string.IsNullOrWhiteSpace(Restaurant.Slug))
+            return "/";
+
+        return $"/restaurant/{Restaurant.Slug}";
+    }
+
+    private string GetLoginUrl()
+    {
+        var returnUrl = GetReturnUrl();
+
+        return Navigation.GetUriWithQueryParameters(
+            "/Account/Login",
+            new Dictionary<string, object?>
+                {
+                    ["ReturnUrl"] = returnUrl
+                });
     }
 
     private string GetNavBackground()

@@ -1,0 +1,131 @@
+﻿@page "/Account/Orders"
+@rendermode InteractiveServer
+
+@using EasySystems.Restaurants.Data
+@using EasySystems.Restaurants.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+
+@attribute [Authorize]
+
+@inject ApplicationDbContext Db
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>My orders</PageTitle>
+
+<div class="customer-orders-page">
+    <div class="customer-orders-header">
+        <p class="eyebrow">Mina beställningar</p>
+        <h1>Dina tidigare beställningar</h1>
+        <p>Här kan du se dina beställningar, status och vad du har beställt.</p>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="public-loading">Loading orders...</div>
+    }
+    else if (orders.Count == 0)
+    {
+        <div class="empty-menu">
+            <h3>Inga beställningar ännu</h3>
+            <p>När du beställer med ditt konto kommer dina beställningar visas här.</p>
+        </div>
+    }
+    else
+    {
+        <div class="customer-orders-list">
+            @foreach (var order in orders)
+            {
+                <div class="customer-order-card">
+                    <div class="customer-order-top">
+                        <div>
+                            <span>Order #@order.Id</span>
+                            <h2>@order.Restaurant?.Name</h2>
+                            <p>@order.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</p>
+                        </div>
+
+                        <div>
+                            <strong>@order.TotalAmount.ToString("0.00") kr</strong>
+                            <small class="order-status @GetStatusClass(order.Status)">
+                                @order.Status
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="customer-order-items">
+                        @foreach (var item in order.Items)
+                        {
+                            <div>
+                                <span>@item.Quantity × @item.ItemName</span>
+
+                                @if (!string.IsNullOrWhiteSpace(item.SelectedOptions))
+                                {
+                                    <small>@item.SelectedOptions</small>
+                                }
+
+                                <strong>@item.LineTotal.ToString("0.00") kr</strong>
+                            </div>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(order.Restaurant?.Slug))
+                    {
+                        <button type="button" class="secondary-admin-btn" @onclick="() => GoToRestaurant(order.Restaurant!.Slug)">
+                            Beställ igen
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Order> orders = [];
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = await UserManager.GetUserAsync(authState.User);
+
+        if (user is null)
+        {
+            isLoading = false;
+            return;
+        }
+
+        orders = await Db.Orders
+            .AsNoTracking()
+            .Include(x => x.Restaurant)
+            .Include(x => x.Items)
+            .Where(x => x.CustomerUserId == user.Id)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync();
+
+        isLoading = false;
+    }
+
+    private void GoToRestaurant(string slug)
+    {
+        Navigation.NavigateTo($"/restaurant/{slug}");
+    }
+
+    private string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "New" => "status-new",
+            "Accepted" => "status-accepted",
+            "Preparing" => "status-preparing",
+            "Ready" => "status-ready",
+            "Completed" => "status-completed",
+            "Cancelled" => "status-cancelled",
+            _ => "status-new"
+        };
+    }
+}

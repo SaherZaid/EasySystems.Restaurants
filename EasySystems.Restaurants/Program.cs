@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using EasySystems.Restaurants.Services;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -136,6 +137,30 @@ app.MapStaticAssets();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapPost("/Account/RestaurantLogout", async (
+    SignInManager<ApplicationUser> signInManager,
+    [FromForm] string? returnUrl) =>
+{
+    await signInManager.SignOutAsync();
+
+    if (string.IsNullOrWhiteSpace(returnUrl))
+    {
+        return Results.Redirect("/");
+    }
+
+    if (!returnUrl.StartsWith("/"))
+    {
+        return Results.Redirect("/");
+    }
+
+    if (returnUrl.StartsWith("//"))
+    {
+        return Results.Redirect("/");
+    }
+
+    return Results.Redirect(returnUrl);
+});
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();

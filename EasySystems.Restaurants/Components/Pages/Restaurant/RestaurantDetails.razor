@@ -399,6 +399,7 @@ else
     private bool showCart;
     private bool showCheckout;
     private bool cartLoaded;
+    private string? loadedCartStorageKey;
 
     private MenuItem? selectedMenuItem;
     private List<MenuItemOption> selectedItemOptions = [];
@@ -412,7 +413,20 @@ else
     private bool orderSubmitted;
     private int createdOrderId;
 
-    private string CartStorageKey => restaurant is null ? "cart" : $"restaurant-cart-{restaurant.Id}";
+    private string CartStorageKey
+    {
+        get
+        {
+            if (restaurant is null)
+                return "restaurant-cart-anonymous";
+
+            if (currentUser is not null)
+                return $"restaurant-cart-user-{currentUser.Id}-restaurant-{restaurant.Id}";
+
+            return $"restaurant-cart-guest-restaurant-{restaurant.Id}";
+        }
+    }
+
     private decimal CartTotal => cart.Sum(x => x.UnitPrice * x.Quantity);
     private int CartCount => cart.Sum(x => x.Quantity);
 
@@ -476,9 +490,14 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && restaurant is not null && !cartLoaded)
+        if (restaurant is null)
+            return;
+
+        if (!cartLoaded || loadedCartStorageKey != CartStorageKey)
         {
             cartLoaded = true;
+            loadedCartStorageKey = CartStorageKey;
+
             await LoadCart();
             StateHasChanged();
         }
@@ -534,6 +553,10 @@ else
         if (!string.IsNullOrWhiteSpace(json))
         {
             cart = JsonSerializer.Deserialize<List<CartItem>>(json) ?? [];
+        }
+        else
+        {
+            cart = [];
         }
     }
 
@@ -750,6 +773,7 @@ else
         PrefillCustomerFromUser();
 
         await JS.InvokeVoidAsync("easyCart.remove", CartStorageKey);
+        loadedCartStorageKey = null;
     }
 
     private async Task ScrollToMenu()
