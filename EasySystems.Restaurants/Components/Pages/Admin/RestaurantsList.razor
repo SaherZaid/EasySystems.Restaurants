@@ -7,13 +7,14 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 
 @attribute [Authorize]
 
-@inject ApplicationDbContext Db
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
-@inject UserManager<ApplicationUser> UserManager
+
 
 <PageTitle>Restaurants</PageTitle>
 
@@ -23,12 +24,16 @@
 
     <AdminNavbar RestaurantId="firstRestaurant.Id" RestaurantSlug="@firstRestaurant.Slug" />
 }
+else
+{
+    <AdminNavbar />
+}
 
 @if (!checkedAccess)
 {
     <div class="public-loading">Loading...</div>
 }
-else if (currentUser is null)
+else if (string.IsNullOrWhiteSpace(currentUserId))
 {
     <div class="public-not-found">
         <h1>Access denied</h1>
@@ -109,17 +114,13 @@ else
                                 </div>
 
                                 <div class="restaurant-admin-actions">
-                                    @if (isPlatformSuperAdmin || IsRestaurantOwner(restaurant.Id))
-                                    {
-                                        <button type="button" @onclick="() => GoToOwner(restaurant.Id)">Users</button>
-                                        <button type="button" @onclick="() => GoToEdit(restaurant.Id)">Edit</button>
-                                        <button type="button" @onclick="() => GoToLegal(restaurant.Id)">Legal</button>
-                                    }
+                                    <button type="button" @onclick="() => ManageRestaurant(restaurant.Id)">
+                                        Manage
+                                    </button>
 
-                                    <button type="button" @onclick="() => GoToCategories(restaurant.Id)">Categories</button>
-                                    <button type="button" @onclick="() => GoToItems(restaurant.Id)">Items</button>
-                                    <button type="button" @onclick="() => GoToOrders(restaurant.Id)">Orders</button>
-                                    <button type="button" @onclick="() => ViewRestaurant(restaurant.Slug)">View</button>
+                                    <button type="button" @onclick="() => ViewRestaurant(restaurant.Slug)">
+                                        View website
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -134,33 +135,47 @@ else
     private List<Restaurant> restaurants = [];
     private List<RestaurantUserAccess> myAccesses = [];
 
-    private ApplicationUser? currentUser;
+    private string? currentUserId;
     private bool isPlatformSuperAdmin;
     private bool checkedAccess;
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        currentUser = await UserManager.GetUserAsync(authState.User);
+        var principal = authState.User;
 
-        if (currentUser is null)
+        if (principal.Identity?.IsAuthenticated != true)
         {
             checkedAccess = true;
             return;
         }
 
-        isPlatformSuperAdmin = await UserManager.IsInRoleAsync(currentUser, "PlatformSuperAdmin");
+        var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            checkedAccess = true;
+            return;
+        }
+
+        currentUserId = userId;
+
+        isPlatformSuperAdmin = principal.IsInRole("PlatformSuperAdmin");
+
+        await using var db = await DbFactory.CreateDbContextAsync();
 
         if (isPlatformSuperAdmin)
         {
-            restaurants = await Db.Restaurants
+            restaurants = await db.Restaurants
+                .AsNoTracking()
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
         }
         else
         {
-            myAccesses = await Db.RestaurantUserAccesses
-                .Where(x => x.UserId == currentUser.Id)
+            myAccesses = await db.RestaurantUserAccesses
+                .AsNoTracking()
+                .Where(x => x.UserId == userId)
                 .ToListAsync();
 
             var restaurantIds = myAccesses
@@ -168,13 +183,30 @@ else
                 .Distinct()
                 .ToList();
 
-            restaurants = await Db.Restaurants
+            restaurants = await db.Restaurants
+                .AsNoTracking()
                 .Where(x => restaurantIds.Contains(x.Id))
                 .OrderBy(x => x.Name)
                 .ToListAsync();
         }
 
         checkedAccess = true;
+    }
+
+    private void CreateRestaurant()
+    {
+        Navigation.NavigateTo("/admin/restaurants/create");
+    }
+
+    private void ManageRestaurant(int restaurantId)
+    {
+        if (isPlatformSuperAdmin || IsRestaurantOwner(restaurantId))
+        {
+            Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/edit");
+            return;
+        }
+
+        Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/orders");
     }
 
     private bool IsRestaurantOwner(int restaurantId)
@@ -185,41 +217,6 @@ else
         return myAccesses.Any(x =>
             x.RestaurantId == restaurantId &&
             x.Role == "RestaurantOwner");
-    }
-
-    private void CreateRestaurant()
-    {
-        Navigation.NavigateTo("/admin/restaurants/create");
-    }
-
-    private void GoToOwner(int restaurantId)
-    {
-        Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/owner");
-    }
-
-    private void GoToEdit(int restaurantId)
-    {
-        Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/edit");
-    }
-
-    private void GoToCategories(int restaurantId)
-    {
-        Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/categories");
-    }
-
-    private void GoToItems(int restaurantId)
-    {
-        Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/items");
-    }
-
-    private void GoToOrders(int restaurantId)
-    {
-        Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/orders");
-    }
-
-    private void GoToLegal(int restaurantId)
-    {
-        Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/legal");
     }
 
     private void ViewRestaurant(string slug)

@@ -1,18 +1,36 @@
-﻿@using Microsoft.AspNetCore.Components.Routing
+﻿@using EasySystems.Restaurants.Data
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
 
 <nav class="admin-navbar">
     <div class="admin-navbar-inner">
 
-        <div class="admin-brand">
+        <a class="admin-brand" href="/admin/restaurants">
             <span>RA</span>
             <strong>Restaurant Admin</strong>
-        </div>
+        </a>
 
         <button type="button" class="admin-menu-toggle" @onclick="ToggleMenu">
             ☰
         </button>
 
         <div class="admin-nav-links @(isOpen ? "open" : "")">
+
+            <NavLink href="/admin/restaurants" @onclick="CloseMenu">
+                Restaurants
+            </NavLink>
+
+            @if (isPlatformSuperAdmin)
+            {
+                <NavLink href="/admin/restaurants/create" @onclick="CloseMenu">
+                    Create
+                </NavLink>
+            }
 
             @if (!string.IsNullOrWhiteSpace(RestaurantSlug))
             {
@@ -21,31 +39,46 @@
                 </a>
             }
 
-            @if (RestaurantId is not null)
+            @if (RestaurantId is not null && canAccessRestaurant)
             {
-                <NavLink href="@($"/admin/restaurants/{RestaurantId}/owner")" @onclick="CloseMenu">
-                    Owner 👑
-                </NavLink>
+                @if (CanManageUsers)
+                {
+                    <NavLink href="@($"/admin/restaurants/{RestaurantId}/owner")" @onclick="CloseMenu">
+                        Users
+                    </NavLink>
+                }
 
-                <NavLink href="@($"/admin/restaurants/{RestaurantId}/edit")" @onclick="CloseMenu">
-                    Edit
-                </NavLink>
+                @if (CanManageSettings)
+                {
+                    <NavLink href="@($"/admin/restaurants/{RestaurantId}/edit")" @onclick="CloseMenu">
+                        Edit
+                    </NavLink>
+                }
 
-                <NavLink href="@($"/admin/restaurants/{RestaurantId}/categories")" @onclick="CloseMenu">
-                    Categories
-                </NavLink>
+                @if (CanManageMenu)
+                {
+                    <NavLink href="@($"/admin/restaurants/{RestaurantId}/categories")" @onclick="CloseMenu">
+                        Categories
+                    </NavLink>
 
-                <NavLink href="@($"/admin/restaurants/{RestaurantId}/items")" @onclick="CloseMenu">
-                    Items
-                </NavLink>
+                    <NavLink href="@($"/admin/restaurants/{RestaurantId}/items")" @onclick="CloseMenu">
+                        Items
+                    </NavLink>
+                }
 
-                <NavLink href="@($"/admin/restaurants/{RestaurantId}/orders")" @onclick="CloseMenu">
-                    Orders
-                </NavLink>
+                @if (CanManageOrders)
+                {
+                    <NavLink href="@($"/admin/restaurants/{RestaurantId}/orders")" @onclick="CloseMenu">
+                        Orders
+                    </NavLink>
+                }
 
-                <NavLink href="@($"/admin/restaurants/{RestaurantId}/legal")" @onclick="CloseMenu">
-                    Legal
-                </NavLink>
+                @if (CanManageLegal)
+                {
+                    <NavLink href="@($"/admin/restaurants/{RestaurantId}/legal")" @onclick="CloseMenu">
+                        Legal
+                    </NavLink>
+                }
             }
 
         </div>
@@ -60,6 +93,58 @@
     public string? RestaurantSlug { get; set; }
 
     private bool isOpen;
+    private bool isPlatformSuperAdmin;
+    private bool canAccessRestaurant;
+    private string? restaurantRole;
+
+    private bool CanManageUsers => isPlatformSuperAdmin || restaurantRole == "RestaurantOwner";
+    private bool CanManageSettings => isPlatformSuperAdmin || restaurantRole == "RestaurantOwner";
+    private bool CanManageLegal => isPlatformSuperAdmin || restaurantRole == "RestaurantOwner";
+    private bool CanManageMenu => isPlatformSuperAdmin || restaurantRole == "RestaurantOwner" || restaurantRole == "RestaurantAdmin";
+    private bool CanManageOrders => isPlatformSuperAdmin || restaurantRole == "RestaurantOwner" || restaurantRole == "RestaurantAdmin";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isPlatformSuperAdmin = false;
+        canAccessRestaurant = false;
+        restaurantRole = null;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var principal = authState.User;
+
+        if (principal.Identity?.IsAuthenticated != true)
+            return;
+
+        var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userId))
+            return;
+
+        isPlatformSuperAdmin = principal.IsInRole("PlatformSuperAdmin");
+
+        if (isPlatformSuperAdmin)
+        {
+            canAccessRestaurant = true;
+            return;
+        }
+
+        if (RestaurantId is null)
+            return;
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        var access = await db.RestaurantUserAccesses
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x =>
+                x.RestaurantId == RestaurantId.Value &&
+                x.UserId == userId);
+
+        if (access is not null)
+        {
+            canAccessRestaurant = true;
+            restaurantRole = access.Role;
+        }
+    }
 
     private void ToggleMenu()
     {

@@ -3112,3 +3112,11 @@ html {
         grid-template-columns: 1fr;
     }
 }
+
+.restaurant-admin-link {
+    background: var(--primary);
+    color: white !important;
+    border-radius: 999px;
+    padding: 10px 14px !important;
+    font-weight: 900;
+}

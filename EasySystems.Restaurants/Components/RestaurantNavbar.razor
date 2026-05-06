@@ -3,10 +3,12 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.EntityFrameworkCore
 
 @inject AuthenticationStateProvider AuthStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
+@inject EasySystems.Restaurants.Data.ApplicationDbContext Db
 
 <nav class="restaurant-navbar"
      style="--nav-bg:@GetNavBackground(); --nav-text:@GetNavText(); --primary:@GetPrimary();">
@@ -40,6 +42,13 @@
                 <a href="/Account/Orders" @onclick="CloseMenu">Mina beställningar</a>
                 <a href="/Account/Profile" @onclick="CloseMenu">Mitt konto</a>
 
+                @if (canOpenAdmin)
+                {
+                    <a class="restaurant-admin-link" href="/admin/restaurants" @onclick="CloseMenu">
+                        Admin
+                    </a>
+                }
+
                 <form action="/Account/RestaurantLogout" method="post" class="restaurant-nav-logout">
                     <AntiforgeryToken />
                     <input type="hidden" name="returnUrl" value="@GetReturnUrl()" />
@@ -63,16 +72,33 @@
     public Restaurant? Restaurant { get; set; }
 
     private bool isOpen;
+    private bool canOpenAdmin;
     private ApplicationUser? currentUser;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
+        canOpenAdmin = false;
+
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
 
-        if (authState.User.Identity?.IsAuthenticated == true)
+        if (authState.User.Identity?.IsAuthenticated != true)
+            return;
+
+        currentUser = await UserManager.GetUserAsync(authState.User);
+
+        if (currentUser is null || Restaurant is null)
+            return;
+
+        if (await UserManager.IsInRoleAsync(currentUser, "PlatformSuperAdmin"))
         {
-            currentUser = await UserManager.GetUserAsync(authState.User);
+            canOpenAdmin = true;
+            return;
         }
+
+        canOpenAdmin = await Db.RestaurantUserAccesses.AnyAsync(x =>
+            x.RestaurantId == Restaurant.Id &&
+            x.UserId == currentUser.Id &&
+            (x.Role == "RestaurantOwner" || x.Role == "RestaurantAdmin"));
     }
 
     private void ToggleMenu()
@@ -95,14 +121,12 @@
 
     private string GetLoginUrl()
     {
-        var returnUrl = GetReturnUrl();
-
         return Navigation.GetUriWithQueryParameters(
             "/Account/Login",
             new Dictionary<string, object?>
-            {
-                ["ReturnUrl"] = returnUrl
-            });
+                {
+                    ["ReturnUrl"] = GetReturnUrl()
+                });
     }
 
     private string GetNavBackground()
