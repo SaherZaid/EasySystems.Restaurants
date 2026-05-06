@@ -1,0 +1,233 @@
+﻿@page "/Account/Profile"
+@rendermode InteractiveServer
+
+@using System.ComponentModel.DataAnnotations
+@using EasySystems.Restaurants.Data
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+
+@attribute [Authorize]
+
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+
+<PageTitle>My profile</PageTitle>
+
+<div class="customer-profile-page">
+    <div class="customer-profile-shell">
+        <div class="customer-profile-hero">
+            <div class="customer-profile-avatar">
+                @GetInitials()
+            </div>
+
+            <div>
+                <p class="eyebrow">Mitt konto</p>
+                <h1>@GetDisplayName()</h1>
+                <p>@currentUser?.Email</p>
+            </div>
+        </div>
+
+        <div class="customer-profile-grid">
+            <div class="customer-profile-card">
+                <h2>Profiluppgifter</h2>
+                <p>Uppdatera ditt namn och telefonnummer som används vid beställning.</p>
+
+                @if (isLoading)
+                {
+                    <div class="public-loading">Loading profile...</div>
+                }
+                else
+                {
+                    <EditForm Model="Input" OnValidSubmit="SaveProfile" FormName="customer-profile">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="auth-error-list" />
+
+                        <div class="auth-two-cols">
+                            <div class="auth-field">
+                                <label>First name</label>
+                                <InputText class="auth-input" @bind-Value="Input.FirstName" />
+                                <ValidationMessage For="() => Input.FirstName" class="auth-validation" />
+                            </div>
+
+                            <div class="auth-field">
+                                <label>Last name</label>
+                                <InputText class="auth-input" @bind-Value="Input.LastName" />
+                                <ValidationMessage For="() => Input.LastName" class="auth-validation" />
+                            </div>
+                        </div>
+
+                        <div class="auth-field">
+                            <label>Email</label>
+                            <input class="auth-input" value="@Input.Email" disabled />
+                            <small class="profile-help">Email cannot be changed here right now.</small>
+                        </div>
+
+                        <div class="auth-field">
+                            <label>Phone number</label>
+                            <InputText class="auth-input" @bind-Value="Input.PhoneNumber" />
+                            <ValidationMessage For="() => Input.PhoneNumber" class="auth-validation" />
+                        </div>
+
+                        <button type="submit" class="auth-submit">
+                            Save profile
+                        </button>
+
+                        @if (!string.IsNullOrWhiteSpace(successMessage))
+                        {
+                            <div class="upload-success">@successMessage</div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(errorMessage))
+                        {
+                            <div class="error">@errorMessage</div>
+                        }
+                    </EditForm>
+                }
+            </div>
+
+            <div class="customer-profile-card customer-profile-side">
+                <h2>Konto</h2>
+
+                <div class="profile-info-row">
+                    <span>Email confirmed</span>
+                    <strong>@(currentUser?.EmailConfirmed == true ? "Yes" : "No")</strong>
+                </div>
+
+                <div class="profile-info-row">
+                    <span>Phone</span>
+                    <strong>@(string.IsNullOrWhiteSpace(currentUser?.PhoneNumber) ? "Not added" : currentUser.PhoneNumber)</strong>
+                </div>
+
+                <div class="profile-info-row">
+                    <span>Created</span>
+                    <strong>@currentUser?.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")</strong>
+                </div>
+
+                <div class="profile-actions">
+                    <button type="button" class="secondary-admin-btn" @onclick="GoToOrders">
+                        Mina beställningar
+                    </button>
+
+                    <button type="button" class="secondary-admin-btn" @onclick="GoBack">
+                        Tillbaka
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ApplicationUser? currentUser;
+    private bool isLoading = true;
+
+    private string? successMessage;
+    private string? errorMessage;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        currentUser = await UserManager.GetUserAsync(authState.User);
+
+        if (currentUser is null)
+        {
+            Navigation.NavigateTo("/Account/Login", forceLoad: true);
+            return;
+        }
+
+        Input = new InputModel
+            {
+                FirstName = currentUser.FirstName,
+                LastName = currentUser.LastName,
+                Email = currentUser.Email ?? "",
+                PhoneNumber = currentUser.PhoneNumber ?? ""
+            };
+
+        isLoading = false;
+    }
+
+    private async Task SaveProfile()
+    {
+        successMessage = null;
+        errorMessage = null;
+
+        if (currentUser is null)
+            return;
+
+        currentUser.FirstName = Input.FirstName.Trim();
+        currentUser.LastName = Input.LastName.Trim();
+        currentUser.PhoneNumber = Input.PhoneNumber.Trim();
+
+        var result = await UserManager.UpdateAsync(currentUser);
+
+        if (!result.Succeeded)
+        {
+            errorMessage = string.Join(", ", result.Errors.Select(x => x.Description));
+            return;
+        }
+
+        successMessage = "Profile updated successfully.";
+    }
+
+    private string GetDisplayName()
+    {
+        if (currentUser is null)
+            return "My profile";
+
+        var fullName = $"{currentUser.FirstName} {currentUser.LastName}".Trim();
+
+        if (!string.IsNullOrWhiteSpace(fullName))
+            return fullName;
+
+        return currentUser.Email ?? "My profile";
+    }
+
+    private string GetInitials()
+    {
+        if (currentUser is null)
+            return "U";
+
+        var first = currentUser.FirstName;
+        var last = currentUser.LastName;
+
+        if (!string.IsNullOrWhiteSpace(first) && !string.IsNullOrWhiteSpace(last))
+            return $"{first[0]}{last[0]}".ToUpper();
+
+        if (!string.IsNullOrWhiteSpace(currentUser.Email))
+            return currentUser.Email[0].ToString().ToUpper();
+
+        return "U";
+    }
+
+    private void GoToOrders()
+    {
+        Navigation.NavigateTo("/Account/Orders");
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "First name is required.")]
+        [StringLength(50, ErrorMessage = "First name cannot be longer than 50 characters.")]
+        public string FirstName { get; set; } = "";
+
+        [Required(ErrorMessage = "Last name is required.")]
+        [StringLength(50, ErrorMessage = "Last name cannot be longer than 50 characters.")]
+        public string LastName { get; set; } = "";
+
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Phone number is required.")]
+        [Phone(ErrorMessage = "Enter a valid phone number.")]
+        public string PhoneNumber { get; set; } = "";
+    }
+}

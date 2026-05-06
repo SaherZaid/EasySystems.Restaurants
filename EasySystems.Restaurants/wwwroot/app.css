@@ -3000,3 +3000,115 @@ html {
         grid-template-columns: 1fr;
     }
 }
+
+.customer-profile-page {
+    min-height: 100vh;
+    padding: 120px 22px 60px;
+    background: radial-gradient(circle at top left, rgba(139, 0, 0, .12), transparent 32%), #f8fafc;
+}
+
+.customer-profile-shell {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.customer-profile-hero {
+    background: #111827;
+    color: white;
+    border-radius: 34px;
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .18);
+    margin-bottom: 22px;
+}
+
+.customer-profile-avatar {
+    width: 82px;
+    height: 82px;
+    border-radius: 26px;
+    background: white;
+    color: #111827;
+    display: grid;
+    place-items: center;
+    font-weight: 900;
+    font-size: 1.7rem;
+}
+
+.customer-profile-hero h1 {
+    margin: 0;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    letter-spacing: -.04em;
+}
+
+.customer-profile-hero p {
+    margin: 6px 0 0;
+    color: rgba(255,255,255,.75);
+    font-weight: 800;
+}
+
+.customer-profile-grid {
+    display: grid;
+    grid-template-columns: 1.5fr .85fr;
+    gap: 22px;
+}
+
+.customer-profile-card {
+    background: white;
+    border: 1px solid rgba(15, 23, 42, .08);
+    border-radius: 30px;
+    padding: 26px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
+}
+
+    .customer-profile-card h2 {
+        margin: 0 0 8px;
+        color: #111827;
+    }
+
+    .customer-profile-card > p {
+        color: #6b7280;
+        font-weight: 700;
+        line-height: 1.6;
+        margin-bottom: 20px;
+    }
+
+.profile-help {
+    color: #6b7280;
+    font-weight: 700;
+}
+
+.profile-info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+    .profile-info-row span {
+        color: #6b7280;
+        font-weight: 900;
+    }
+
+    .profile-info-row strong {
+        color: #111827;
+        text-align: right;
+    }
+
+.profile-actions {
+    display: grid;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+@media (max-width: 850px) {
+    .customer-profile-hero {
+        display: grid;
+    }
+
+    .customer-profile-grid {
+        grid-template-columns: 1fr;
+    }
+}

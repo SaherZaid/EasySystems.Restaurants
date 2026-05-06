@@ -38,6 +38,7 @@
             @if (currentUser is not null)
             {
                 <a href="/Account/Orders" @onclick="CloseMenu">Mina beställningar</a>
+                <a href="/Account/Profile" @onclick="CloseMenu">Mitt konto</a>
 
                 <form action="/Account/RestaurantLogout" method="post" class="restaurant-nav-logout">
                     <AntiforgeryToken />
@@ -99,9 +100,9 @@
         return Navigation.GetUriWithQueryParameters(
             "/Account/Login",
             new Dictionary<string, object?>
-                {
-                    ["ReturnUrl"] = returnUrl
-                });
+            {
+                ["ReturnUrl"] = returnUrl
+            });
     }
 
     private string GetNavBackground()
