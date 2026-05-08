@@ -15,7 +15,7 @@
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Create account</PageTitle>
+<PageTitle>Skapa konto</PageTitle>
 
 <div class="auth-page">
     <div class="auth-card">
@@ -23,7 +23,7 @@
             <span>ES</span>
             <div>
                 <strong>EasySystems</strong>
-                <p>Restaurant ordering platform</p>
+                <p>Restaurangplattform för beställningar</p>
             </div>
         </div>
 
@@ -38,45 +38,45 @@
             <DataAnnotationsValidator />
 
             <div class="auth-header">
-                <p class="eyebrow">Create account</p>
-                <h1>Welcome</h1>
-                <p>Create your account to order faster and manage your profile.</p>
+                <p class="eyebrow">Skapa konto</p>
+                <h1>Välkommen</h1>
+                <p>Skapa ditt konto för att beställa snabbare och hantera din profil.</p>
             </div>
 
             <ValidationSummary class="auth-error-list" role="alert" />
 
             <div class="auth-two-cols">
                 <div class="auth-field">
-                    <label for="Input.FirstName">First name</label>
+                    <label for="Input.FirstName">Förnamn</label>
                     <InputText @bind-Value="Input.FirstName"
                                id="Input.FirstName"
                                class="auth-input"
-                               autocomplete="given-name"/>
+                               autocomplete="given-name" />
                     <ValidationMessage For="() => Input.FirstName" class="auth-validation" />
                 </div>
 
                 <div class="auth-field">
-                    <label for="Input.LastName">Last name</label>
+                    <label for="Input.LastName">Efternamn</label>
                     <InputText @bind-Value="Input.LastName"
                                id="Input.LastName"
                                class="auth-input"
-                               autocomplete="family-name"/>
+                               autocomplete="family-name" />
                     <ValidationMessage For="() => Input.LastName" class="auth-validation" />
                 </div>
             </div>
 
             <div class="auth-field">
-                <label for="Input.Email">Email</label>
+                <label for="Input.Email">E-post</label>
                 <InputText @bind-Value="Input.Email"
                            id="Input.Email"
                            class="auth-input"
                            autocomplete="username"
-                           aria-required="true"/>
+                           aria-required="true" />
                 <ValidationMessage For="() => Input.Email" class="auth-validation" />
             </div>
 
             <div class="auth-field">
-                <label for="Input.PhoneNumber">Phone number</label>
+                <label for="Input.PhoneNumber">Telefonnummer</label>
                 <InputText @bind-Value="Input.PhoneNumber"
                            id="Input.PhoneNumber"
                            class="auth-input"
@@ -87,7 +87,7 @@
 
             <div class="auth-two-cols">
                 <div class="auth-field">
-                    <label for="Input.Password">Password</label>
+                    <label for="Input.Password">Lösenord</label>
                     <InputText type="password"
                                @bind-Value="Input.Password"
                                id="Input.Password"
@@ -99,7 +99,7 @@
                 </div>
 
                 <div class="auth-field">
-                    <label for="Input.ConfirmPassword">Confirm password</label>
+                    <label for="Input.ConfirmPassword">Bekräfta lösenord</label>
                     <InputText type="password"
                                @bind-Value="Input.ConfirmPassword"
                                id="Input.ConfirmPassword"
@@ -112,38 +112,38 @@
             </div>
 
             <button type="submit" class="auth-submit">
-                Create account
+                Skapa konto
             </button>
 
             <p class="auth-bottom-text">
-                Already have an account?
-                <a href="/Account/Login">Sign in</a>
+                Har du redan ett konto?
+                <a href="/Account/Login">Logga in</a>
             </p>
         </EditForm>
     </div>
 
     <div class="auth-side">
         <div class="auth-side-content">
-            <span class="auth-badge">Easy ordering</span>
-            <h2>Order food faster from your favorite restaurants.</h2>
+            <span class="auth-badge">Enkla beställningar</span>
+            <h2>Beställ mat snabbare från dina favoritrestauranger.</h2>
             <p>
-                Save your profile, confirm your email and enjoy a smoother restaurant ordering experience.
+                Spara din profil, verifiera din e-post och få en smidigare beställningsupplevelse.
             </p>
 
             <div class="auth-points">
                 <div>
                     <strong>01</strong>
-                    <span>Create your account</span>
+                    <span>Skapa ditt konto</span>
                 </div>
 
                 <div>
                     <strong>02</strong>
-                    <span>Confirm your email</span>
+                    <span>Bekräfta din e-post</span>
                 </div>
 
                 <div>
                     <strong>03</strong>
-                    <span>Start ordering</span>
+                    <span>Börja beställa</span>
                 </div>
             </div>
         </div>
@@ -162,7 +162,7 @@
     private string? Message =>
         identityErrors is null
             ? null
-            : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
+            : $"Fel: {string.Join(", ", identityErrors.Select(error => error.Description))}";
 
     public async Task RegisterUser(EditContext editContext)
     {
@@ -237,8 +237,8 @@
         }
         catch
         {
-            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
-                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.");
+            throw new InvalidOperationException($"Det gick inte att skapa en instans av '{nameof(ApplicationUser)}'. " +
+                $"Kontrollera att '{nameof(ApplicationUser)}' inte är en abstrakt klass och har en parameterlös konstruktor.");
         }
     }
 
@@ -246,7 +246,7 @@
     {
         if (!UserManager.SupportsUserEmail)
         {
-            throw new NotSupportedException("The default UI requires a user store with email support.");
+            throw new NotSupportedException("Standardgränssnittet kräver ett användarlager med stöd för e-post.");
         }
 
         return (IUserEmailStore<ApplicationUser>)UserStore;
@@ -254,36 +254,36 @@
 
     private sealed class InputModel
     {
-        [Required(ErrorMessage = "First name is required.")]
-        [StringLength(50, ErrorMessage = "First name cannot be longer than 50 characters.")]
-        [Display(Name = "First name")]
+        [Required(ErrorMessage = "Förnamn krävs.")]
+        [StringLength(50, ErrorMessage = "Förnamn får inte vara längre än 50 tecken.")]
+        [Display(Name = "Förnamn")]
         public string FirstName { get; set; } = "";
 
-        [Required(ErrorMessage = "Last name is required.")]
-        [StringLength(50, ErrorMessage = "Last name cannot be longer than 50 characters.")]
-        [Display(Name = "Last name")]
+        [Required(ErrorMessage = "Efternamn krävs.")]
+        [StringLength(50, ErrorMessage = "Efternamn får inte vara längre än 50 tecken.")]
+        [Display(Name = "Efternamn")]
         public string LastName { get; set; } = "";
 
-        [Required(ErrorMessage = "Email is required.")]
-        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
-        [Display(Name = "Email")]
+        [Required(ErrorMessage = "E-post krävs.")]
+        [EmailAddress(ErrorMessage = "Ange en giltig e-postadress.")]
+        [Display(Name = "E-post")]
         public string Email { get; set; } = "";
 
-        [Required(ErrorMessage = "Phone number is required.")]
-        [Phone(ErrorMessage = "Enter a valid phone number.")]
-        [Display(Name = "Phone number")]
+        [Required(ErrorMessage = "Telefonnummer krävs.")]
+        [Phone(ErrorMessage = "Ange ett giltigt telefonnummer.")]
+        [Display(Name = "Telefonnummer")]
         public string PhoneNumber { get; set; } = "";
 
-        [Required(ErrorMessage = "Password is required.")]
-        [StringLength(100, ErrorMessage = "The password must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [Required(ErrorMessage = "Lösenord krävs.")]
+        [StringLength(100, ErrorMessage = "Lösenordet måste vara minst {2} och max {1} tecken långt.", MinimumLength = 6)]
         [DataType(DataType.Password)]
-        [Display(Name = "Password")]
+        [Display(Name = "Lösenord")]
         public string Password { get; set; } = "";
 
-        [Required(ErrorMessage = "Confirm password is required.")]
+        [Required(ErrorMessage = "Bekräfta lösenord krävs.")]
         [DataType(DataType.Password)]
-        [Display(Name = "Confirm password")]
-        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        [Display(Name = "Bekräfta lösenord")]
+        [Compare("Password", ErrorMessage = "Lösenorden matchar inte.")]
         public string ConfirmPassword { get; set; } = "";
     }
 }

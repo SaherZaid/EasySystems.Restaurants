@@ -8,7 +8,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Confirm email</PageTitle>
+<PageTitle>Bekräfta e-post</PageTitle>
 
 <div class="auth-page">
     <div class="auth-card">
@@ -16,7 +16,7 @@
             <span>ES</span>
             <div>
                 <strong>EasySystems</strong>
-                <p>Email confirmation</p>
+                <p>E-postbekräftelse</p>
             </div>
         </div>
 
@@ -29,17 +29,17 @@
         </div>
 
         <div class="auth-links">
-            <a href="/Account/Login">Go to login</a>
-            <a href="/Account/ResendEmailConfirmation">Resend confirmation email</a>
+            <a href="/Account/Login">Gå till inloggning</a>
+            <a href="/Account/ResendEmailConfirmation">Skicka verifieringsmail igen</a>
         </div>
     </div>
 
     <div class="auth-side">
         <div class="auth-side-content">
-            <span class="auth-badge">Account verified</span>
-            <h2>Your account is almost ready.</h2>
+            <span class="auth-badge">Konto verifierat</span>
+            <h2>Ditt konto är nästan klart.</h2>
             <p>
-                After confirming your email, you can sign in and continue using EasySystems.
+                Efter att du har bekräftat din e-post kan du logga in och fortsätta använda EasySystems.
             </p>
         </div>
     </div>
@@ -47,9 +47,9 @@
 
 @code {
     private string? statusMessage;
-    private string statusLabel = "Checking";
-    private string headline = "Confirming your email";
-    private string description = "Please wait while we verify your account.";
+    private string statusLabel = "Kontrollerar";
+    private string headline = "Bekräftar din e-post";
+    private string description = "Vänta medan vi verifierar ditt konto.";
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
@@ -73,10 +73,10 @@
         if (user is null)
         {
             HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
-            statusLabel = "Error";
-            headline = "User not found";
-            description = "We could not find the account connected to this confirmation link.";
-            statusMessage = $"Error loading user with ID {UserId}";
+            statusLabel = "Fel";
+            headline = "Användaren hittades inte";
+            description = "Vi kunde inte hitta kontot som är kopplat till denna bekräftelselänk.";
+            statusMessage = $"Fel vid hämtning av användare med ID {UserId}";
             return;
         }
 
@@ -85,17 +85,17 @@
 
         if (result.Succeeded)
         {
-            statusLabel = "Success";
-            headline = "Email confirmed";
-            description = "Thank you. Your email has been confirmed and you can now sign in.";
-            statusMessage = "Thank you for confirming your email.";
+            statusLabel = "Klart";
+            headline = "E-post bekräftad";
+            description = "Tack. Din e-post har bekräftats och du kan nu logga in.";
+            statusMessage = "Tack för att du bekräftade din e-post.";
         }
         else
         {
-            statusLabel = "Error";
-            headline = "Confirmation failed";
-            description = "The confirmation link may be invalid or expired. You can request a new confirmation email.";
-            statusMessage = "Error confirming your email.";
+            statusLabel = "Fel";
+            headline = "Bekräftelsen misslyckades";
+            description = "Bekräftelselänken kan vara ogiltig eller ha gått ut. Du kan begära ett nytt verifieringsmail.";
+            statusMessage = "Det gick inte att bekräfta din e-post.";
         }
     }
 }

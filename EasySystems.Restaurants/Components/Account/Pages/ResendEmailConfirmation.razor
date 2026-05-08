@@ -11,7 +11,7 @@
 @inject IEmailSender<ApplicationUser> EmailSender
 @inject NavigationManager NavigationManager
 
-<PageTitle>Resend email confirmation</PageTitle>
+<PageTitle>Skicka verifieringsmail igen</PageTitle>
 
 <div class="auth-page">
     <div class="auth-card">
@@ -19,7 +19,7 @@
             <span>ES</span>
             <div>
                 <strong>EasySystems</strong>
-                <p>Email confirmation</p>
+                <p>E-postverifiering</p>
             </div>
         </div>
 
@@ -29,40 +29,40 @@
             <DataAnnotationsValidator />
 
             <div class="auth-header">
-                <p class="eyebrow">Resend email</p>
-                <h1>Need a new link?</h1>
-                <p>Enter your email and we’ll send a fresh confirmation link.</p>
+                <p class="eyebrow">Skicka e-post igen</p>
+                <h1>Behöver du en ny länk?</h1>
+                <p>Ange din e-post så skickar vi en ny verifieringslänk.</p>
             </div>
 
             <ValidationSummary class="auth-error-list" role="alert" />
 
             <div class="auth-field">
-                <label for="Input.Email">Email</label>
+                <label for="Input.Email">E-post</label>
                 <InputText @bind-Value="Input.Email"
                            id="Input.Email"
                            class="auth-input"
                            aria-required="true"
-                           placeholder="name@example.com" />
+                           placeholder="namn@example.com" />
                 <ValidationMessage For="() => Input.Email" class="auth-validation" />
             </div>
 
             <button type="submit" class="auth-submit">
-                Resend confirmation email
+                Skicka verifieringsmail igen
             </button>
 
             <div class="auth-links">
-                <a href="/Account/Login">Back to login</a>
-                <a href="/Account/Register">Create account</a>
+                <a href="/Account/Login">Tillbaka till inloggning</a>
+                <a href="/Account/Register">Skapa konto</a>
             </div>
         </EditForm>
     </div>
 
     <div class="auth-side">
         <div class="auth-side-content">
-            <span class="auth-badge">Verification</span>
-            <h2>We’ll send you a new confirmation link.</h2>
+            <span class="auth-badge">Verifiering</span>
+            <h2>Vi skickar en ny verifieringslänk till dig.</h2>
             <p>
-                Use the same email you registered with and check your inbox or spam folder.
+                Använd samma e-postadress som du registrerade dig med och kontrollera inkorgen eller skräpposten.
             </p>
         </div>
     </div>
@@ -92,13 +92,13 @@
 
         if (user is null)
         {
-            message = "Verification email sent. Please check your email.";
+            message = "Verifieringsmail skickat. Kontrollera din e-post.";
             return;
         }
 
         if (await UserManager.IsEmailConfirmedAsync(user))
         {
-            message = "This email is already confirmed. You can log in now.";
+            message = "Den här e-postadressen är redan verifierad. Du kan logga in nu.";
             return;
         }
 
@@ -120,13 +120,13 @@
             email,
             HtmlEncoder.Default.Encode(callbackUrl));
 
-        message = "Verification email sent. Please check your email.";
+        message = "Verifieringsmail skickat. Kontrollera din e-post.";
     }
 
     private sealed class InputModel
     {
-        [Required(ErrorMessage = "Email is required.")]
-        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
+        [Required(ErrorMessage = "E-post krävs.")]
+        [EmailAddress(ErrorMessage = "Ange en giltig e-postadress.")]
         public string Email { get; set; } = "";
     }
 }

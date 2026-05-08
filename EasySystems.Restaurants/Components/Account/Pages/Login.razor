@@ -11,7 +11,7 @@
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Log in</PageTitle>
+<PageTitle>Logga in</PageTitle>
 
 <div class="auth-page">
     <div class="auth-card">
@@ -19,7 +19,7 @@
             <span>ES</span>
             <div>
                 <strong>EasySystems</strong>
-                <p>Restaurant ordering platform</p>
+                <p>Restaurangplattform för beställningar</p>
             </div>
         </div>
 
@@ -29,26 +29,26 @@
             <DataAnnotationsValidator />
 
             <div class="auth-header">
-                <p class="eyebrow">Welcome back</p>
-                <h1>Sign in</h1>
-                <p>Log in to manage your restaurant or continue ordering from your favorite place.</p>
+                <p class="eyebrow">Välkommen tillbaka</p>
+                <h1>Logga in</h1>
+                <p>Logga in för att se dina beställningar och beställa snabbare nästa gång.</p>
             </div>
 
             <ValidationSummary class="auth-error-list" role="alert" />
 
             <div class="auth-field">
-                <label for="Input.Email">Email</label>
+                <label for="Input.Email">E-post</label>
                 <InputText @bind-Value="Input.Email"
                            id="Input.Email"
                            class="auth-input"
                            autocomplete="username"
                            aria-required="true"
-                           placeholder="name@example.com" />
+                           placeholder="namn@example.com" />
                 <ValidationMessage For="() => Input.Email" class="auth-validation" />
             </div>
 
             <div class="auth-field">
-                <label for="Input.Password">Password</label>
+                <label for="Input.Password">Lösenord</label>
                 <InputText type="password"
                            @bind-Value="Input.Password"
                            id="Input.Password"
@@ -62,23 +62,23 @@
             <div class="auth-row-between">
                 <label class="auth-check">
                     <InputCheckbox @bind-Value="Input.RememberMe" />
-                    <span>Remember me</span>
+                    <span>Kom ihåg mig</span>
                 </label>
 
-                <a href="/Account/ForgotPassword">Forgot password?</a>
+                <a href="/Account/ForgotPassword">Glömt lösenord?</a>
             </div>
 
             <button type="submit" class="auth-submit">
-                Log in
+                Logga in
             </button>
 
             <div class="auth-links">
                 <a href="@(NavigationManager.GetUriWithQueryParameters("/Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">
-                    Create new account
+                    Skapa nytt konto
                 </a>
 
                 <a href="@GetResendLink()">
-                    Resend email confirmation
+                    Skicka verifieringsmail igen
                 </a>
             </div>
         </EditForm>
@@ -86,26 +86,26 @@
 
     <div class="auth-side">
         <div class="auth-side-content">
-            <span class="auth-badge">Restaurant control</span>
-            <h2>Manage orders, menus and customers from one beautiful dashboard.</h2>
+            <span class="auth-badge">Snabbare beställningar</span>
+            <h2>Logga in och beställ mat smidigare nästa gång.</h2>
             <p>
-                Sign in as a restaurant owner, admin or customer and continue where you left off.
+                Med ett konto kan du se dina tidigare beställningar, spara dina uppgifter och beställa igen snabbare.
             </p>
 
             <div class="auth-points">
                 <div>
                     <strong>01</strong>
-                    <span>Restaurant owners manage their website</span>
+                    <span>Se dina tidigare beställningar</span>
                 </div>
 
                 <div>
                     <strong>02</strong>
-                    <span>Admins handle orders and menu updates</span>
+                    <span>Fyll i dina uppgifter automatiskt</span>
                 </div>
 
                 <div>
                     <strong>03</strong>
-                    <span>Customers order faster with accounts</span>
+                    <span>Beställ igen från din favoritrestaurang</span>
                 </div>
             </div>
         </div>
@@ -189,7 +189,7 @@
         }
         else
         {
-            errorMessage = "Error: Invalid login attempt.";
+            errorMessage = "Fel: Ogiltig inloggning.";
         }
     }
 
@@ -208,15 +208,15 @@
 
     private sealed class InputModel
     {
-        [Required(ErrorMessage = "Email is required.")]
-        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
+        [Required(ErrorMessage = "E-post krävs.")]
+        [EmailAddress(ErrorMessage = "Ange en giltig e-postadress.")]
         public string Email { get; set; } = "";
 
-        [Required(ErrorMessage = "Password is required.")]
+        [Required(ErrorMessage = "Lösenord krävs.")]
         [DataType(DataType.Password)]
         public string Password { get; set; } = "";
 
-        [Display(Name = "Remember me?")]
+        [Display(Name = "Kom ihåg mig")]
         public bool RememberMe { get; set; }
     }
 }

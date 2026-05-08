@@ -7,7 +7,7 @@
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Check your email</PageTitle>
+<PageTitle>Kontrollera din e-post</PageTitle>
 
 <div class="auth-page">
     <div class="auth-card">
@@ -15,52 +15,52 @@
             <span>ES</span>
             <div>
                 <strong>EasySystems</strong>
-                <p>Account created</p>
+                <p>Konto skapat</p>
             </div>
         </div>
 
         <StatusMessage Message="@statusMessage" />
 
         <div class="auth-header">
-            <p class="eyebrow">Check your inbox</p>
-            <h1>Confirm your email</h1>
+            <p class="eyebrow">Kontrollera din inkorg</p>
+            <h1>Bekräfta din e-post</h1>
             <p>
-                We sent a confirmation link to <strong>@Email</strong>.
-                Please open it to activate your account.
+                Vi har skickat en bekräftelselänk till <strong>@Email</strong>.
+                Öppna länken för att aktivera ditt konto.
             </p>
         </div>
 
         <div class="auth-links">
-            <a href="/Account/Login">Go to login</a>
+            <a href="/Account/Login">Gå till inloggning</a>
 
             <a href="@GetResendLink()">
-                Resend confirmation email
+                Skicka verifieringsmail igen
             </a>
         </div>
     </div>
 
     <div class="auth-side">
         <div class="auth-side-content">
-            <span class="auth-badge">One more step</span>
-            <h2>Open your email and verify your account.</h2>
+            <span class="auth-badge">Ett steg kvar</span>
+            <h2>Öppna din e-post och verifiera ditt konto.</h2>
             <p>
-                Confirming your email helps keep your account safe and unlocks login access.
+                Genom att bekräfta din e-post håller du ditt konto säkert och får tillgång till inloggning.
             </p>
 
             <div class="auth-points">
                 <div>
                     <strong>01</strong>
-                    <span>Open your inbox</span>
+                    <span>Öppna din inkorg</span>
                 </div>
 
                 <div>
                     <strong>02</strong>
-                    <span>Click the confirmation link</span>
+                    <span>Klicka på verifieringslänken</span>
                 </div>
 
                 <div>
                     <strong>03</strong>
-                    <span>Sign in to continue</span>
+                    <span>Logga in för att fortsätta</span>
                 </div>
             </div>
         </div>
@@ -92,7 +92,7 @@
         if (user is null)
         {
             HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
-            statusMessage = "Error finding user for the provided email.";
+            statusMessage = "Fel vid hämtning av användare för den angivna e-postadressen.";
         }
     }
 
