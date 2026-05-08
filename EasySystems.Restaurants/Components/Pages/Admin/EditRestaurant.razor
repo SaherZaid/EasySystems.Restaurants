@@ -30,10 +30,7 @@
 }
 else if (!isAuthorized)
 {
-    <div class="public-not-found">
-        <h1>Access denied</h1>
-        <p>You do not have permission to edit this restaurant.</p>
-    </div>
+    <div class="public-loading">Redirecting...</div>
 }
 else
 {
@@ -234,8 +231,7 @@ else
                         <p class="preview-label">Live preview</p>
 
                         <div class="restaurant-preview" style="--primary:@restaurant.PrimaryColor; --secondary:@restaurant.SecondaryColor;">
-                            <div class="mini-navbar-preview"
-                                 style="@GetMiniNavbarStyle()">
+                            <div class="mini-navbar-preview" style="@GetMiniNavbarStyle()">
                                 <strong>@DisplayOrFallback(restaurant.Name, "Restaurant")</strong>
                                 <span>Hem</span>
                                 <span>Meny</span>
@@ -265,8 +261,7 @@ else
                                 <span>@DisplayOrFallback(restaurant.Address, "Address")</span>
                             </div>
 
-                            <div class="mini-footer-preview"
-                                 style="@GetMiniFooterStyle()">
+                            <div class="mini-footer-preview" style="@GetMiniFooterStyle()">
                                 <strong>Footer preview</strong>
                                 <span>Privacy • Terms • Contact</span>
                             </div>
@@ -300,41 +295,35 @@ else
     {
         checkedAccess = false;
         isAuthorized = false;
-
-        restaurant = await Db.Restaurants
-            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+        errorMessage = null;
+        successMessage = null;
 
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
 
-        isAuthorized = await AccessService.CanAccessRestaurantAsync(
+        isAuthorized = await AccessService.CanManageRestaurantSettingsAsync(
             authState.User,
             RestaurantId);
 
         checkedAccess = true;
 
-        if (!isAuthorized || restaurant is null)
+        if (!isAuthorized)
+        {
+            Navigation.NavigateTo("/Account/Denied", true);
             return;
-    }
-    
-    private string GetMiniNavbarStyle()
-    {
+        }
+
+        restaurant = await Db.Restaurants
+            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+
         if (restaurant is null)
-            return string.Empty;
-
-        return $"background:{restaurant.NavbarBackgroundColor}; color:{restaurant.NavbarTextColor};";
-    }
-
-    private string GetMiniFooterStyle()
-    {
-        if (restaurant is null)
-            return string.Empty;
-
-        return $"background:{restaurant.FooterBackgroundColor}; color:{restaurant.FooterTextColor};";
+        {
+            return;
+        }
     }
 
     private async Task SaveRestaurant()
     {
-        if (restaurant is null)
+        if (!isAuthorized || restaurant is null)
             return;
 
         errorMessage = null;
@@ -370,7 +359,7 @@ else
 
     private async Task UploadLogo(InputFileChangeEventArgs e)
     {
-        if (restaurant is null)
+        if (!isAuthorized || restaurant is null)
             return;
 
         restaurant.LogoUrl = await SaveImageAsync(e.File, "logos");
@@ -378,7 +367,7 @@ else
 
     private async Task UploadHeroImage(InputFileChangeEventArgs e)
     {
-        if (restaurant is null)
+        if (!isAuthorized || restaurant is null)
             return;
 
         restaurant.HeroImageUrl = await SaveImageAsync(e.File, "heroes");
@@ -386,6 +375,9 @@ else
 
     private async Task<string> SaveImageAsync(IBrowserFile file, string folderName)
     {
+        if (!isAuthorized)
+            return string.Empty;
+
         errorMessage = null;
 
         var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
@@ -452,6 +444,22 @@ else
             return string.Empty;
 
         return $"background: linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)), url('{restaurant.HeroImageUrl}') center/cover;";
+    }
+
+    private string GetMiniNavbarStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.NavbarBackgroundColor}; color:{restaurant.NavbarTextColor};";
+    }
+
+    private string GetMiniFooterStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.FooterBackgroundColor}; color:{restaurant.FooterTextColor};";
     }
 
     private string NormalizeSlug(string value)

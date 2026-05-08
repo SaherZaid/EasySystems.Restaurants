@@ -18,7 +18,7 @@
 @inject RestaurantAccessService AccessService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Restaurant Access</PageTitle>
+<PageTitle>Användare och behörigheter</PageTitle>
 
 @if (restaurant is not null && isAuthorized)
 {
@@ -27,71 +27,110 @@
 
 @if (!checkedAccess)
 {
-    <div class="public-loading">Checking access...</div>
+    <div class="public-loading">Kontrollerar behörighet...</div>
 }
 else if (!isAuthorized)
 {
-    <div class="public-not-found">
-        <h1>Access denied</h1>
-        <p>You do not have permission to manage users for this restaurant.</p>
-    </div>
+    <div class="public-loading">Omdirigerar...</div>
 }
 else
 {
     <div class="admin-page">
         <div class="admin-header">
             <div>
-                <p class="eyebrow">Restaurant access</p>
-                <h1>@(restaurant?.Name ?? "Restaurant") users</h1>
-                <p class="subtitle">Search users, assign owners and admins, and manage who can access this restaurant.</p>
+                <p class="eyebrow">Användare och behörigheter</p>
+                <h1>@(restaurant?.Name ?? "Restaurang")</h1>
+                <p class="subtitle">
+                    Här kan du lägga till användare, välja roll och styra vem som får administrera restaurangen.
+                </p>
             </div>
         </div>
 
         @if (restaurant is null)
         {
             <div class="form-card admin-center-card">
-                <h2>Restaurant not found</h2>
+                <h2>Restaurangen hittades inte</h2>
             </div>
         }
         else
         {
             <div class="access-layout">
                 <div class="form-card">
-                    <h2>Add user access</h2>
+                    <h2>Lägg till eller ändra användare</h2>
+                    <p class="subtitle">
+                        Sök efter en användare, välj en roll och klicka sedan på spara.
+                    </p>
 
-                    <label>Search user</label>
+                    <label>Sök användare</label>
                     <input class="input"
                            value="@searchText"
                            @oninput="OnSearchChanged"
-                           placeholder="Search by email, username or phone..." />
+                           placeholder="Sök via e-post, användarnamn eller telefon..." />
 
                     <div class="user-search-list">
-                        @foreach (var user in FilteredUsers)
+                        @if (!FilteredUsers.Any())
                         {
-                            <button type="button"
-                                    class="user-search-item @(selectedUserId == user.Id ? "selected" : "")"
-                                    @onclick="() => SelectUser(user)">
-                                <div>
-                                    <strong>@DisplayUser(user)</strong>
-                                    <span>@DisplayUserSubText(user)</span>
-                                </div>
+                            <div class="empty-category">
+                                Ingen användare hittades.
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var user in FilteredUsers)
+                            {
+                                <button type="button"
+                                        class="user-search-item @(selectedUserId == user.Id ? "selected" : "")"
+                                        @onclick="() => SelectUser(user)">
+                                    <div>
+                                        <strong>@DisplayUser(user)</strong>
+                                        <span>@DisplayUserSubText(user)</span>
+                                    </div>
 
-                                @if (selectedUserId == user.Id)
-                                {
-                                    <small>Selected</small>
-                                }
-                            </button>
+                                    @if (selectedUserId == user.Id)
+                                    {
+                                        <small>Vald</small>
+                                    }
+                                </button>
+                            }
                         }
                     </div>
 
-                    <label>Permission</label>
-                    <InputSelect class="input" @bind-Value="selectedAccessRole">
-                        <option value="RestaurantOwner">Restaurant Owner</option>
-                        <option value="RestaurantAdmin">Restaurant Admin</option>
-                    </InputSelect>
+                    @if (selectedUser is not null)
+                    {
+                        <div class="owner-highlight" style="margin-top:18px;">
+                            <span>Vald användare</span>
+                            <strong>@DisplayUser(selectedUser)</strong>
+                            <p>@DisplayUserSubText(selectedUser)</p>
+                        </div>
+                    }
+
+                    <label>Välj roll</label>
+
+                    <div class="role-picker">
+                        <button type="button"
+                                class="role-option @(selectedAccessRole == "Customer" ? "selected" : "")"
+                                @onclick='() => SelectRole("Customer")'>
+                            <strong>Kund</strong>
+                            <span>Kan beställa mat men får ingen adminåtkomst.</span>
+                        </button>
+
+                        <button type="button"
+                                class="role-option @(selectedAccessRole == "RestaurantAdmin" ? "selected" : "")"
+                                @onclick='() => SelectRole("RestaurantAdmin")'>
+                            <strong>Restaurangadmin</strong>
+                            <span>Kan hantera meny, kategorier, tillval och beställningar.</span>
+                        </button>
+
+                        <button type="button"
+                                class="role-option @(selectedAccessRole == "RestaurantOwner" ? "selected" : "")"
+                                @onclick='() => SelectRole("RestaurantOwner")'>
+                            <strong>Restaurangägare</strong>
+                            <span>Har full åtkomst till denna restaurang och användare.</span>
+                        </button>
+                    </div>
 
                     <button class="save-btn" type="button" @onclick="SaveAccess">
-                        Save access
+                        Spara roll
                     </button>
 
                     @if (!string.IsNullOrWhiteSpace(errorMessage))
@@ -106,15 +145,15 @@ else
                 </div>
 
                 <div class="preview-card">
-                    <p class="preview-label">Current access</p>
+                    <p class="preview-label">Nuvarande behörigheter</p>
 
                     <div class="owner-highlight">
-                        <span>Main owner</span>
+                        <span>Huvudägare</span>
 
                         @if (currentOwner is null)
                         {
-                            <strong>No main owner assigned</strong>
-                            <p>Assign a Restaurant Owner to make them the main owner.</p>
+                            <strong>Ingen huvudägare vald</strong>
+                            <p>Välj rollen Restaurangägare för att sätta en huvudägare.</p>
                         }
                         else
                         {
@@ -126,8 +165,8 @@ else
                     @if (accesses.Count == 0)
                     {
                         <div class="empty-menu">
-                            <h3>No users assigned</h3>
-                            <p>Add an owner or admin to this restaurant.</p>
+                            <h3>Inga användare har adminåtkomst</h3>
+                            <p>Lägg till en restaurangägare eller restaurangadmin.</p>
                         </div>
                     }
                     else
@@ -149,19 +188,23 @@ else
                                         @if (access.Role != "RestaurantOwner")
                                         {
                                             <button type="button" @onclick='() => ChangeAccessRole(access, "RestaurantOwner")'>
-                                                Make owner
+                                                Gör till ägare
                                             </button>
                                         }
 
                                         @if (access.Role != "RestaurantAdmin")
                                         {
                                             <button type="button" @onclick='() => ChangeAccessRole(access, "RestaurantAdmin")'>
-                                                Make admin
+                                                Gör till admin
                                             </button>
                                         }
 
+                                        <button type="button" @onclick='() => ChangeAccessRole(access, "Customer")'>
+                                            Gör till kund
+                                        </button>
+
                                         <button type="button" class="danger-btn" @onclick="() => RemoveAccess(access)">
-                                            Remove
+                                            Ta bort åtkomst
                                         </button>
                                     </div>
                                 </div>
@@ -170,8 +213,8 @@ else
                     }
 
                     <div class="restaurant-admin-actions" style="margin-top:18px;">
-                        <button type="button" @onclick="BackToRestaurants">Back</button>
-                        <button type="button" @onclick="ViewRestaurant">View restaurant</button>
+                        <button type="button" @onclick="BackToRestaurants">Tillbaka</button>
+                        <button type="button" @onclick="ViewRestaurant">Visa restaurang</button>
                     </div>
                 </div>
             </div>
@@ -185,9 +228,11 @@ else
 
     private Restaurant? restaurant;
     private ApplicationUser? currentOwner;
+    private ApplicationUser? selectedUser;
 
     private List<ApplicationUser> users = [];
     private List<RestaurantUserAccess> accesses = [];
+    private HashSet<string> platformSuperAdminUserIds = [];
 
     private string searchText = string.Empty;
     private string? selectedUserId;
@@ -203,7 +248,9 @@ else
     {
         get
         {
-            var query = users.AsEnumerable();
+            var query = users
+                .Where(x => !platformSuperAdminUserIds.Contains(x.Id))
+                .AsEnumerable();
 
             if (!string.IsNullOrWhiteSpace(searchText))
             {
@@ -223,9 +270,8 @@ else
     {
         checkedAccess = false;
         isAuthorized = false;
-
-        restaurant = await Db.Restaurants
-            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+        errorMessage = null;
+        successMessage = null;
 
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
 
@@ -235,8 +281,19 @@ else
 
         checkedAccess = true;
 
-        if (!isAuthorized || restaurant is null)
+        if (!isAuthorized)
+        {
+            Navigation.NavigateTo("/Account/Denied", true);
             return;
+        }
+
+        restaurant = await Db.Restaurants
+            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+
+        if (restaurant is null)
+            return;
+
+        await LoadPlatformSuperAdmins();
 
         users = await UserManager.Users
             .OrderBy(x => x.Email)
@@ -245,18 +302,32 @@ else
         await LoadAccesses();
     }
 
+    private async Task LoadPlatformSuperAdmins()
+    {
+        var superAdmins = await UserManager.GetUsersInRoleAsync("PlatformSuperAdmin");
+        platformSuperAdminUserIds = superAdmins.Select(x => x.Id).ToHashSet();
+    }
+
     private async Task LoadAccesses()
     {
+        if (!isAuthorized)
+            return;
+
         accesses = await Db.RestaurantUserAccesses
             .Include(x => x.User)
-            .Where(x => x.RestaurantId == RestaurantId)
+            .Where(x =>
+                x.RestaurantId == RestaurantId &&
+                x.User != null &&
+                !platformSuperAdminUserIds.Contains(x.UserId))
             .OrderBy(x => x.Role)
             .ThenBy(x => x.User!.Email)
             .ToListAsync();
 
         currentOwner = null;
 
-        if (restaurant is not null && !string.IsNullOrWhiteSpace(restaurant.OwnerUserId))
+        if (restaurant is not null &&
+            !string.IsNullOrWhiteSpace(restaurant.OwnerUserId) &&
+            !platformSuperAdminUserIds.Contains(restaurant.OwnerUserId))
         {
             currentOwner = await UserManager.FindByIdAsync(restaurant.OwnerUserId);
         }
@@ -264,7 +335,21 @@ else
 
     private void SelectUser(ApplicationUser user)
     {
+        if (!isAuthorized)
+            return;
+
+        if (platformSuperAdminUserIds.Contains(user.Id))
+            return;
+
+        selectedUser = user;
         selectedUserId = user.Id;
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    private void SelectRole(string role)
+    {
+        selectedAccessRole = role;
         errorMessage = null;
         successMessage = null;
     }
@@ -279,64 +364,40 @@ else
         errorMessage = null;
         successMessage = null;
 
+        if (!isAuthorized)
+            return;
+
         if (restaurant is null)
         {
-            errorMessage = "Restaurant not found.";
+            errorMessage = "Restaurangen hittades inte.";
             return;
         }
 
         if (string.IsNullOrWhiteSpace(selectedUserId))
         {
-            errorMessage = "Choose a user first.";
+            errorMessage = "Välj en användare först.";
             return;
         }
 
         var user = await UserManager.FindByIdAsync(selectedUserId);
 
-        if (user is null)
+        if (user is null || platformSuperAdminUserIds.Contains(user.Id))
         {
-            errorMessage = "User not found.";
+            errorMessage = "Användaren kunde inte väljas.";
             return;
         }
 
-        var existingAccess = await Db.RestaurantUserAccesses
-            .FirstOrDefaultAsync(x => x.RestaurantId == RestaurantId && x.UserId == user.Id);
-
-        if (existingAccess is null)
-        {
-            existingAccess = new RestaurantUserAccess
-            {
-                RestaurantId = RestaurantId,
-                UserId = user.Id,
-                Role = selectedAccessRole,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            Db.RestaurantUserAccesses.Add(existingAccess);
-        }
-        else
-        {
-            existingAccess.Role = selectedAccessRole;
-        }
-
-        if (!await UserManager.IsInRoleAsync(user, selectedAccessRole))
-        {
-            await UserManager.AddToRoleAsync(user, selectedAccessRole);
-        }
-
-        if (selectedAccessRole == "RestaurantOwner")
-        {
-            restaurant.OwnerUserId = user.Id;
-        }
+        await ApplyRoleToUser(user, selectedAccessRole);
 
         await Db.SaveChangesAsync();
         await LoadAccesses();
 
         selectedUserId = null;
+        selectedUser = null;
         searchText = string.Empty;
         selectedAccessRole = "RestaurantAdmin";
 
-        successMessage = "User access saved successfully.";
+        successMessage = "Rollen har sparats.";
     }
 
     private async Task ChangeAccessRole(RestaurantUserAccess access, string role)
@@ -344,25 +405,72 @@ else
         errorMessage = null;
         successMessage = null;
 
+        if (!isAuthorized)
+            return;
+
         if (restaurant is null || access.User is null)
             return;
 
-        access.Role = role;
+        if (platformSuperAdminUserIds.Contains(access.UserId))
+            return;
 
-        if (!await UserManager.IsInRoleAsync(access.User, role))
-        {
-            await UserManager.AddToRoleAsync(access.User, role);
-        }
-
-        if (role == "RestaurantOwner")
-        {
-            restaurant.OwnerUserId = access.UserId;
-        }
+        await ApplyRoleToUser(access.User, role);
 
         await Db.SaveChangesAsync();
         await LoadAccesses();
 
-        successMessage = "Access updated.";
+        successMessage = "Rollen har uppdaterats.";
+    }
+
+    private async Task ApplyRoleToUser(ApplicationUser user, string role)
+    {
+        if (restaurant is null)
+            return;
+
+        if (!await UserManager.IsInRoleAsync(user, role))
+        {
+            await UserManager.AddToRoleAsync(user, role);
+        }
+
+        var existingAccess = await Db.RestaurantUserAccesses
+            .FirstOrDefaultAsync(x => x.RestaurantId == RestaurantId && x.UserId == user.Id);
+
+        if (role == "Customer")
+        {
+            if (existingAccess is not null)
+            {
+                Db.RestaurantUserAccesses.Remove(existingAccess);
+            }
+
+            if (restaurant.OwnerUserId == user.Id)
+            {
+                restaurant.OwnerUserId = null;
+            }
+
+            return;
+        }
+
+        if (existingAccess is null)
+        {
+            existingAccess = new RestaurantUserAccess
+                {
+                    RestaurantId = RestaurantId,
+                    UserId = user.Id,
+                    Role = role,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+            Db.RestaurantUserAccesses.Add(existingAccess);
+        }
+        else
+        {
+            existingAccess.Role = role;
+        }
+
+        if (role == "RestaurantOwner")
+        {
+            restaurant.OwnerUserId = user.Id;
+        }
     }
 
     private async Task RemoveAccess(RestaurantUserAccess access)
@@ -370,7 +478,13 @@ else
         errorMessage = null;
         successMessage = null;
 
+        if (!isAuthorized)
+            return;
+
         if (restaurant is null)
+            return;
+
+        if (platformSuperAdminUserIds.Contains(access.UserId))
             return;
 
         if (restaurant.OwnerUserId == access.UserId)
@@ -383,13 +497,18 @@ else
 
         await LoadAccesses();
 
-        successMessage = "Access removed.";
+        successMessage = "Åtkomsten har tagits bort.";
     }
 
     private string DisplayUser(ApplicationUser? user)
     {
         if (user is null)
-            return "Unknown user";
+            return "Okänd användare";
+
+        var fullName = $"{user.FirstName} {user.LastName}".Trim();
+
+        if (!string.IsNullOrWhiteSpace(fullName))
+            return fullName;
 
         if (!string.IsNullOrWhiteSpace(user.Email))
             return user.Email;
@@ -402,6 +521,12 @@ else
 
     private string DisplayUserSubText(ApplicationUser user)
     {
+        if (!string.IsNullOrWhiteSpace(user.Email) && !string.IsNullOrWhiteSpace(user.PhoneNumber))
+            return $"{user.Email} • {user.PhoneNumber}";
+
+        if (!string.IsNullOrWhiteSpace(user.Email))
+            return user.Email;
+
         if (!string.IsNullOrWhiteSpace(user.PhoneNumber))
             return user.PhoneNumber;
 
@@ -415,8 +540,9 @@ else
     {
         return role switch
         {
-            "RestaurantOwner" => "Owner",
-            "RestaurantAdmin" => "Admin",
+            "RestaurantOwner" => "Restaurangägare",
+            "RestaurantAdmin" => "Restaurangadmin",
+            "Customer" => "Kund",
             _ => role
         };
     }
@@ -427,6 +553,7 @@ else
         {
             "RestaurantOwner" => "access-role-owner",
             "RestaurantAdmin" => "access-role-admin",
+            "Customer" => "access-role-customer",
             _ => "access-role-admin"
         };
     }

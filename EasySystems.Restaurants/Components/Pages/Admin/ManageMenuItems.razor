@@ -17,7 +17,7 @@
 @inject RestaurantAccessService AccessService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Manage Menu Items</PageTitle>
+<PageTitle>Rätter</PageTitle>
 
 @if (restaurant is not null && isAuthorized)
 {
@@ -26,114 +26,175 @@
 
 @if (!checkedAccess)
 {
-    <div class="public-loading">Checking access...</div>
+    <div class="public-loading">Kontrollerar behörighet...</div>
 }
 else if (!isAuthorized)
 {
-    <div class="public-not-found">
-        <h1>Access denied</h1>
-        <p>You do not have permission to manage dishes for this restaurant.</p>
-    </div>
+    <div class="public-loading">Omdirigerar...</div>
 }
 else
 {
     <div class="admin-page">
         <div class="admin-header">
             <div>
-                <p class="eyebrow">Menu Items</p>
-                <h1>Manage dishes</h1>
-                <p class="subtitle">Add dishes, edit them, manage options and control availability.</p>
+                <p class="eyebrow">Meny</p>
+                <h1>Rätter</h1>
+                <p class="subtitle">
+                    Lägg till rätter, priser, bilder och tillval. Du kan även dölja rätter som är slut.
+                </p>
+            </div>
+
+            <div class="restaurant-admin-actions">
+                <button type="button" @onclick="GoToCategories">Kategorier</button>
+                <button type="button" @onclick="GoToRestaurant">Visa restaurang</button>
             </div>
         </div>
 
         @if (restaurant is null)
         {
             <div class="form-card admin-center-card">
-                <h2>Restaurant not found</h2>
-                <p>This restaurant does not exist.</p>
+                <h2>Restaurangen hittades inte</h2>
+                <p>Den här restaurangen finns inte.</p>
             </div>
         }
         else if (categories.Count == 0)
         {
             <div class="form-card admin-center-card">
-                <h2>No categories yet</h2>
-                <p>You need to create menu categories before adding dishes.</p>
-                <button class="save-btn" type="button" @onclick="GoToCategories">Create categories</button>
+                <h2>Inga kategorier ännu</h2>
+                <p>Du behöver skapa kategorier innan du lägger till rätter.</p>
+                <button class="save-btn" type="button" @onclick="GoToCategories">
+                    Skapa kategorier
+                </button>
             </div>
         }
         else
         {
-            <div class="admin-grid">
-                <div class="form-card">
-                    <h2>Add new dish</h2>
+            <div class="admin-items-dashboard">
+                <div class="items-left-column">
+                    <div class="form-card">
+                        <div class="admin-card-title">
+                            <div>
+                                <h2>Ny rätt</h2>
+                                <p>Fyll i informationen och klicka på lägg till.</p>
+                            </div>
+                            <span>@items.Count st</span>
+                        </div>
 
-                    <label>Category</label>
-                    <InputSelect class="input" @bind-Value="newItem.MenuCategoryId">
-                        @foreach (var category in categories)
+                        <label>Kategori</label>
+                        <InputSelect class="input" @bind-Value="newItem.MenuCategoryId">
+                            @foreach (var category in categories)
+                            {
+                                <option value="@category.Id">@category.Name</option>
+                            }
+                        </InputSelect>
+
+                        <label>Namn på rätt</label>
+                        <InputText class="input"
+                                   @bind-Value="newItem.Name"
+                                   placeholder="Exempel: Kycklingkebab tallrik" />
+
+                        <label>Beskrivning</label>
+                        <InputTextArea class="input textarea"
+                                       @bind-Value="newItem.Description"
+                                       placeholder="Exempel: Serveras med ris, sallad och valfri sås." />
+
+                        <div class="two-cols">
+                            <div>
+                                <label>Pris</label>
+                                <InputNumber class="input" @bind-Value="newItem.Price" />
+                            </div>
+
+                            <div>
+                                <label>Placering</label>
+                                <InputNumber class="input" @bind-Value="newItem.SortOrder" />
+                            </div>
+                        </div>
+
+                        <label>Bild</label>
+                        <InputFile class="file-input"
+                                   OnChange="UploadNewItemImage"
+                                   accept="image/png,image/jpeg,image/webp" />
+
+                        @if (!string.IsNullOrWhiteSpace(newItem.ImageUrl))
                         {
-                            <option value="@category.Id">@category.Name</option>
+                            <div class="dish-image-preview">
+                                <img src="@newItem.ImageUrl" alt="Förhandsvisning" />
+                                <span>Bilden är uppladdad</span>
+                            </div>
                         }
-                    </InputSelect>
 
-                    <label>Dish name</label>
-                    <InputText class="input" @bind-Value="newItem.Name" placeholder="Kyckling Kebab Tallrik" />
+                        <button class="save-btn" type="button" @onclick="AddItem">
+                            Lägg till rätt
+                        </button>
 
-                    <label>Description</label>
-                    <InputTextArea class="input textarea" @bind-Value="newItem.Description" placeholder="Serveras med ris, sallad och valfri sås..." />
+                        @if (!string.IsNullOrWhiteSpace(errorMessage))
+                        {
+                            <div class="error">@errorMessage</div>
+                        }
 
-                    <div class="two-cols">
-                        <div>
-                            <label>Price</label>
-                            <InputNumber class="input" @bind-Value="newItem.Price" />
-                        </div>
-
-                        <div>
-                            <label>Sort order</label>
-                            <InputNumber class="input" @bind-Value="newItem.SortOrder" />
-                        </div>
+                        @if (!string.IsNullOrWhiteSpace(successMessage))
+                        {
+                            <div class="upload-success">@successMessage</div>
+                        }
                     </div>
 
-                    <label>Dish image</label>
-                    <InputFile class="file-input" OnChange="UploadNewItemImage" accept="image/png,image/jpeg,image/webp" />
-
-                    @if (!string.IsNullOrWhiteSpace(newItem.ImageUrl))
-                    {
-                        <p class="upload-success">Dish image uploaded successfully</p>
-                    }
-
-                    <button class="save-btn" type="button" @onclick="AddItem">Add dish</button>
-
-                    @if (!string.IsNullOrWhiteSpace(errorMessage))
-                    {
-                        <div class="error">@errorMessage</div>
-                    }
-
-                    @if (!string.IsNullOrWhiteSpace(successMessage))
-                    {
-                        <div class="upload-success">@successMessage</div>
-                    }
+                    <div class="form-card category-help-card">
+                        <h3>Tips</h3>
+                        <p>
+                            Håll namnet kort och använd beskrivningen för innehåll, såser och tillbehör.
+                        </p>
+                        <ul>
+                            <li>Markera som ej tillgänglig om rätten är slut.</li>
+                            <li>Använd tillval för extra sås, borttagna ingredienser eller topping.</li>
+                            <li>Lägg gärna till bild för bättre meny.</li>
+                        </ul>
+                    </div>
                 </div>
 
                 <div class="preview-card">
-                    <p class="preview-label">@restaurant.Name dishes</p>
+                    <div class="admin-card-title">
+                        <div>
+                            <p class="preview-label">@restaurant.Name</p>
+                            <h2>Alla rätter</h2>
+                        </div>
 
-                    @if (items.Count == 0)
+                        <span>@AvailableItemCount tillgängliga</span>
+                    </div>
+
+                    <div class="items-toolbar">
+                        <input class="input"
+                               value="@itemSearchText"
+                               @oninput="OnItemSearchChanged"
+                               placeholder="Sök rätt..." />
+
+                        <InputSelect class="input" @bind-Value="selectedCategoryFilter">
+                            <option value="0">Alla kategorier</option>
+                            @foreach (var category in categories)
+                            {
+                                <option value="@category.Id">@category.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    @if (FilteredItems.Count == 0)
                     {
                         <div class="empty-menu">
-                            <h3>No dishes yet</h3>
-                            <p>Add your first dish to the menu.</p>
+                            <h3>Inga rätter hittades</h3>
+                            <p>Testa att ändra sökning eller kategori.</p>
                         </div>
                     }
                     else
                     {
-                        <div class="item-admin-list">
-                            @foreach (var item in items)
+                        <div class="item-admin-list modern-item-list">
+                            @foreach (var item in FilteredItems)
                             {
-                                <div class="item-admin-card">
+                                <div class="item-admin-card modern-item-card @(item.IsAvailable ? "" : "is-hidden")">
                                     @if (editingItemId == item.Id)
                                     {
-                                        <div class="edit-item-form">
-                                            <label>Category</label>
+                                        <div class="edit-item-form modern-edit-item-form">
+                                            <h3>Redigera rätt</h3>
+
+                                            <label>Kategori</label>
                                             <InputSelect class="input" @bind-Value="editItem.MenuCategoryId">
                                                 @foreach (var category in categories)
                                                 {
@@ -141,88 +202,130 @@ else
                                                 }
                                             </InputSelect>
 
-                                            <label>Dish name</label>
+                                            <label>Namn på rätt</label>
                                             <InputText class="input" @bind-Value="editItem.Name" />
 
-                                            <label>Description</label>
+                                            <label>Beskrivning</label>
                                             <InputTextArea class="input textarea" @bind-Value="editItem.Description" />
 
                                             <div class="two-cols">
                                                 <div>
-                                                    <label>Price</label>
+                                                    <label>Pris</label>
                                                     <InputNumber class="input" @bind-Value="editItem.Price" />
                                                 </div>
 
                                                 <div>
-                                                    <label>Sort order</label>
+                                                    <label>Placering</label>
                                                     <InputNumber class="input" @bind-Value="editItem.SortOrder" />
                                                 </div>
                                             </div>
 
                                             <label class="checkbox-label">
                                                 <InputCheckbox @bind-Value="editItem.IsAvailable" />
-                                                Available
+                                                Visa rätten för kunder
                                             </label>
 
-                                            <label>Replace image</label>
-                                            <InputFile class="file-input" OnChange="UploadEditItemImage" accept="image/png,image/jpeg,image/webp" />
+                                            @if (!string.IsNullOrWhiteSpace(editItem.ImageUrl))
+                                            {
+                                                <div class="dish-image-preview">
+                                                    <img src="@editItem.ImageUrl" alt="@editItem.Name" />
+                                                    <span>Nuvarande bild</span>
+                                                </div>
+                                            }
+
+                                            <label>Byt bild</label>
+                                            <InputFile class="file-input"
+                                                       OnChange="UploadEditItemImage"
+                                                       accept="image/png,image/jpeg,image/webp" />
 
                                             <div class="category-actions">
-                                                <button type="button" @onclick="SaveEditItem">Save</button>
-                                                <button type="button" @onclick="CancelEditItem">Cancel</button>
+                                                <button type="button" class="save-small-btn" @onclick="SaveEditItem">
+                                                    Spara
+                                                </button>
+
+                                                <button type="button" @onclick="CancelEditItem">
+                                                    Avbryt
+                                                </button>
                                             </div>
                                         </div>
                                     }
                                     else
                                     {
-                                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
-                                        {
-                                            <img src="@item.ImageUrl" alt="@item.Name" />
-                                        }
+                                        <div class="modern-item-image">
+                                            @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                            {
+                                                <img src="@item.ImageUrl" alt="@item.Name" />
+                                            }
+                                            else
+                                            {
+                                                <span>Ingen bild</span>
+                                            }
+                                        </div>
 
-                                        <div>
-                                            <strong>@item.Name</strong>
+                                        <div class="modern-item-info">
+                                            <div class="item-title-row">
+                                                <strong>@item.Name</strong>
+
+                                                @if (item.IsAvailable)
+                                                {
+                                                    <small class="visible-badge">Synlig</small>
+                                                }
+                                                else
+                                                {
+                                                    <small class="hidden-badge">Ej tillgänglig</small>
+                                                }
+                                            </div>
 
                                             @if (!string.IsNullOrWhiteSpace(item.Description))
                                             {
                                                 <p>@item.Description</p>
                                             }
+                                            else
+                                            {
+                                                <p class="muted-text">Ingen beskrivning tillagd.</p>
+                                            }
 
-                                            <span>@item.Price.ToString("0.00") kr</span>
-                                            <small>@item.MenuCategory?.Name</small>
+                                            <div class="item-meta-row">
+                                                <span>@item.Price.ToString("0.00") kr</span>
+                                                <small>@item.MenuCategory?.Name</small>
+                                            </div>
                                         </div>
 
-                                        <div class="category-actions">
+                                        <div class="category-actions item-actions-modern">
                                             <button type="button" @onclick="() => StartEditItem(item)">
-                                                Edit
+                                                Redigera
                                             </button>
 
                                             <button type="button" @onclick="() => ManageOptions(item.Id)">
-                                                Options
+                                                Tillval
                                             </button>
 
                                             <button type="button" @onclick="() => ToggleAvailability(item)">
-                                                @(item.IsAvailable ? "Mark unavailable" : "Mark available")
+                                                @(item.IsAvailable ? "Dölj" : "Visa")
                                             </button>
 
-                                            <button class="danger-btn" type="button" @onclick="() => DeleteItem(item)">
-                                                Delete
-                                            </button>
+                                            @if (pendingDeleteItemId == item.Id)
+                                            {
+                                                <button class="danger-btn" type="button" @onclick="() => DeleteItem(item)">
+                                                    Bekräfta radering
+                                                </button>
+
+                                                <button type="button" @onclick="CancelDelete">
+                                                    Avbryt
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button class="danger-btn" type="button" @onclick="() => AskDelete(item)">
+                                                    Radera
+                                                </button>
+                                            }
                                         </div>
-
-                                        @if (!item.IsAvailable)
-                                        {
-                                            <small class="hidden-badge">Unavailable</small>
-                                        }
                                     }
                                 </div>
                             }
                         </div>
                     }
-
-                    <button class="secondary-admin-btn" type="button" @onclick="GoToRestaurant">
-                        View restaurant page
-                    </button>
                 </div>
             </div>
         }
@@ -239,16 +342,49 @@ else
 
     private string? errorMessage;
     private string? successMessage;
+    private string itemSearchText = string.Empty;
 
+    private int selectedCategoryFilter;
     private int? editingItemId;
+    private int? pendingDeleteItemId;
 
     private bool checkedAccess;
     private bool isAuthorized;
 
-    private MenuItem newItem = new()
+    private int AvailableItemCount => items.Count(x => x.IsAvailable);
+
+    private List<MenuItem> FilteredItems
     {
-        IsAvailable = true
-    };
+        get
+        {
+            var query = items.AsEnumerable();
+
+            if (selectedCategoryFilter > 0)
+            {
+                query = query.Where(x => x.MenuCategoryId == selectedCategoryFilter);
+            }
+
+            if (!string.IsNullOrWhiteSpace(itemSearchText))
+            {
+                var text = itemSearchText.Trim();
+
+                query = query.Where(x =>
+                    (!string.IsNullOrWhiteSpace(x.Name) &&
+                     x.Name.Contains(text, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(x.Description) &&
+                     x.Description.Contains(text, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(x.MenuCategory?.Name) &&
+                     x.MenuCategory.Name.Contains(text, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            return query.ToList();
+        }
+    }
+
+    private MenuItem newItem = new()
+        {
+            IsAvailable = true
+        };
 
     private MenuItem editItem = new();
 
@@ -258,24 +394,33 @@ else
     {
         checkedAccess = false;
         isAuthorized = false;
-
-        restaurant = await Db.Restaurants
-            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+        errorMessage = null;
+        successMessage = null;
 
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
 
-        isAuthorized = await AccessService.CanAccessRestaurantAsync(
+        isAuthorized = await AccessService.CanManageRestaurantMenuAsync(
             authState.User,
             RestaurantId);
 
         checkedAccess = true;
 
-        if (!isAuthorized || restaurant is null)
+        if (!isAuthorized)
+        {
+            Navigation.NavigateTo("/Account/Denied", true);
+            return;
+        }
+
+        restaurant = await Db.Restaurants
+            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+
+        if (restaurant is null)
             return;
 
         categories = await Db.MenuCategories
             .Where(x => x.RestaurantId == RestaurantId)
             .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.Name)
             .ToListAsync();
 
         await LoadItems();
@@ -284,46 +429,59 @@ else
 
     private async Task LoadItems()
     {
+        if (!isAuthorized)
+            return;
+
         items = await Db.MenuItems
             .Include(x => x.MenuCategory)
             .Where(x => x.MenuCategory != null && x.MenuCategory.RestaurantId == RestaurantId)
             .OrderBy(x => x.MenuCategory!.SortOrder)
             .ThenBy(x => x.SortOrder)
+            .ThenBy(x => x.Name)
             .ToListAsync();
     }
 
     private void ResetNewItem()
     {
+        var firstCategoryId = categories.FirstOrDefault()?.Id ?? 0;
+
         newItem = new MenuItem
-        {
-            MenuCategoryId = categories.FirstOrDefault()?.Id ?? 0,
-            IsAvailable = true,
-            SortOrder = items.Count + 1
-        };
+            {
+                MenuCategoryId = firstCategoryId,
+                IsAvailable = true,
+                SortOrder = firstCategoryId == 0
+                    ? 1
+                    : items.Count(x => x.MenuCategoryId == firstCategoryId) + 1
+            };
     }
 
     private async Task AddItem()
     {
         errorMessage = null;
         successMessage = null;
+        pendingDeleteItemId = null;
 
-        newItem.Name = newItem.Name.Trim();
+        if (!isAuthorized)
+            return;
+
+        newItem.Name = newItem.Name?.Trim() ?? string.Empty;
+        newItem.Description = newItem.Description?.Trim() ?? string.Empty;
 
         if (newItem.MenuCategoryId <= 0)
         {
-            errorMessage = "Category is required.";
+            errorMessage = "Välj en kategori.";
             return;
         }
 
         if (string.IsNullOrWhiteSpace(newItem.Name))
         {
-            errorMessage = "Dish name is required.";
+            errorMessage = "Namn på rätt krävs.";
             return;
         }
 
         if (newItem.Price <= 0)
         {
-            errorMessage = "Price must be greater than 0.";
+            errorMessage = "Priset måste vara större än 0.";
             return;
         }
 
@@ -335,27 +493,31 @@ else
         await LoadItems();
         ResetNewItem();
 
-        successMessage = "Dish added successfully.";
+        successMessage = "Rätten har lagts till.";
     }
 
     private void StartEditItem(MenuItem item)
     {
+        if (!isAuthorized)
+            return;
+
         errorMessage = null;
         successMessage = null;
+        pendingDeleteItemId = null;
 
         editingItemId = item.Id;
 
         editItem = new MenuItem
-        {
-            Id = item.Id,
-            MenuCategoryId = item.MenuCategoryId,
-            Name = item.Name,
-            Description = item.Description,
-            Price = item.Price,
-            ImageUrl = item.ImageUrl,
-            IsAvailable = item.IsAvailable,
-            SortOrder = item.SortOrder
-        };
+            {
+                Id = item.Id,
+                MenuCategoryId = item.MenuCategoryId,
+                Name = item.Name,
+                Description = item.Description,
+                Price = item.Price,
+                ImageUrl = item.ImageUrl,
+                IsAvailable = item.IsAvailable,
+                SortOrder = item.SortOrder
+            };
     }
 
     private void CancelEditItem()
@@ -370,26 +532,27 @@ else
         errorMessage = null;
         successMessage = null;
 
-        if (editingItemId is null)
+        if (!isAuthorized || editingItemId is null)
             return;
 
-        editItem.Name = editItem.Name.Trim();
+        editItem.Name = editItem.Name?.Trim() ?? string.Empty;
+        editItem.Description = editItem.Description?.Trim() ?? string.Empty;
 
         if (editItem.MenuCategoryId <= 0)
         {
-            errorMessage = "Category is required.";
+            errorMessage = "Välj en kategori.";
             return;
         }
 
         if (string.IsNullOrWhiteSpace(editItem.Name))
         {
-            errorMessage = "Dish name is required.";
+            errorMessage = "Namn på rätt krävs.";
             return;
         }
 
         if (editItem.Price <= 0)
         {
-            errorMessage = "Price must be greater than 0.";
+            errorMessage = "Priset måste vara större än 0.";
             return;
         }
 
@@ -402,7 +565,7 @@ else
 
         if (item is null)
         {
-            errorMessage = "Dish not found.";
+            errorMessage = "Rätten hittades inte.";
             return;
         }
 
@@ -418,35 +581,55 @@ else
         await LoadItems();
 
         editingItemId = null;
-        successMessage = "Dish updated successfully.";
+        successMessage = "Rätten har uppdaterats.";
     }
 
     private async Task UploadNewItemImage(InputFileChangeEventArgs e)
     {
-        newItem.ImageUrl = await SaveImageAsync(e.File, "products");
+        if (!isAuthorized)
+            return;
+
+        var imageUrl = await SaveImageAsync(e.File, "products");
+
+        if (!string.IsNullOrWhiteSpace(imageUrl))
+        {
+            newItem.ImageUrl = imageUrl;
+        }
     }
 
     private async Task UploadEditItemImage(InputFileChangeEventArgs e)
     {
-        editItem.ImageUrl = await SaveImageAsync(e.File, "products");
+        if (!isAuthorized)
+            return;
+
+        var imageUrl = await SaveImageAsync(e.File, "products");
+
+        if (!string.IsNullOrWhiteSpace(imageUrl))
+        {
+            editItem.ImageUrl = imageUrl;
+        }
     }
 
     private async Task<string> SaveImageAsync(IBrowserFile file, string folderName)
     {
+        if (!isAuthorized)
+            return string.Empty;
+
         errorMessage = null;
+        successMessage = null;
 
         var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
         var extension = Path.GetExtension(file.Name).ToLowerInvariant();
 
         if (!allowedExtensions.Contains(extension))
         {
-            errorMessage = "Only JPG, PNG and WEBP images are allowed.";
+            errorMessage = "Endast JPG, PNG och WEBP är tillåtna.";
             return string.Empty;
         }
 
         if (file.Size > MaxFileSize)
         {
-            errorMessage = "Image size must be less than 5 MB.";
+            errorMessage = "Bilden får vara max 5 MB.";
             return string.Empty;
         }
 
@@ -466,28 +649,91 @@ else
 
         await readStream.CopyToAsync(writeStream);
 
-        successMessage = "Image uploaded.";
+        successMessage = "Bilden har laddats upp.";
         return relativePath;
     }
 
     private async Task ToggleAvailability(MenuItem item)
     {
-        item.IsAvailable = !item.IsAvailable;
+        if (!isAuthorized)
+            return;
+
+        errorMessage = null;
+        successMessage = null;
+        pendingDeleteItemId = null;
+
+        var dbItem = await Db.MenuItems
+            .Include(x => x.MenuCategory)
+            .FirstOrDefaultAsync(x =>
+                x.Id == item.Id &&
+                x.MenuCategory != null &&
+                x.MenuCategory.RestaurantId == RestaurantId);
+
+        if (dbItem is null)
+            return;
+
+        dbItem.IsAvailable = !dbItem.IsAvailable;
+
         await Db.SaveChangesAsync();
         await LoadItems();
+
+        successMessage = dbItem.IsAvailable
+            ? "Rätten visas nu för kunder."
+            : "Rätten är nu dold för kunder.";
+    }
+
+    private void AskDelete(MenuItem item)
+    {
+        errorMessage = null;
+        successMessage = null;
+        pendingDeleteItemId = item.Id;
+    }
+
+    private void CancelDelete()
+    {
+        pendingDeleteItemId = null;
+        errorMessage = null;
     }
 
     private async Task DeleteItem(MenuItem item)
     {
-        Db.MenuItems.Remove(item);
+        if (!isAuthorized)
+            return;
+
+        errorMessage = null;
+        successMessage = null;
+
+        var dbItem = await Db.MenuItems
+            .Include(x => x.MenuCategory)
+            .FirstOrDefaultAsync(x =>
+                x.Id == item.Id &&
+                x.MenuCategory != null &&
+                x.MenuCategory.RestaurantId == RestaurantId);
+
+        if (dbItem is null)
+            return;
+
+        Db.MenuItems.Remove(dbItem);
         await Db.SaveChangesAsync();
 
+        pendingDeleteItemId = null;
+
         await LoadItems();
-        successMessage = "Dish deleted.";
+        ResetNewItem();
+
+        successMessage = "Rätten har raderats.";
+    }
+
+    private void OnItemSearchChanged(ChangeEventArgs e)
+    {
+        itemSearchText = e.Value?.ToString() ?? string.Empty;
     }
 
     private void ManageOptions(int menuItemId)
     {
+        if (!isAuthorized)
+            return;
+
         Navigation.NavigateTo($"/admin/restaurants/{RestaurantId}/items/{menuItemId}/options");
     }
 

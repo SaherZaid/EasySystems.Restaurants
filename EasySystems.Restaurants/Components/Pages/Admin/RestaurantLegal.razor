@@ -13,6 +13,7 @@
 @inject ApplicationDbContext Db
 @inject RestaurantAccessService AccessService
 @inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 
 <PageTitle>Legal Pages</PageTitle>
 
@@ -27,10 +28,7 @@
 }
 else if (!isAuthorized)
 {
-    <div class="public-not-found">
-        <h1>Access denied</h1>
-        <p>You do not have permission to manage legal pages for this restaurant.</p>
-    </div>
+    <div class="public-loading">Redirecting...</div>
 }
 else
 {
@@ -96,6 +94,11 @@ else
                     {
                         <div class="upload-success">@message</div>
                     }
+
+                    @if (!string.IsNullOrWhiteSpace(errorMessage))
+                    {
+                        <div class="error">@errorMessage</div>
+                    }
                 </div>
             </EditForm>
         }
@@ -121,6 +124,7 @@ else
         };
 
     private string? message;
+    private string? errorMessage;
 
     private bool checkedAccess;
     private bool isAuthorized;
@@ -129,19 +133,27 @@ else
     {
         checkedAccess = false;
         isAuthorized = false;
-
-        restaurant = await Db.Restaurants
-            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+        message = null;
+        errorMessage = null;
 
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
 
-        isAuthorized = await AccessService.CanManageRestaurantUsersAsync(
+        isAuthorized = await AccessService.CanManageRestaurantLegalAsync(
             authState.User,
             RestaurantId);
 
         checkedAccess = true;
 
-        if (!isAuthorized || restaurant is null)
+        if (!isAuthorized)
+        {
+            Navigation.NavigateTo("/Account/Denied", true);
+            return;
+        }
+
+        restaurant = await Db.Restaurants
+            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+
+        if (restaurant is null)
             return;
 
         var pages = await Db.RestaurantLegalPages
@@ -168,11 +180,23 @@ else
     private async Task SavePages()
     {
         message = null;
+        errorMessage = null;
+
+        if (!isAuthorized)
+            return;
+
+        if (restaurant is null)
+        {
+            errorMessage = "Restaurant not found.";
+            return;
+        }
 
         privacy.RestaurantId = RestaurantId;
+        privacy.PageType = "Privacy";
         privacy.UpdatedAt = DateTime.UtcNow;
 
         terms.RestaurantId = RestaurantId;
+        terms.PageType = "Terms";
         terms.UpdatedAt = DateTime.UtcNow;
 
         SaveSinglePage(privacy);

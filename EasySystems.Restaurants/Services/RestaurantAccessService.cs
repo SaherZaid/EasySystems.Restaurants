@@ -7,18 +7,18 @@ namespace EasySystems.Restaurants.Services;
 
 public class RestaurantAccessService
 {
-    private readonly ApplicationDbContext _db;
+    private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public RestaurantAccessService(
-        ApplicationDbContext db,
+        IDbContextFactory<ApplicationDbContext> dbFactory,
         UserManager<ApplicationUser> userManager)
     {
-        _db = db;
+        _dbFactory = dbFactory;
         _userManager = userManager;
     }
 
-    public async Task<bool> CanAccessRestaurantAsync(ClaimsPrincipal user, int restaurantId)
+    public async Task<bool> IsPlatformSuperAdminAsync(ClaimsPrincipal user)
     {
         if (user.Identity?.IsAuthenticated != true)
             return false;
@@ -28,10 +28,28 @@ public class RestaurantAccessService
         if (appUser is null)
             return false;
 
-        if (await _userManager.IsInRoleAsync(appUser, "PlatformSuperAdmin"))
+        return await _userManager.IsInRoleAsync(appUser, "PlatformSuperAdmin");
+    }
+
+    public async Task<bool> CanCreateRestaurantsAsync(ClaimsPrincipal user)
+    {
+        return await IsPlatformSuperAdminAsync(user);
+    }
+
+    public async Task<bool> CanAccessRestaurantAsync(ClaimsPrincipal user, int restaurantId)
+    {
+        if (await IsPlatformSuperAdminAsync(user))
             return true;
 
-        return await _db.RestaurantUserAccesses
+        var appUser = await _userManager.GetUserAsync(user);
+
+        if (appUser is null)
+            return false;
+
+        await using var db = await _dbFactory.CreateDbContextAsync();
+
+        return await db.RestaurantUserAccesses
+            .AsNoTracking()
             .AnyAsync(x =>
                 x.RestaurantId == restaurantId &&
                 x.UserId == appUser.Id);
@@ -39,6 +57,52 @@ public class RestaurantAccessService
 
     public async Task<bool> CanManageRestaurantUsersAsync(ClaimsPrincipal user, int restaurantId)
     {
+        return await HasRestaurantRoleAsync(
+            user,
+            restaurantId,
+            allowedRoles: ["RestaurantOwner"]);
+    }
+
+    public async Task<bool> CanManageRestaurantSettingsAsync(ClaimsPrincipal user, int restaurantId)
+    {
+        return await HasRestaurantRoleAsync(
+            user,
+            restaurantId,
+            allowedRoles: ["RestaurantOwner"]);
+    }
+
+    public async Task<bool> CanManageRestaurantLegalAsync(ClaimsPrincipal user, int restaurantId)
+    {
+        return await HasRestaurantRoleAsync(
+            user,
+            restaurantId,
+            allowedRoles: ["RestaurantOwner"]);
+    }
+
+    public async Task<bool> CanManageRestaurantMenuAsync(ClaimsPrincipal user, int restaurantId)
+    {
+        return await HasRestaurantRoleAsync(
+            user,
+            restaurantId,
+            allowedRoles: ["RestaurantOwner", "RestaurantAdmin"]);
+    }
+
+    public async Task<bool> CanManageRestaurantOrdersAsync(ClaimsPrincipal user, int restaurantId)
+    {
+        return await HasRestaurantRoleAsync(
+            user,
+            restaurantId,
+            allowedRoles: ["RestaurantOwner", "RestaurantAdmin"]);
+    }
+
+    private async Task<bool> HasRestaurantRoleAsync(
+        ClaimsPrincipal user,
+        int restaurantId,
+        string[] allowedRoles)
+    {
+        if (await IsPlatformSuperAdminAsync(user))
+            return true;
+
         if (user.Identity?.IsAuthenticated != true)
             return false;
 
@@ -47,13 +111,13 @@ public class RestaurantAccessService
         if (appUser is null)
             return false;
 
-        if (await _userManager.IsInRoleAsync(appUser, "PlatformSuperAdmin"))
-            return true;
+        await using var db = await _dbFactory.CreateDbContextAsync();
 
-        return await _db.RestaurantUserAccesses
+        return await db.RestaurantUserAccesses
+            .AsNoTracking()
             .AnyAsync(x =>
                 x.RestaurantId == restaurantId &&
                 x.UserId == appUser.Id &&
-                x.Role == "RestaurantOwner");
+                allowedRoles.Contains(x.Role));
     }
 }

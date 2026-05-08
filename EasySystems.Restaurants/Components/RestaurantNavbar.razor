@@ -1,14 +1,13 @@
 ﻿@using EasySystems.Restaurants.Models
 @using EasySystems.Restaurants.Data
 @using Microsoft.AspNetCore.Components.Authorization
-@using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
 
 @inject AuthenticationStateProvider AuthStateProvider
-@inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
-@inject EasySystems.Restaurants.Data.ApplicationDbContext Db
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
 
 <nav class="restaurant-navbar"
      style="--nav-bg:@GetNavBackground(); --nav-text:@GetNavText(); --primary:@GetPrimary();">
@@ -34,10 +33,10 @@
             <a href="/restaurant/@Restaurant?.Slug" @onclick="CloseMenu">Hem</a>
             <a href="/restaurant/@Restaurant?.Slug#menu" @onclick="CloseMenu">Meny</a>
             <a href="/restaurant/@Restaurant?.Slug/contact" @onclick="CloseMenu">Kontakt & öppettider</a>
-            <a href="/restaurant/@Restaurant?.Slug/privacy" @onclick="CloseMenu">Privacy</a>
-            <a href="/restaurant/@Restaurant?.Slug/terms" @onclick="CloseMenu">Terms</a>
+            <a href="/restaurant/@Restaurant?.Slug/privacy" @onclick="CloseMenu">Integritet</a>
+            <a href="/restaurant/@Restaurant?.Slug/terms" @onclick="CloseMenu">Villkor</a>
 
-            @if (currentUser is not null)
+            @if (isAuthenticated)
             {
                 <a href="/Account/Orders" @onclick="CloseMenu">Mina beställningar</a>
                 <a href="/Account/Profile" @onclick="CloseMenu">Mitt konto</a>
@@ -73,32 +72,43 @@
 
     private bool isOpen;
     private bool canOpenAdmin;
-    private ApplicationUser? currentUser;
+    private bool isAuthenticated;
 
     protected override async Task OnParametersSetAsync()
     {
         canOpenAdmin = false;
+        isAuthenticated = false;
 
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
 
-        if (authState.User.Identity?.IsAuthenticated != true)
+        if (user.Identity?.IsAuthenticated != true)
             return;
 
-        currentUser = await UserManager.GetUserAsync(authState.User);
+        isAuthenticated = true;
 
-        if (currentUser is null || Restaurant is null)
+        if (Restaurant is null)
             return;
 
-        if (await UserManager.IsInRoleAsync(currentUser, "PlatformSuperAdmin"))
+        if (user.IsInRole("PlatformSuperAdmin"))
         {
             canOpenAdmin = true;
             return;
         }
 
-        canOpenAdmin = await Db.RestaurantUserAccesses.AnyAsync(x =>
-            x.RestaurantId == Restaurant.Id &&
-            x.UserId == currentUser.Id &&
-            (x.Role == "RestaurantOwner" || x.Role == "RestaurantAdmin"));
+        var currentUserId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return;
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+
+        canOpenAdmin = await db.RestaurantUserAccesses
+            .AsNoTracking()
+            .AnyAsync(x =>
+                x.RestaurantId == Restaurant.Id &&
+                x.UserId == currentUserId &&
+                (x.Role == "RestaurantOwner" || x.Role == "RestaurantAdmin"));
     }
 
     private void ToggleMenu()

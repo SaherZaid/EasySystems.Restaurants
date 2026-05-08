@@ -12,7 +12,7 @@
 
         <a class="admin-brand" href="/admin/restaurants">
             <span>RA</span>
-            <strong>Restaurant Admin</strong>
+            <strong>Restaurangadmin</strong>
         </a>
 
         <button type="button" class="admin-menu-toggle" @onclick="ToggleMenu">
@@ -21,21 +21,19 @@
 
         <div class="admin-nav-links @(isOpen ? "open" : "")">
 
-            <NavLink href="/admin/restaurants" @onclick="CloseMenu">
-                Restaurants
-            </NavLink>
+            
 
             @if (isPlatformSuperAdmin)
             {
                 <NavLink href="/admin/restaurants/create" @onclick="CloseMenu">
-                    Create
+                    Skapa
                 </NavLink>
             }
 
             @if (!string.IsNullOrWhiteSpace(RestaurantSlug))
             {
                 <a class="admin-home-link" href="@($"/restaurant/{RestaurantSlug}")" @onclick="CloseMenu">
-                    Home
+                    Startsida
                 </a>
             }
 
@@ -44,39 +42,39 @@
                 @if (CanManageUsers)
                 {
                     <NavLink href="@($"/admin/restaurants/{RestaurantId}/owner")" @onclick="CloseMenu">
-                        Users
+                        Hantera användarroller
                     </NavLink>
                 }
 
                 @if (CanManageSettings)
                 {
                     <NavLink href="@($"/admin/restaurants/{RestaurantId}/edit")" @onclick="CloseMenu">
-                        Edit
+                        Hantera & designa restaurangen
                     </NavLink>
                 }
 
                 @if (CanManageMenu)
                 {
                     <NavLink href="@($"/admin/restaurants/{RestaurantId}/categories")" @onclick="CloseMenu">
-                        Categories
+                        Menykategorier
                     </NavLink>
 
                     <NavLink href="@($"/admin/restaurants/{RestaurantId}/items")" @onclick="CloseMenu">
-                        Items
+                        Menyrätter
                     </NavLink>
                 }
 
                 @if (CanManageOrders)
                 {
                     <NavLink href="@($"/admin/restaurants/{RestaurantId}/orders")" @onclick="CloseMenu">
-                        Orders
+                        Kundbeställningar
                     </NavLink>
                 }
 
                 @if (CanManageLegal)
                 {
                     <NavLink href="@($"/admin/restaurants/{RestaurantId}/legal")" @onclick="CloseMenu">
-                        Legal
+                        Villkor & integritet
                     </NavLink>
                 }
             }

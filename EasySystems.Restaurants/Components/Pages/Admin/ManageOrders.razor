@@ -13,8 +13,9 @@
 @inject ApplicationDbContext Db
 @inject RestaurantAccessService AccessService
 @inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 
-<PageTitle>Orders</PageTitle>
+<PageTitle>Beställningar</PageTitle>
 
 @if (restaurant is not null && isAuthorized)
 {
@@ -23,14 +24,11 @@
 
 @if (!checkedAccess)
 {
-    <div class="public-loading">Checking access...</div>
+    <div class="public-loading">Kontrollerar behörighet...</div>
 }
 else if (!isAuthorized)
 {
-    <div class="public-not-found">
-        <h1>Access denied</h1>
-        <p>You do not have permission to view orders for this restaurant.</p>
-    </div>
+    <div class="public-loading">Omdirigerar...</div>
 }
 else
 {
@@ -44,173 +42,183 @@ else
     <div class="admin-page">
         <div class="admin-header">
             <div>
-                <p class="eyebrow">Orders Dashboard</p>
-                <h1>@(restaurant?.Name ?? "Restaurant") orders</h1>
-                <p class="subtitle">Manage customer orders, follow status and view order details.</p>
+                <p class="eyebrow">Beställningar</p>
+                <h1>@(restaurant?.Name ?? "Restaurang")</h1>
+                <p class="subtitle">
+                    Hantera nya beställningar, följ status och se kundens detaljer.
+                </p>
+            </div>
+
+            <div class="restaurant-admin-actions">
+                <button type="button" @onclick="LoadOrders">Uppdatera</button>
             </div>
         </div>
 
         @if (restaurant is null)
         {
             <div class="form-card admin-center-card">
-                <h2>Restaurant not found</h2>
+                <h2>Restaurangen hittades inte</h2>
             </div>
         }
         else
         {
-            <div class="orders-dashboard">
-                <div class="order-stats">
+            <div class="orders-dashboard modern-orders-dashboard">
+                <div class="order-stats modern-order-stats">
                     <div>
-                        <span>New</span>
+                        <span>Nya</span>
                         <strong>@CountByStatus("New")</strong>
                     </div>
 
                     <div>
-                        <span>Preparing</span>
+                        <span>Tillagas</span>
                         <strong>@CountByStatus("Preparing")</strong>
                     </div>
 
                     <div>
-                        <span>Ready</span>
+                        <span>Klara</span>
                         <strong>@CountByStatus("Ready")</strong>
                     </div>
 
                     <div>
-                        <span>Total sales</span>
+                        <span>Försäljning</span>
                         <strong>@orders.Sum(x => x.TotalAmount).ToString("0.00") kr</strong>
                     </div>
                 </div>
 
-                <div class="order-filter-tabs">
-                    @foreach (var status in filters)
-                    {
-                        <button type="button"
-                                class="@(selectedFilter == status ? "active" : "")"
-                                @onclick="() => selectedFilter = status">
-                            @status
-                        </button>
-                    }
-                </div>
+                <div class="orders-main-layout">
+                    <div class="orders-list-panel">
+                        <div class="orders-toolbar">
+                            <input class="input"
+                                   value="@searchText"
+                                   @oninput="OnSearchChanged"
+                                   placeholder="Sök namn, telefon, ordernummer eller rätt..." />
 
-                <div class="orders-table-card">
-                    @if (FilteredOrders.Count == 0)
-                    {
-                        <div class="empty-menu">
-                            <h3>No orders found</h3>
-                            <p>Orders matching this filter will appear here.</p>
-                        </div>
-                    }
-                    else
-                    {
-                        <table class="orders-table">
-                            <thead>
-                                <tr>
-                                    <th>Order</th>
-                                    <th>Customer</th>
-                                    <th>Items</th>
-                                    <th>Total</th>
-                                    <th>Status</th>
-                                    <th>Time</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                @foreach (var order in FilteredOrders)
+                            <InputSelect class="input" @bind-Value="selectedFilter">
+                                @foreach (var status in filters)
                                 {
-                                    <tr class="@(selectedOrder?.Id == order.Id ? "selected-row" : "")">
-                                        <td><strong>#@order.Id</strong></td>
-
-                                        <td>
-                                            <div class="customer-cell">
-                                                <strong>@order.CustomerName</strong>
-                                                <span>@order.CustomerPhone</span>
-                                            </div>
-                                        </td>
-
-                                        <td>@order.Items.Sum(x => x.Quantity)</td>
-
-                                        <td>
-                                            <strong>@order.TotalAmount.ToString("0.00") kr</strong>
-                                        </td>
-
-                                        <td>
-                                            <span class="order-status @GetStatusClass(order.Status)">
-                                                @order.Status
-                                            </span>
-                                        </td>
-
-                                        <td>@order.CreatedAt.ToLocalTime().ToString("HH:mm")</td>
-
-                                        <td>
-                                            <button class="view-order-btn" type="button" @onclick="() => SelectOrder(order)">
-                                                View
-                                            </button>
-                                        </td>
-                                    </tr>
+                                    <option value="@status">@FormatStatus(status)</option>
                                 }
-                            </tbody>
-                        </table>
-                    }
-                </div>
-
-                @if (selectedOrder is not null)
-                {
-                    <div class="order-detail-panel">
-                        <div class="order-detail-header">
-                            <div>
-                                <p class="order-number">Order #@selectedOrder.Id</p>
-                                <h2>@selectedOrder.CustomerName</h2>
-                                <span>@selectedOrder.CustomerPhone</span>
-                            </div>
-
-                            <button type="button" class="cart-close" @onclick="() => selectedOrder = null">×</button>
+                            </InputSelect>
                         </div>
 
-                        <div class="order-status-big @GetStatusClass(selectedOrder.Status)">
-                            @selectedOrder.Status
-                        </div>
-
-                        <div class="order-meta">
-                            <span>@selectedOrder.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>
-                            <strong>@selectedOrder.TotalAmount.ToString("0.00") kr</strong>
-                        </div>
-
-                        @if (!string.IsNullOrWhiteSpace(selectedOrder.CustomerNote))
-                        {
-                            <div class="customer-note">
-                                <strong>Customer note</strong>
-                                <p>@selectedOrder.CustomerNote</p>
-                            </div>
-                        }
-
-                        <div class="order-items">
-                            @foreach (var item in selectedOrder.Items)
+                        <div class="order-filter-tabs modern-order-tabs">
+                            @foreach (var status in filters)
                             {
-                                <div class="order-item-detail">
-                                    <div>
-                                        <span>@item.Quantity × @item.ItemName</span>
-
-                                        @if (!string.IsNullOrWhiteSpace(item.SelectedOptions))
-                                        {
-                                            <small>@item.SelectedOptions</small>
-                                        }
-                                    </div>
-
-                                    <strong>@item.LineTotal.ToString("0.00") kr</strong>
-                                </div>
+                                <button type="button"
+                                        class="@(selectedFilter == status ? "active" : "")"
+                                        @onclick="() => selectedFilter = status">
+                                    @FormatStatus(status)
+                                    <small>@CountForFilter(status)</small>
+                                </button>
                             }
                         </div>
 
-                        <div class="order-actions">
-                            <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Accepted")'>Accept</button>
-                            <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Preparing")'>Preparing</button>
-                            <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Ready")'>Ready</button>
-                            <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Completed")'>Completed</button>
-                            <button class="danger-btn" type="button" @onclick='() => UpdateStatus(selectedOrder, "Cancelled")'>Cancel</button>
-                        </div>
+                        @if (FilteredOrders.Count == 0)
+                        {
+                            <div class="empty-menu">
+                                <h3>Inga beställningar hittades</h3>
+                                <p>Testa att ändra sökning eller filter.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="modern-orders-list">
+                                @foreach (var order in FilteredOrders)
+                                {
+                                    <button type="button"
+                                            class="modern-order-card @(selectedOrder?.Id == order.Id ? "selected" : "")"
+                                            @onclick="() => SelectOrder(order)">
+                                        <div class="modern-order-card-top">
+                                            <div>
+                                                <strong>#@order.Id</strong>
+                                                <span>@order.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>
+                                            </div>
+
+                                            <small class="order-status @GetStatusClass(order.Status)">
+                                                @FormatStatus(order.Status)
+                                            </small>
+                                        </div>
+
+                                        <div class="modern-order-customer">
+                                            <strong>@order.CustomerName</strong>
+                                            <span>@order.CustomerPhone</span>
+                                        </div>
+
+                                        <div class="modern-order-bottom">
+                                            <span>@order.Items.Sum(x => x.Quantity) varor</span>
+                                            <strong>@order.TotalAmount.ToString("0.00") kr</strong>
+                                        </div>
+                                    </button>
+                                }
+                            </div>
+                        }
                     </div>
-                }
+
+                    <div class="order-detail-panel modern-order-detail">
+                        @if (selectedOrder is null)
+                        {
+                            <div class="empty-menu">
+                                <h3>Välj en beställning</h3>
+                                <p>Klicka på en beställning i listan för att se detaljer.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="order-detail-header">
+                                <div>
+                                    <p class="order-number">Beställning #@selectedOrder.Id</p>
+                                    <h2>@selectedOrder.CustomerName</h2>
+                                    <span>@selectedOrder.CustomerPhone</span>
+                                </div>
+
+                                <button type="button" class="cart-close" @onclick="() => selectedOrder = null">×</button>
+                            </div>
+
+                            <div class="order-status-big @GetStatusClass(selectedOrder.Status)">
+                                @FormatStatus(selectedOrder.Status)
+                            </div>
+
+                            <div class="order-meta">
+                                <span>@selectedOrder.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>
+                                <strong>@selectedOrder.TotalAmount.ToString("0.00") kr</strong>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(selectedOrder.CustomerNote))
+                            {
+                                <div class="customer-note">
+                                    <strong>Kundens meddelande</strong>
+                                    <p>@selectedOrder.CustomerNote</p>
+                                </div>
+                            }
+
+                            <div class="order-items">
+                                @foreach (var item in selectedOrder.Items)
+                                {
+                                    <div class="order-item-detail">
+                                        <div>
+                                            <span>@item.Quantity × @item.ItemName</span>
+
+                                            @if (!string.IsNullOrWhiteSpace(item.SelectedOptions))
+                                            {
+                                                <small>@item.SelectedOptions</small>
+                                            }
+                                        </div>
+
+                                        <strong>@item.LineTotal.ToString("0.00") kr</strong>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="order-actions modern-status-actions">
+                                <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Accepted")'>Acceptera</button>
+                                <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Preparing")'>Tillagas</button>
+                                <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Ready")'>Klar</button>
+                                <button type="button" @onclick='() => UpdateStatus(selectedOrder, "Completed")'>Avslutad</button>
+                                <button class="danger-btn" type="button" @onclick='() => UpdateStatus(selectedOrder, "Cancelled")'>Avbryt</button>
+                            </div>
+                        }
+                    </div>
+                </div>
             </div>
         }
     </div>
@@ -225,6 +233,7 @@ else
     private Order? selectedOrder;
 
     private string selectedFilter = "All";
+    private string searchText = string.Empty;
     private string? successMessage;
 
     private bool checkedAccess;
@@ -241,28 +250,62 @@ else
     "Cancelled"
     ];
 
-    private List<Order> FilteredOrders =>
-        selectedFilter == "All"
-            ? orders
-            : orders.Where(x => x.Status == selectedFilter).ToList();
+    private List<Order> FilteredOrders
+    {
+        get
+        {
+            var query = orders.AsEnumerable();
+
+            if (selectedFilter != "All")
+            {
+                query = query.Where(x => x.Status == selectedFilter);
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                var text = searchText.Trim();
+
+                query = query.Where(x =>
+                    x.Id.ToString().Contains(text, StringComparison.OrdinalIgnoreCase) ||
+                    (!string.IsNullOrWhiteSpace(x.CustomerName) &&
+                     x.CustomerName.Contains(text, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(x.CustomerPhone) &&
+                     x.CustomerPhone.Contains(text, StringComparison.OrdinalIgnoreCase)) ||
+                    x.Items.Any(i =>
+                        (!string.IsNullOrWhiteSpace(i.ItemName) &&
+                         i.ItemName.Contains(text, StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrWhiteSpace(i.SelectedOptions) &&
+                         i.SelectedOptions.Contains(text, StringComparison.OrdinalIgnoreCase))));
+            }
+
+            return query.ToList();
+        }
+    }
 
     protected override async Task OnParametersSetAsync()
     {
         checkedAccess = false;
         isAuthorized = false;
-
-        restaurant = await Db.Restaurants
-            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+        successMessage = null;
 
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
 
-        isAuthorized = await AccessService.CanAccessRestaurantAsync(
+        isAuthorized = await AccessService.CanManageRestaurantOrdersAsync(
             authState.User,
             RestaurantId);
 
         checkedAccess = true;
 
-        if (!isAuthorized || restaurant is null)
+        if (!isAuthorized)
+        {
+            Navigation.NavigateTo("/Account/Denied", true);
+            return;
+        }
+
+        restaurant = await Db.Restaurants
+            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+
+        if (restaurant is null)
             return;
 
         await LoadOrders();
@@ -270,6 +313,9 @@ else
 
     private async Task LoadOrders()
     {
+        if (!isAuthorized)
+            return;
+
         orders = await Db.Orders
             .Include(x => x.Items)
             .Where(x => x.RestaurantId == RestaurantId)
@@ -284,16 +330,31 @@ else
 
     private void SelectOrder(Order order)
     {
+        if (!isAuthorized)
+            return;
+
         selectedOrder = order;
     }
 
     private async Task UpdateStatus(Order order, string status)
     {
-        order.Status = status;
+        if (!isAuthorized)
+            return;
+
+        var dbOrder = await Db.Orders
+            .FirstOrDefaultAsync(x =>
+                x.Id == order.Id &&
+                x.RestaurantId == RestaurantId);
+
+        if (dbOrder is null)
+            return;
+
+        dbOrder.Status = status;
+
         await Db.SaveChangesAsync();
         await LoadOrders();
 
-        successMessage = $"Order #{order.Id} updated to {status}";
+        successMessage = $"Beställning #{order.Id} uppdaterad till {FormatStatus(status)}.";
         StateHasChanged();
 
         await Task.Delay(2000);
@@ -302,8 +363,33 @@ else
         StateHasChanged();
     }
 
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        searchText = e.Value?.ToString() ?? string.Empty;
+    }
+
     private int CountByStatus(string status)
         => orders.Count(x => x.Status == status);
+
+    private int CountForFilter(string status)
+        => status == "All"
+            ? orders.Count
+            : CountByStatus(status);
+
+    private string FormatStatus(string status)
+    {
+        return status switch
+        {
+            "All" => "Alla",
+            "New" => "Ny",
+            "Accepted" => "Accepterad",
+            "Preparing" => "Tillagas",
+            "Ready" => "Klar",
+            "Completed" => "Avslutad",
+            "Cancelled" => "Avbruten",
+            _ => status
+        };
+    }
 
     private string GetStatusClass(string status)
     {

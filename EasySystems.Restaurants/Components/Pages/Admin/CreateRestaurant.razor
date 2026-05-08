@@ -3,11 +3,11 @@
 
 @using EasySystems.Restaurants.Data
 @using EasySystems.Restaurants.Models
+@using EasySystems.Restaurants.Services
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
-@using Microsoft.AspNetCore.Identity
 
 @attribute [Authorize]
 
@@ -15,7 +15,7 @@
 @inject NavigationManager Navigation
 @inject IWebHostEnvironment Environment
 @inject AuthenticationStateProvider AuthStateProvider
-@inject UserManager<ApplicationUser> UserManager
+@inject RestaurantAccessService AccessService
 
 <PageTitle>Create Restaurant</PageTitle>
 
@@ -23,15 +23,14 @@
 {
     <div class="public-loading">Checking access...</div>
 }
-else if (!isPlatformSuperAdmin)
+else if (!hasAccess)
 {
-    <div class="public-not-found">
-        <h1>Access denied</h1>
-        <p>Only platform super admin can create restaurants.</p>
-    </div>
+    <div class="public-loading">Redirecting...</div>
 }
 else
 {
+    <AdminNavbar />
+
     <div class="admin-page">
         <div class="admin-header">
             <div>
@@ -304,24 +303,26 @@ else
 
     private string? errorMessage;
     private bool checkedAccess;
-    private bool isPlatformSuperAdmin;
+    private bool hasAccess;
 
     private const long MaxFileSize = 5 * 1024 * 1024;
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = await UserManager.GetUserAsync(authState.User);
 
-        isPlatformSuperAdmin = user is not null &&
-            await UserManager.IsInRoleAsync(user, "PlatformSuperAdmin");
-
+        hasAccess = await AccessService.CanCreateRestaurantsAsync(authState.User);
         checkedAccess = true;
+
+        if (!hasAccess)
+        {
+            Navigation.NavigateTo("/Account/Denied", true);
+        }
     }
 
     private async Task SaveRestaurant()
     {
-        if (!isPlatformSuperAdmin)
+        if (!hasAccess)
             return;
 
         errorMessage = null;
@@ -357,17 +358,23 @@ else
 
     private async Task UploadLogo(InputFileChangeEventArgs e)
     {
+        if (!hasAccess)
+            return;
+
         restaurant.LogoUrl = await SaveImageAsync(e.File, "logos");
     }
 
     private async Task UploadHeroImage(InputFileChangeEventArgs e)
     {
+        if (!hasAccess)
+            return;
+
         restaurant.HeroImageUrl = await SaveImageAsync(e.File, "heroes");
     }
 
     private async Task<string> SaveImageAsync(IBrowserFile file, string folderName)
     {
-        if (!isPlatformSuperAdmin)
+        if (!hasAccess)
             return string.Empty;
 
         errorMessage = null;

@@ -15,7 +15,7 @@
 @inject RestaurantAccessService AccessService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Manage Item Options</PageTitle>
+<PageTitle>Tillval och ingredienser</PageTitle>
 
 @if (restaurant is not null && isAuthorized)
 {
@@ -24,171 +24,182 @@
 
 @if (!checkedAccess)
 {
-    <div class="public-loading">Checking access...</div>
+    <div class="public-loading">Kontrollerar behörighet...</div>
 }
 else if (!isAuthorized)
 {
-    <div class="public-not-found">
-        <h1>Access denied</h1>
-        <p>You do not have permission to manage dish options for this restaurant.</p>
-    </div>
+    <div class="public-loading">Omdirigerar...</div>
 }
 else
 {
     <div class="admin-page">
         <div class="admin-header">
             <div>
-                <p class="eyebrow">Dish Ingredients</p>
-                <h1>@(menuItem?.Name ?? "Dish")</h1>
-                <p class="subtitle">Add included ingredients and paid extras for this dish.</p>
+                <p class="eyebrow">Meny</p>
+                <h1>Tillval och ingredienser</h1>
+                <p class="subtitle">
+                    Lägg till ingredienser som ingår i rätten och extra tillval som kunden kan välja mot extra kostnad.
+                </p>
+            </div>
+
+            <div class="restaurant-admin-actions">
+                <button type="button" @onclick="BackToItems">Tillbaka till rätter</button>
             </div>
         </div>
 
         @if (restaurant is null || menuItem is null)
         {
             <div class="form-card admin-center-card">
-                <h2>Dish not found</h2>
-                <p>This dish does not exist.</p>
+                <h2>Rätten hittades inte</h2>
+                <p>Den här rätten finns inte.</p>
             </div>
         }
         else
         {
-            <div class="admin-grid">
-                <div class="form-card">
-                    <h2>Add ingredient / option</h2>
+            <div class="admin-options-dashboard">
+                <div class="options-left-column">
+                    <div class="form-card">
+                        <div class="dish-option-summary modern-dish-summary">
+                            @if (!string.IsNullOrWhiteSpace(menuItem.ImageUrl))
+                            {
+                                <img src="@menuItem.ImageUrl" alt="@menuItem.Name" />
+                            }
 
-                    <label>Name</label>
-                    <InputText class="input" @bind-Value="newOption.Name" placeholder="Sallad, Tomat, Lök, Extra cheese..." />
+                            <div>
+                                <span>@menuItem.MenuCategory?.Name</span>
+                                <strong>@menuItem.Name</strong>
+                                <p>@menuItem.Description</p>
+                                <b>@menuItem.Price.ToString("0.00") kr</b>
+                            </div>
+                        </div>
+                    </div>
 
-                    <label class="checkbox-label">
-                        <InputCheckbox @bind-Value="newOption.IsDefaultIncluded" />
-                        Included by default
-                    </label>
+                    <div class="form-card">
+                        <div class="admin-card-title">
+                            <div>
+                                <h2>Nytt tillval</h2>
+                                <p>Välj om det ingår i rätten eller kostar extra.</p>
+                            </div>
+                            <span>@options.Count st</span>
+                        </div>
 
-                    @if (!newOption.IsDefaultIncluded)
-                    {
-                        <label>Extra price</label>
-                        <InputNumber class="input" @bind-Value="newOption.ExtraPrice" />
-                    }
+                        <label>Namn</label>
+                        <InputText class="input"
+                                   @bind-Value="newOption.Name"
+                                   placeholder="Exempel: Sallad, Tomat, Extra ost..." />
 
-                    <label>Sort order</label>
-                    <InputNumber class="input" @bind-Value="newOption.SortOrder" />
+                        <label>Typ</label>
+                        <div class="option-type-picker">
+                            <button type="button"
+                                    class="option-type-card @(newOption.IsDefaultIncluded ? "selected" : "")"
+                                    @onclick="() => SetNewOptionType(true)">
+                                <strong>Ingår i rätten</strong>
+                                <span>Kunden kan ta bort detta, till exempel lök eller tomat.</span>
+                            </button>
 
-                    <label class="checkbox-label">
-                        <InputCheckbox @bind-Value="newOption.IsAvailable" />
-                        Available
-                    </label>
+                            <button type="button"
+                                    class="option-type-card @(!newOption.IsDefaultIncluded ? "selected" : "")"
+                                    @onclick="() => SetNewOptionType(false)">
+                                <strong>Extra tillval</strong>
+                                <span>Kunden kan lägga till detta mot extra kostnad.</span>
+                            </button>
+                        </div>
 
-                    <button class="save-btn" type="button" @onclick="AddOption">
-                        Add
-                    </button>
+                        @if (!newOption.IsDefaultIncluded)
+                        {
+                            <label>Extra pris</label>
+                            <InputNumber class="input" @bind-Value="newOption.ExtraPrice" />
+                        }
 
-                    @if (!string.IsNullOrWhiteSpace(errorMessage))
-                    {
-                        <div class="error">@errorMessage</div>
-                    }
+                        <label>Placering</label>
+                        <InputNumber class="input" @bind-Value="newOption.SortOrder" />
 
-                    @if (!string.IsNullOrWhiteSpace(successMessage))
-                    {
-                        <div class="upload-success">@successMessage</div>
-                    }
+                        <label class="checkbox-label">
+                            <InputCheckbox @bind-Value="newOption.IsAvailable" />
+                            Visa detta val för kunder
+                        </label>
+
+                        <button class="save-btn" type="button" @onclick="AddOption">
+                            Lägg till
+                        </button>
+
+                        @if (!string.IsNullOrWhiteSpace(errorMessage))
+                        {
+                            <div class="error">@errorMessage</div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(successMessage))
+                        {
+                            <div class="upload-success">@successMessage</div>
+                        }
+                    </div>
+
+                    <div class="form-card category-help-card">
+                        <h3>Exempel</h3>
+                        <ul>
+                            <li><strong>Ingår:</strong> Sallad, tomat, lök, sås.</li>
+                            <li><strong>Extra:</strong> Extra ost, extra kött, extra sås.</li>
+                        </ul>
+                    </div>
                 </div>
 
                 <div class="preview-card">
-                    <p class="preview-label">@menuItem.Name ingredients</p>
+                    <div class="admin-card-title">
+                        <div>
+                            <p class="preview-label">@menuItem.Name</p>
+                            <h2>Val som kunden ser</h2>
+                        </div>
 
-                    <div class="dish-option-summary">
-                        <strong>@menuItem.Name</strong>
-                        <span>@menuItem.Price.ToString("0.00") kr</span>
-                        <p>@menuItem.Description</p>
+                        <span>@AvailableOptionCount synliga</span>
                     </div>
 
                     @if (options.Count == 0)
                     {
                         <div class="empty-menu">
-                            <h3>No ingredients or extras yet</h3>
-                            <p>Add included ingredients like salad, tomato, onion, or paid extras like extra cheese.</p>
+                            <h3>Inga ingredienser eller tillval ännu</h3>
+                            <p>Lägg till till exempel sallad, tomat, lök eller extra ost.</p>
                         </div>
                     }
                     else
                     {
-                        <div class="option-admin-list">
-                            @foreach (var option in options)
-                            {
-                                <div class="option-admin-card">
-                                    @if (editingOptionId == option.Id)
-                                    {
-                                        <div class="edit-category-form">
-                                            <label>Name</label>
-                                            <InputText class="input" @bind-Value="editOption.Name" />
+                        <div class="option-section-grid">
+                            <div>
+                                <h3>Ingår i rätten</h3>
 
-                                            <label class="checkbox-label">
-                                                <InputCheckbox @bind-Value="editOption.IsDefaultIncluded" />
-                                                Included by default
-                                            </label>
-
-                                            @if (!editOption.IsDefaultIncluded)
-                                            {
-                                                <label>Extra price</label>
-                                                <InputNumber class="input" @bind-Value="editOption.ExtraPrice" />
-                                            }
-
-                                            <label>Sort order</label>
-                                            <InputNumber class="input" @bind-Value="editOption.SortOrder" />
-
-                                            <label class="checkbox-label">
-                                                <InputCheckbox @bind-Value="editOption.IsAvailable" />
-                                                Available
-                                            </label>
-
-                                            <div class="category-actions">
-                                                <button type="button" @onclick="SaveEditOption">Save</button>
-                                                <button type="button" @onclick="CancelEditOption">Cancel</button>
-                                            </div>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div>
-                                            <strong>@option.Name</strong>
-
-                                            @if (option.IsDefaultIncluded)
-                                            {
-                                                <span class="included-tag">Included</span>
-                                            }
-                                            else
-                                            {
-                                                <span>+@option.ExtraPrice.ToString("0.00") kr</span>
-                                            }
-
-                                            <small>Order: @option.SortOrder</small>
-                                        </div>
-
-                                        <div class="category-actions">
-                                            <button type="button" @onclick="() => StartEditOption(option)">Edit</button>
-
-                                            <button type="button" @onclick="() => ToggleAvailability(option)">
-                                                @(option.IsAvailable ? "Hide" : "Show")
-                                            </button>
-
-                                            <button class="danger-btn" type="button" @onclick="() => DeleteOption(option)">
-                                                Delete
-                                            </button>
-                                        </div>
-
-                                        @if (!option.IsAvailable)
+                                @if (IncludedOptions.Count == 0)
+                                {
+                                    <div class="empty-category">Inget tillagt ännu.</div>
+                                }
+                                else
+                                {
+                                    <div class="option-admin-list modern-option-list">
+                                        @foreach (var option in IncludedOptions)
                                         {
-                                            <small class="hidden-badge">Unavailable</small>
+                                            @OptionCard(option)
                                         }
-                                    }
-                                </div>
-                            }
+                                    </div>
+                                }
+                            </div>
+
+                            <div>
+                                <h3>Extra tillval</h3>
+
+                                @if (ExtraOptions.Count == 0)
+                                {
+                                    <div class="empty-category">Inga extra tillval ännu.</div>
+                                }
+                                else
+                                {
+                                    <div class="option-admin-list modern-option-list">
+                                        @foreach (var option in ExtraOptions)
+                                        {
+                                            @OptionCard(option)
+                                        }
+                                    </div>
+                                }
+                            </div>
                         </div>
                     }
-
-                    <button class="secondary-admin-btn" type="button" @onclick="BackToItems">
-                        Back to dishes
-                    </button>
                 </div>
             </div>
         }
@@ -210,15 +221,28 @@ else
     private string? successMessage;
 
     private int? editingOptionId;
+    private int? pendingDeleteOptionId;
 
     private bool checkedAccess;
     private bool isAuthorized;
 
+    private int AvailableOptionCount => options.Count(x => x.IsAvailable);
+
+    private List<MenuItemOption> IncludedOptions => options
+    .Where(x => x.IsDefaultIncluded)
+    .OrderBy(x => x.SortOrder)
+    .ToList();
+
+    private List<MenuItemOption> ExtraOptions => options
+    .Where(x => !x.IsDefaultIncluded)
+    .OrderBy(x => x.SortOrder)
+    .ToList();
+
     private MenuItemOption newOption = new()
-        {
-            IsAvailable = true,
-            IsDefaultIncluded = true
-        };
+            {
+                IsAvailable = true,
+                IsDefaultIncluded = true
+            };
 
     private MenuItemOption editOption = new();
 
@@ -226,27 +250,35 @@ else
     {
         checkedAccess = false;
         isAuthorized = false;
-
-        restaurant = await Db.Restaurants
-            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+        errorMessage = null;
+        successMessage = null;
 
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
 
-        isAuthorized = await AccessService.CanAccessRestaurantAsync(
-            authState.User,
-            RestaurantId);
+        isAuthorized = await AccessService.CanManageRestaurantMenuAsync(
+        authState.User,
+        RestaurantId);
 
         checkedAccess = true;
 
-        if (!isAuthorized || restaurant is null)
+        if (!isAuthorized)
+        {
+            Navigation.NavigateTo("/Account/Denied", true);
+            return;
+        }
+
+        restaurant = await Db.Restaurants
+        .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+
+        if (restaurant is null)
             return;
 
         menuItem = await Db.MenuItems
-            .Include(x => x.MenuCategory)
-            .FirstOrDefaultAsync(x =>
-                x.Id == MenuItemId &&
-                x.MenuCategory != null &&
-                x.MenuCategory.RestaurantId == RestaurantId);
+        .Include(x => x.MenuCategory)
+        .FirstOrDefaultAsync(x =>
+            x.Id == MenuItemId &&
+            x.MenuCategory != null &&
+            x.MenuCategory.RestaurantId == RestaurantId);
 
         if (menuItem is null)
             return;
@@ -257,41 +289,75 @@ else
 
     private async Task LoadOptions()
     {
+        if (!isAuthorized)
+            return;
+
         options = await Db.MenuItemOptions
-            .Where(x => x.MenuItemId == MenuItemId)
-            .OrderByDescending(x => x.IsDefaultIncluded)
-            .ThenBy(x => x.SortOrder)
-            .ToListAsync();
+        .Where(x => x.MenuItemId == MenuItemId)
+        .OrderByDescending(x => x.IsDefaultIncluded)
+        .ThenBy(x => x.SortOrder)
+        .ThenBy(x => x.Name)
+        .ToListAsync();
     }
 
     private void ResetNewOption()
     {
         newOption = new MenuItemOption
-            {
-                MenuItemId = MenuItemId,
-                IsAvailable = true,
-                IsDefaultIncluded = true,
-                ExtraPrice = 0,
-                SortOrder = options.Count + 1
-            };
+                {
+                    MenuItemId = MenuItemId,
+                    IsAvailable = true,
+                    IsDefaultIncluded = true,
+                    ExtraPrice = 0,
+                    SortOrder = options.Count + 1
+                };
+    }
+
+    private void SetNewOptionType(bool isIncluded)
+    {
+        newOption.IsDefaultIncluded = isIncluded;
+
+        if (isIncluded)
+        {
+            newOption.ExtraPrice = 0;
+        }
+
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    private void SetEditOptionType(bool isIncluded)
+    {
+        editOption.IsDefaultIncluded = isIncluded;
+
+        if (isIncluded)
+        {
+            editOption.ExtraPrice = 0;
+        }
+
+        errorMessage = null;
+        successMessage = null;
     }
 
     private async Task AddOption()
     {
         errorMessage = null;
         successMessage = null;
+        pendingDeleteOptionId = null;
+
+        if (!isAuthorized)
+            return;
 
         if (menuItem is null)
         {
-            errorMessage = "Dish not found.";
+            errorMessage = "Rätten hittades inte.";
             return;
         }
 
-        newOption.Name = newOption.Name.Trim();
+        newOption.Name = newOption.Name?.Trim() ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(newOption.Name))
         {
-            errorMessage = "Name is required.";
+            errorMessage = "Namn krävs.";
             return;
         }
 
@@ -302,7 +368,7 @@ else
 
         if (newOption.ExtraPrice < 0)
         {
-            errorMessage = "Extra price cannot be negative.";
+            errorMessage = "Extra pris kan inte vara negativt.";
             return;
         }
 
@@ -314,26 +380,30 @@ else
         await LoadOptions();
         ResetNewOption();
 
-        successMessage = "Saved successfully.";
+        successMessage = "Tillvalet har sparats.";
     }
 
     private void StartEditOption(MenuItemOption option)
     {
+        if (!isAuthorized)
+            return;
+
         errorMessage = null;
         successMessage = null;
+        pendingDeleteOptionId = null;
 
         editingOptionId = option.Id;
 
         editOption = new MenuItemOption
-            {
-                Id = option.Id,
-                MenuItemId = option.MenuItemId,
-                Name = option.Name,
-                ExtraPrice = option.ExtraPrice,
-                IsDefaultIncluded = option.IsDefaultIncluded,
-                SortOrder = option.SortOrder,
-                IsAvailable = option.IsAvailable
-            };
+                {
+                    Id = option.Id,
+                    MenuItemId = option.MenuItemId,
+                    Name = option.Name,
+                    ExtraPrice = option.ExtraPrice,
+                    IsDefaultIncluded = option.IsDefaultIncluded,
+                    SortOrder = option.SortOrder,
+                    IsAvailable = option.IsAvailable
+                };
     }
 
     private void CancelEditOption()
@@ -348,14 +418,14 @@ else
         errorMessage = null;
         successMessage = null;
 
-        if (editingOptionId is null)
+        if (!isAuthorized || editingOptionId is null)
             return;
 
-        editOption.Name = editOption.Name.Trim();
+        editOption.Name = editOption.Name?.Trim() ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(editOption.Name))
         {
-            errorMessage = "Name is required.";
+            errorMessage = "Namn krävs.";
             return;
         }
 
@@ -366,23 +436,23 @@ else
 
         if (editOption.ExtraPrice < 0)
         {
-            errorMessage = "Extra price cannot be negative.";
+            errorMessage = "Extra pris kan inte vara negativt.";
             return;
         }
 
         var option = await Db.MenuItemOptions
-            .Include(x => x.MenuItem)
-            .ThenInclude(x => x!.MenuCategory)
-            .FirstOrDefaultAsync(x =>
-                x.Id == editingOptionId.Value &&
-                x.MenuItemId == MenuItemId &&
-                x.MenuItem != null &&
-                x.MenuItem.MenuCategory != null &&
-                x.MenuItem.MenuCategory.RestaurantId == RestaurantId);
+        .Include(x => x.MenuItem)
+        .ThenInclude(x => x!.MenuCategory)
+        .FirstOrDefaultAsync(x =>
+            x.Id == editingOptionId.Value &&
+            x.MenuItemId == MenuItemId &&
+            x.MenuItem != null &&
+            x.MenuItem.MenuCategory != null &&
+            x.MenuItem.MenuCategory.RestaurantId == RestaurantId);
 
         if (option is null)
         {
-            errorMessage = "Option not found.";
+            errorMessage = "Tillvalet hittades inte.";
             return;
         }
 
@@ -396,24 +466,188 @@ else
         await LoadOptions();
 
         editingOptionId = null;
-        successMessage = "Updated successfully.";
+        successMessage = "Tillvalet har uppdaterats.";
     }
 
     private async Task ToggleAvailability(MenuItemOption option)
     {
-        option.IsAvailable = !option.IsAvailable;
+        if (!isAuthorized)
+            return;
+
+        errorMessage = null;
+        successMessage = null;
+        pendingDeleteOptionId = null;
+
+        var dbOption = await Db.MenuItemOptions
+        .Include(x => x.MenuItem)
+        .ThenInclude(x => x!.MenuCategory)
+        .FirstOrDefaultAsync(x =>
+            x.Id == option.Id &&
+            x.MenuItemId == MenuItemId &&
+            x.MenuItem != null &&
+            x.MenuItem.MenuCategory != null &&
+            x.MenuItem.MenuCategory.RestaurantId == RestaurantId);
+
+        if (dbOption is null)
+            return;
+
+        dbOption.IsAvailable = !dbOption.IsAvailable;
+
         await Db.SaveChangesAsync();
         await LoadOptions();
+
+        successMessage = dbOption.IsAvailable
+        ? "Tillvalet visas nu för kunder."
+        : "Tillvalet är nu dolt för kunder.";
+    }
+
+    private void AskDelete(MenuItemOption option)
+    {
+        errorMessage = null;
+        successMessage = null;
+        pendingDeleteOptionId = option.Id;
+    }
+
+    private void CancelDelete()
+    {
+        pendingDeleteOptionId = null;
+        errorMessage = null;
     }
 
     private async Task DeleteOption(MenuItemOption option)
     {
-        Db.MenuItemOptions.Remove(option);
+        if (!isAuthorized)
+            return;
+
+        errorMessage = null;
+        successMessage = null;
+
+        var dbOption = await Db.MenuItemOptions
+        .Include(x => x.MenuItem)
+        .ThenInclude(x => x!.MenuCategory)
+        .FirstOrDefaultAsync(x =>
+            x.Id == option.Id &&
+            x.MenuItemId == MenuItemId &&
+            x.MenuItem != null &&
+            x.MenuItem.MenuCategory != null &&
+            x.MenuItem.MenuCategory.RestaurantId == RestaurantId);
+
+        if (dbOption is null)
+            return;
+
+        Db.MenuItemOptions.Remove(dbOption);
         await Db.SaveChangesAsync();
 
+        pendingDeleteOptionId = null;
+
         await LoadOptions();
-        successMessage = "Deleted.";
+
+        successMessage = "Tillvalet har raderats.";
     }
+
+    private RenderFragment OptionCard(MenuItemOption option) => @<div class="option-admin-card modern-option-card @(option.IsAvailable ? "" : "is-hidden")">
+        @if (editingOptionId == option.Id)
+    {
+        <div class="edit-category-form modern-option-edit">
+            <h3>Redigera tillval</h3>
+
+            <label>Namn</label>
+            <InputText class="input" @bind-Value="editOption.Name" />
+
+            <label>Typ</label>
+            <div class="option-type-picker">
+                <button type="button"
+                        class="option-type-card @(editOption.IsDefaultIncluded ? "selected" : "")"
+                        @onclick="() => SetEditOptionType(true)">
+                    <strong>Ingår</strong>
+                    <span>Ingår i rätten från början.</span>
+                </button>
+
+                <button type="button"
+                        class="option-type-card @(!editOption.IsDefaultIncluded ? "selected" : "")"
+                        @onclick="() => SetEditOptionType(false)">
+                    <strong>Extra</strong>
+                    <span>Kostar extra för kunden.</span>
+                </button>
+            </div>
+
+            @if (!editOption.IsDefaultIncluded)
+        {
+            <label>Extra pris</label>
+            <InputNumber class="input" @bind-Value="editOption.ExtraPrice" />
+        }
+
+            <label>Placering</label>
+            <InputNumber class="input" @bind-Value="editOption.SortOrder" />
+
+            <label class="checkbox-label">
+                <InputCheckbox @bind-Value="editOption.IsAvailable" />
+                Visa detta val för kunder
+            </label>
+
+            <div class="category-actions">
+                <button type="button" class="save-small-btn" @onclick="SaveEditOption">
+                    Spara
+                </button>
+
+                <button type="button" @onclick="CancelEditOption">
+                    Avbryt
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="option-card-main">
+            <div>
+                <strong>@option.Name</strong>
+
+                @if (option.IsDefaultIncluded)
+            {
+                <span class="included-tag">Ingår</span>
+            }
+            else
+            {
+                <span class="extra-price-tag">+@option.ExtraPrice.ToString("0.00") kr</span>
+            }
+
+                @if (!option.IsAvailable)
+            {
+                <small class="hidden-badge">Dold</small>
+            }
+            </div>
+
+            <small>Placering: @option.SortOrder</small>
+        </div>
+
+        <div class="category-actions option-actions-modern">
+            <button type="button" @onclick="() => StartEditOption(option)">
+                Redigera
+            </button>
+
+            <button type="button" @onclick="() => ToggleAvailability(option)">
+                @(option.IsAvailable ? "Dölj" : "Visa")
+            </button>
+
+            @if (pendingDeleteOptionId == option.Id)
+        {
+            <button class="danger-btn" type="button" @onclick="() => DeleteOption(option)">
+                Bekräfta radering
+            </button>
+
+            <button type="button" @onclick="CancelDelete">
+                Avbryt
+            </button>
+        }
+        else
+        {
+            <button class="danger-btn" type="button" @onclick="() => AskDelete(option)">
+                Radera
+            </button>
+        }
+        </div>
+    }
+    </div>;
 
     private void BackToItems()
     {

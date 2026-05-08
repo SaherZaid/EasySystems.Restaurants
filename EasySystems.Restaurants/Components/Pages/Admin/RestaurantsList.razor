@@ -5,7 +5,6 @@
 @using EasySystems.Restaurants.Models
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
-@using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 
@@ -15,8 +14,7 @@
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
 
-
-<PageTitle>Restaurants</PageTitle>
+<PageTitle>Restauranger</PageTitle>
 
 @if (restaurants.Count > 0)
 {
@@ -31,33 +29,30 @@ else
 
 @if (!checkedAccess)
 {
-    <div class="public-loading">Loading...</div>
+    <div class="public-loading">Laddar...</div>
 }
-else if (string.IsNullOrWhiteSpace(currentUserId))
+else if (!hasAdminAccess)
 {
-    <div class="public-not-found">
-        <h1>Access denied</h1>
-        <p>You need to login first.</p>
-    </div>
+    <div class="public-loading">Omdirigerar...</div>
 }
 else
 {
     <div class="admin-page">
         <div class="admin-header admin-header-row">
             <div>
-                <p class="eyebrow">Restaurant Admin</p>
-                <h1>@(isPlatformSuperAdmin ? "Restaurants" : "My restaurant")</h1>
+                <p class="eyebrow">Restaurangadmin</p>
+                <h1>@(isPlatformSuperAdmin ? "Restauranger" : "Min restaurang")</h1>
                 <p class="subtitle">
                     @(isPlatformSuperAdmin
-                        ? "Manage all restaurant websites from one place."
-                        : "Manage your restaurant website, menu, orders and settings.")
+                        ? "Hantera alla restaurangsidor från ett ställe."
+                        : "Hantera restaurangens sida, meny, beställningar och inställningar.")
                 </p>
             </div>
 
             @if (isPlatformSuperAdmin)
             {
                 <button class="admin-primary-btn" type="button" @onclick="CreateRestaurant">
-                    Create restaurant
+                    Skapa restaurang
                 </button>
             }
         </div>
@@ -66,8 +61,8 @@ else
             @if (restaurants.Count == 0)
             {
                 <div class="empty-menu">
-                    <h3>No restaurant access yet</h3>
-                    <p>You do not have access to any restaurant yet.</p>
+                    <h3>Ingen restaurangåtkomst ännu</h3>
+                    <p>Du har inte åtkomst till någon restaurang ännu.</p>
                 </div>
             }
             else
@@ -80,7 +75,7 @@ else
                                 <div class="restaurant-admin-logo">
                                     @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
                                     {
-                                        <img src="@restaurant.LogoUrl" alt="@restaurant.Name logo" />
+                                        <img src="@restaurant.LogoUrl" alt="@restaurant.Name logotyp" />
                                     }
                                     else
                                     {
@@ -97,7 +92,7 @@ else
                                     </div>
 
                                     <span class="restaurant-state @(restaurant.IsActive ? "active" : "inactive")">
-                                        @(restaurant.IsActive ? "Active" : "Inactive")
+                                        @(restaurant.IsActive ? "Aktiv" : "Inaktiv")
                                     </span>
                                 </div>
 
@@ -114,12 +109,10 @@ else
                                 </div>
 
                                 <div class="restaurant-admin-actions">
-                                    <button type="button" @onclick="() => ManageRestaurant(restaurant.Id)">
-                                        Manage
-                                    </button>
+                                    
 
                                     <button type="button" @onclick="() => ViewRestaurant(restaurant.Slug)">
-                                        View website
+                                        Visa restaurangsida
                                     </button>
                                 </div>
                             </div>
@@ -137,6 +130,7 @@ else
 
     private string? currentUserId;
     private bool isPlatformSuperAdmin;
+    private bool hasAdminAccess;
     private bool checkedAccess;
 
     protected override async Task OnInitializedAsync()
@@ -147,6 +141,7 @@ else
         if (principal.Identity?.IsAuthenticated != true)
         {
             checkedAccess = true;
+            Navigation.NavigateTo("/Account/AccessDenied", true);
             return;
         }
 
@@ -155,11 +150,11 @@ else
         if (string.IsNullOrWhiteSpace(userId))
         {
             checkedAccess = true;
+            Navigation.NavigateTo("/Account/AccessDenied", true);
             return;
         }
 
         currentUserId = userId;
-
         isPlatformSuperAdmin = principal.IsInRole("PlatformSuperAdmin");
 
         await using var db = await DbFactory.CreateDbContextAsync();
@@ -170,12 +165,16 @@ else
                 .AsNoTracking()
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
+
+            hasAdminAccess = true;
         }
         else
         {
             myAccesses = await db.RestaurantUserAccesses
                 .AsNoTracking()
-                .Where(x => x.UserId == userId)
+                .Where(x =>
+                    x.UserId == userId &&
+                    (x.Role == "RestaurantOwner" || x.Role == "RestaurantAdmin"))
                 .ToListAsync();
 
             var restaurantIds = myAccesses
@@ -188,18 +187,31 @@ else
                 .Where(x => restaurantIds.Contains(x.Id))
                 .OrderBy(x => x.Name)
                 .ToListAsync();
+
+            hasAdminAccess = restaurants.Count > 0;
         }
 
         checkedAccess = true;
+
+        if (!hasAdminAccess)
+        {
+            Navigation.NavigateTo("/Account/Denied", true);
+        }
     }
 
     private void CreateRestaurant()
     {
+        if (!isPlatformSuperAdmin)
+            return;
+
         Navigation.NavigateTo("/admin/restaurants/create");
     }
 
     private void ManageRestaurant(int restaurantId)
     {
+        if (!hasAdminAccess)
+            return;
+
         if (isPlatformSuperAdmin || IsRestaurantOwner(restaurantId))
         {
             Navigation.NavigateTo($"/admin/restaurants/{restaurantId}/edit");

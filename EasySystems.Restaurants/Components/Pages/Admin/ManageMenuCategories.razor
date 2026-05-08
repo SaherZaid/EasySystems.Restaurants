@@ -15,7 +15,7 @@
 @inject RestaurantAccessService AccessService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Manage Menu Categories</PageTitle>
+<PageTitle>Kategorier</PageTitle>
 
 @if (restaurant is not null && isAuthorized)
 {
@@ -24,155 +24,218 @@
 
 @if (!checkedAccess)
 {
-    <div class="public-loading">Checking access...</div>
+    <div class="public-loading">Kontrollerar behörighet...</div>
 }
 else if (!isAuthorized)
 {
-    <div class="public-not-found">
-        <h1>Access denied</h1>
-        <p>You do not have permission to manage categories for this restaurant.</p>
-    </div>
+    <div class="public-loading">Omdirigerar...</div>
 }
 else
 {
     <div class="admin-page">
         <div class="admin-header">
             <div>
-                <p class="eyebrow">Menu Builder</p>
-                <h1>Manage menu categories</h1>
-                <p class="subtitle">Add, edit, hide, delete and reorder restaurant menu sections.</p>
+                <p class="eyebrow">Meny</p>
+                <h1>Kategorier</h1>
+                <p class="subtitle">
+                    Skapa och ordna menygrupper som till exempel Förrätter, Burgare, Drycker eller Desserter.
+                </p>
+            </div>
+
+            <div class="restaurant-admin-actions">
+                <button type="button" @onclick="GoToRestaurant">Visa restaurang</button>
             </div>
         </div>
 
         @if (restaurant is null)
         {
             <div class="form-card admin-center-card">
-                <h2>Restaurant not found</h2>
-                <p>This restaurant does not exist.</p>
+                <h2>Restaurangen hittades inte</h2>
+                <p>Den här restaurangen finns inte.</p>
             </div>
         }
         else
         {
-            <div class="admin-grid">
-                <div class="form-card">
-                    <h2>Add new category</h2>
+            <div class="admin-category-dashboard">
+                <div class="category-quick-form">
+                    <div class="form-card">
+                        <div class="admin-card-title">
+                            <div>
+                                <h2>Ny kategori</h2>
+                                <p>Lägg till en ny grupp i menyn.</p>
+                            </div>
+                            <span>@categories.Count st</span>
+                        </div>
 
-                    <label>Category name</label>
-                    <InputText class="input" @bind-Value="newCategory.Name" placeholder="Burgare, Drycker, Sushi, Mandi..." />
+                        <label>Kategorinamn</label>
+                        <InputText class="input"
+                                   @bind-Value="newCategory.Name"
+                                   placeholder="Exempel: Pizza, Drycker, Desserter..." />
 
-                    <label>Description</label>
-                    <InputTextArea class="input textarea" @bind-Value="newCategory.Description" placeholder="Short optional description..." />
+                        <label>Beskrivning</label>
+                        <InputTextArea class="input textarea"
+                                       @bind-Value="newCategory.Description"
+                                       placeholder="Kort text som visas under kategorin. Valfritt." />
 
-                    <label>Sort order</label>
-                    <InputNumber class="input" @bind-Value="newCategory.SortOrder" />
+                        <label>Placering</label>
+                        <InputNumber class="input" @bind-Value="newCategory.SortOrder" />
 
-                    <button class="save-btn" type="button" @onclick="AddCategory">
-                        Add category
-                    </button>
+                        <button class="save-btn" type="button" @onclick="AddCategory">
+                            Lägg till kategori
+                        </button>
 
-                    @if (!string.IsNullOrWhiteSpace(errorMessage))
-                    {
-                        <div class="error">@errorMessage</div>
-                    }
+                        @if (!string.IsNullOrWhiteSpace(errorMessage))
+                        {
+                            <div class="error">@errorMessage</div>
+                        }
 
-                    @if (!string.IsNullOrWhiteSpace(successMessage))
-                    {
-                        <div class="upload-success">@successMessage</div>
-                    }
+                        @if (!string.IsNullOrWhiteSpace(successMessage))
+                        {
+                            <div class="upload-success">@successMessage</div>
+                        }
+                    </div>
+
+                    <div class="form-card category-help-card">
+                        <h3>Tips</h3>
+                        <p>
+                            Börja med 3–6 tydliga kategorier. Lägg sedan in rätter under varje kategori.
+                        </p>
+                        <ul>
+                            <li>Använd pilarna för att ändra ordning.</li>
+                            <li>Dölj en kategori om den inte ska synas för kunder.</li>
+                            <li>Kategorier med rätter kan inte raderas direkt.</li>
+                        </ul>
+                    </div>
                 </div>
 
                 <div class="preview-card">
-                    <p class="preview-label">@restaurant.Name categories</p>
+                    <div class="admin-card-title">
+                        <div>
+                            <p class="preview-label">@restaurant.Name</p>
+                            <h2>Nuvarande kategorier</h2>
+                        </div>
+
+                        <span>@VisibleCategoryCount synliga</span>
+                    </div>
 
                     @if (categories.Count == 0)
                     {
                         <div class="empty-menu">
-                            <h3>No categories yet</h3>
-                            <p>Add your first menu category.</p>
+                            <h3>Inga kategorier ännu</h3>
+                            <p>Lägg till första kategorin för att börja bygga menyn.</p>
                         </div>
                     }
                     else
                     {
-                        <div class="category-list">
+                        <div class="category-list modern-category-list">
                             @foreach (var category in categories)
                             {
-                                <div class="category-admin-item">
+                                var itemCount = GetItemCount(category.Id);
+
+                                <div class="category-admin-item modern-category-item @(category.IsVisible ? "" : "is-hidden")">
                                     @if (editingCategoryId == category.Id)
                                     {
                                         <div class="edit-category-form">
-                                            <label>Name</label>
+                                            <h3>Redigera kategori</h3>
+
+                                            <label>Namn</label>
                                             <InputText class="input" @bind-Value="editCategory.Name" />
 
-                                            <label>Description</label>
+                                            <label>Beskrivning</label>
                                             <InputTextArea class="input textarea" @bind-Value="editCategory.Description" />
 
-                                            <label>Sort order</label>
+                                            <label>Placering</label>
                                             <InputNumber class="input" @bind-Value="editCategory.SortOrder" />
 
                                             <label class="checkbox-label">
                                                 <InputCheckbox @bind-Value="editCategory.IsVisible" />
-                                                Visible
+                                                Visa kategorin för kunder
                                             </label>
 
                                             <div class="category-actions">
-                                                <button type="button" @onclick="SaveEditCategory">
-                                                    Save
+                                                <button type="button" class="save-small-btn" @onclick="SaveEditCategory">
+                                                    Spara
                                                 </button>
 
                                                 <button type="button" @onclick="CancelEditCategory">
-                                                    Cancel
+                                                    Avbryt
                                                 </button>
                                             </div>
                                         </div>
                                     }
                                     else
                                     {
-                                        <div>
-                                            <strong>@category.Name</strong>
+                                        <div class="category-main-info">
+                                            <div class="category-order-badge">
+                                                @category.SortOrder
+                                            </div>
 
-                                            @if (!string.IsNullOrWhiteSpace(category.Description))
-                                            {
-                                                <p>@category.Description</p>
-                                            }
+                                            <div>
+                                                <div class="category-title-row">
+                                                    <strong>@category.Name</strong>
 
-                                            <span>Order: @category.SortOrder</span>
+                                                    @if (!category.IsVisible)
+                                                    {
+                                                        <small class="hidden-badge">Dold</small>
+                                                    }
+                                                    else
+                                                    {
+                                                        <small class="visible-badge">Synlig</small>
+                                                    }
+                                                </div>
+
+                                                @if (!string.IsNullOrWhiteSpace(category.Description))
+                                                {
+                                                    <p>@category.Description</p>
+                                                }
+                                                else
+                                                {
+                                                    <p class="muted-text">Ingen beskrivning tillagd.</p>
+                                                }
+
+                                                <span>@itemCount rätter i kategorin</span>
+                                            </div>
                                         </div>
 
-                                        <div class="category-actions">
+                                        <div class="category-actions category-actions-modern">
+                                            <button type="button" @onclick="() => MoveUp(category)" disabled="@IsFirst(category)">
+                                                ↑ Upp
+                                            </button>
+
+                                            <button type="button" @onclick="() => MoveDown(category)" disabled="@IsLast(category)">
+                                                ↓ Ner
+                                            </button>
+
                                             <button type="button" @onclick="() => StartEditCategory(category)">
-                                                Edit
+                                                Redigera
                                             </button>
 
                                             <button type="button" @onclick="() => ToggleVisibility(category)">
-                                                @(category.IsVisible ? "Hide" : "Show")
+                                                @(category.IsVisible ? "Dölj" : "Visa")
                                             </button>
 
-                                            <button type="button" @onclick="() => MoveUp(category)">
-                                                ↑
-                                            </button>
+                                            @if (pendingDeleteCategoryId == category.Id)
+                                            {
+                                                <button class="danger-btn" type="button" @onclick="() => DeleteCategory(category)">
+                                                    Bekräfta radering
+                                                </button>
 
-                                            <button type="button" @onclick="() => MoveDown(category)">
-                                                ↓
-                                            </button>
-
-                                            <button class="danger-btn" type="button" @onclick="() => DeleteCategory(category)">
-                                                Delete
-                                            </button>
+                                                <button type="button" @onclick="CancelDelete">
+                                                    Avbryt
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button class="danger-btn" type="button" @onclick="() => AskDelete(category)">
+                                                    Radera
+                                                </button>
+                                            }
                                         </div>
-
-                                        @if (!category.IsVisible)
-                                        {
-                                            <small class="hidden-badge">Hidden</small>
-                                        }
                                     }
                                 </div>
                             }
                         </div>
                     }
-
-                    <button class="secondary-admin-btn" type="button" @onclick="GoToRestaurant">
-                        View restaurant page
-                    </button>
                 </div>
             </div>
         }
@@ -185,14 +248,18 @@ else
 
     private Restaurant? restaurant;
     private List<MenuCategory> categories = [];
+    private Dictionary<int, int> categoryItemCounts = [];
 
     private string? errorMessage;
     private string? successMessage;
 
     private int? editingCategoryId;
+    private int? pendingDeleteCategoryId;
 
     private bool checkedAccess;
     private bool isAuthorized;
+
+    private int VisibleCategoryCount => categories.Count(x => x.IsVisible);
 
     private MenuCategory newCategory = new()
         {
@@ -205,19 +272,27 @@ else
     {
         checkedAccess = false;
         isAuthorized = false;
-
-        restaurant = await Db.Restaurants
-            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+        errorMessage = null;
+        successMessage = null;
 
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
 
-        isAuthorized = await AccessService.CanAccessRestaurantAsync(
+        isAuthorized = await AccessService.CanManageRestaurantMenuAsync(
             authState.User,
             RestaurantId);
 
         checkedAccess = true;
 
-        if (!isAuthorized || restaurant is null)
+        if (!isAuthorized)
+        {
+            Navigation.NavigateTo("/Account/Denied", true);
+            return;
+        }
+
+        restaurant = await Db.Restaurants
+            .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+
+        if (restaurant is null)
             return;
 
         await LoadCategories();
@@ -226,10 +301,24 @@ else
 
     private async Task LoadCategories()
     {
+        if (!isAuthorized)
+            return;
+
         categories = await Db.MenuCategories
             .Where(x => x.RestaurantId == RestaurantId)
             .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.Name)
             .ToListAsync();
+
+        categoryItemCounts = await Db.MenuItems
+            .Where(x => x.MenuCategory != null && x.MenuCategory.RestaurantId == RestaurantId)
+            .GroupBy(x => x.MenuCategoryId)
+            .Select(x => new
+            {
+                CategoryId = x.Key,
+                Count = x.Count()
+            })
+            .ToDictionaryAsync(x => x.CategoryId, x => x.Count);
     }
 
     private void ResetNewCategory()
@@ -238,7 +327,7 @@ else
             {
                 RestaurantId = RestaurantId,
                 IsVisible = true,
-                SortOrder = categories.Count + 1
+                SortOrder = categories.Count == 0 ? 1 : categories.Max(x => x.SortOrder) + 1
             };
     }
 
@@ -246,12 +335,17 @@ else
     {
         errorMessage = null;
         successMessage = null;
+        pendingDeleteCategoryId = null;
 
-        newCategory.Name = newCategory.Name.Trim();
+        if (!isAuthorized)
+            return;
+
+        newCategory.Name = newCategory.Name?.Trim() ?? string.Empty;
+        newCategory.Description = newCategory.Description?.Trim() ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(newCategory.Name))
         {
-            errorMessage = "Category name is required.";
+            errorMessage = "Kategorinamn krävs.";
             return;
         }
 
@@ -261,16 +355,21 @@ else
         Db.MenuCategories.Add(newCategory);
         await Db.SaveChangesAsync();
 
+        await NormalizeSortOrder();
         await LoadCategories();
         ResetNewCategory();
 
-        successMessage = "Category added successfully.";
+        successMessage = "Kategorin har lagts till.";
     }
 
     private void StartEditCategory(MenuCategory category)
     {
+        if (!isAuthorized)
+            return;
+
         errorMessage = null;
         successMessage = null;
+        pendingDeleteCategoryId = null;
 
         editingCategoryId = category.Id;
 
@@ -297,14 +396,15 @@ else
         errorMessage = null;
         successMessage = null;
 
-        if (editingCategoryId is null)
+        if (!isAuthorized || editingCategoryId is null)
             return;
 
-        editCategory.Name = editCategory.Name.Trim();
+        editCategory.Name = editCategory.Name?.Trim() ?? string.Empty;
+        editCategory.Description = editCategory.Description?.Trim() ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(editCategory.Name))
         {
-            errorMessage = "Category name is required.";
+            errorMessage = "Kategorinamn krävs.";
             return;
         }
 
@@ -313,7 +413,7 @@ else
 
         if (category is null)
         {
-            errorMessage = "Category not found.";
+            errorMessage = "Kategorin hittades inte.";
             return;
         }
 
@@ -323,43 +423,166 @@ else
         category.IsVisible = editCategory.IsVisible;
 
         await Db.SaveChangesAsync();
+        await NormalizeSortOrder();
         await LoadCategories();
 
         editingCategoryId = null;
-        successMessage = "Category updated successfully.";
+        successMessage = "Kategorin har uppdaterats.";
     }
 
     private async Task ToggleVisibility(MenuCategory category)
     {
-        category.IsVisible = !category.IsVisible;
+        if (!isAuthorized)
+            return;
+
+        errorMessage = null;
+        successMessage = null;
+        pendingDeleteCategoryId = null;
+
+        var dbCategory = await Db.MenuCategories
+            .FirstOrDefaultAsync(x => x.Id == category.Id && x.RestaurantId == RestaurantId);
+
+        if (dbCategory is null)
+            return;
+
+        dbCategory.IsVisible = !dbCategory.IsVisible;
+
         await Db.SaveChangesAsync();
         await LoadCategories();
+
+        successMessage = dbCategory.IsVisible
+            ? "Kategorin visas nu för kunder."
+            : "Kategorin är nu dold för kunder.";
     }
 
     private async Task MoveUp(MenuCategory category)
     {
-        if (category.SortOrder <= 1)
+        if (!isAuthorized || IsFirst(category))
             return;
 
-        category.SortOrder--;
-        await Db.SaveChangesAsync();
-        await LoadCategories();
+        var index = categories.FindIndex(x => x.Id == category.Id);
+
+        if (index <= 0)
+            return;
+
+        await SwapSortOrder(categories[index], categories[index - 1]);
     }
 
     private async Task MoveDown(MenuCategory category)
     {
-        category.SortOrder++;
+        if (!isAuthorized || IsLast(category))
+            return;
+
+        var index = categories.FindIndex(x => x.Id == category.Id);
+
+        if (index < 0 || index >= categories.Count - 1)
+            return;
+
+        await SwapSortOrder(categories[index], categories[index + 1]);
+    }
+
+    private async Task SwapSortOrder(MenuCategory first, MenuCategory second)
+    {
+        errorMessage = null;
+        successMessage = null;
+        pendingDeleteCategoryId = null;
+
+        var firstCategory = await Db.MenuCategories
+            .FirstOrDefaultAsync(x => x.Id == first.Id && x.RestaurantId == RestaurantId);
+
+        var secondCategory = await Db.MenuCategories
+            .FirstOrDefaultAsync(x => x.Id == second.Id && x.RestaurantId == RestaurantId);
+
+        if (firstCategory is null || secondCategory is null)
+            return;
+
+        (firstCategory.SortOrder, secondCategory.SortOrder) = (secondCategory.SortOrder, firstCategory.SortOrder);
+
         await Db.SaveChangesAsync();
+        await NormalizeSortOrder();
         await LoadCategories();
+    }
+
+    private void AskDelete(MenuCategory category)
+    {
+        errorMessage = null;
+        successMessage = null;
+        pendingDeleteCategoryId = category.Id;
+    }
+
+    private void CancelDelete()
+    {
+        pendingDeleteCategoryId = null;
+        errorMessage = null;
     }
 
     private async Task DeleteCategory(MenuCategory category)
     {
-        Db.MenuCategories.Remove(category);
+        errorMessage = null;
+        successMessage = null;
+
+        if (!isAuthorized)
+            return;
+
+        var itemCount = await Db.MenuItems
+            .CountAsync(x => x.MenuCategoryId == category.Id);
+
+        if (itemCount > 0)
+        {
+            errorMessage = "Kategorin innehåller rätter. Flytta eller radera rätterna först.";
+            pendingDeleteCategoryId = null;
+            return;
+        }
+
+        var dbCategory = await Db.MenuCategories
+            .FirstOrDefaultAsync(x => x.Id == category.Id && x.RestaurantId == RestaurantId);
+
+        if (dbCategory is null)
+            return;
+
+        Db.MenuCategories.Remove(dbCategory);
         await Db.SaveChangesAsync();
 
+        pendingDeleteCategoryId = null;
+
+        await NormalizeSortOrder();
         await LoadCategories();
-        successMessage = "Category deleted.";
+        ResetNewCategory();
+
+        successMessage = "Kategorin har raderats.";
+    }
+
+    private async Task NormalizeSortOrder()
+    {
+        var orderedCategories = await Db.MenuCategories
+            .Where(x => x.RestaurantId == RestaurantId)
+            .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.Name)
+            .ToListAsync();
+
+        for (var i = 0; i < orderedCategories.Count; i++)
+        {
+            orderedCategories[i].SortOrder = i + 1;
+        }
+
+        await Db.SaveChangesAsync();
+    }
+
+    private int GetItemCount(int categoryId)
+    {
+        return categoryItemCounts.TryGetValue(categoryId, out var count)
+            ? count
+            : 0;
+    }
+
+    private bool IsFirst(MenuCategory category)
+    {
+        return categories.FirstOrDefault()?.Id == category.Id;
+    }
+
+    private bool IsLast(MenuCategory category)
+    {
+        return categories.LastOrDefault()?.Id == category.Id;
     }
 
     private void GoToRestaurant()
