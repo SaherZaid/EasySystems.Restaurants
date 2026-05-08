@@ -17,6 +17,10 @@
 
 <PageTitle>My orders</PageTitle>
 
+@if (navbarRestaurant is not null)
+{
+    <RestaurantNavbar Restaurant="navbarRestaurant" />
+}
 
 <div class="customer-orders-page">
     <div class="customer-orders-header">
@@ -34,6 +38,13 @@
         <div class="empty-menu">
             <h3>Inga beställningar ännu</h3>
             <p>När du beställer med ditt konto kommer dina beställningar visas här.</p>
+
+            @if (navbarRestaurant is not null)
+            {
+                <button type="button" class="secondary-admin-btn" @onclick="GoToNavbarRestaurant">
+                    Till restaurangen
+                </button>
+            }
         </div>
     }
     else
@@ -87,6 +98,7 @@
 
 @code {
     private List<Order> orders = [];
+    private EasySystems.Restaurants.Models.Restaurant? navbarRestaurant;
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
@@ -108,12 +120,31 @@
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync();
 
+        navbarRestaurant = orders
+            .Select(x => x.Restaurant)
+            .FirstOrDefault(x => x is not null);
+
+        if (navbarRestaurant is null)
+        {
+            navbarRestaurant = await Db.Restaurants
+                .AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderByDescending(x => x.CreatedAt)
+                .FirstOrDefaultAsync();
+        }
+
         isLoading = false;
     }
 
     private void GoToRestaurant(string slug)
     {
         Navigation.NavigateTo($"/restaurant/{slug}");
+    }
+
+    private void GoToNavbarRestaurant()
+    {
+        if (navbarRestaurant is not null)
+            Navigation.NavigateTo($"/restaurant/{navbarRestaurant.Slug}");
     }
 
     private string GetStatusClass(string status)
