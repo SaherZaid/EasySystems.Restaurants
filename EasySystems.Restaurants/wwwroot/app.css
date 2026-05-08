@@ -4245,3 +4245,277 @@ html {
         padding: 6px;
     }
 }
+
+/* ========================================
+   PREMIUM RESTAURANT MENU EXPERIENCE
+======================================== */
+
+.restaurant-section {
+    max-width: 1220px;
+    margin: 0 auto;
+    padding: 90px 18px 130px;
+}
+
+.section-heading {
+    text-align: center;
+    margin-bottom: 36px;
+}
+
+    .section-heading p {
+        margin: 0 0 10px;
+        color: var(--primary, #7f1d1d);
+        font-size: 0.78rem;
+        font-weight: 900;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+    }
+
+    .section-heading h2 {
+        margin: 0;
+        color: #151515;
+        font-size: clamp(2.4rem, 5vw, 4.8rem);
+        line-height: 0.95;
+        letter-spacing: -0.06em;
+    }
+
+.menu-category-tabs {
+    position: sticky;
+    top: 78px;
+    z-index: 15;
+    max-width: 980px;
+    margin: 0 auto 54px;
+    padding: 10px;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    background: rgba(20, 20, 20, 0.92);
+    backdrop-filter: blur(16px);
+    border-radius: 999px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+}
+
+    .menu-category-tabs button {
+        border: 0;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.72);
+        padding: 12px 22px;
+        border-radius: 999px;
+        font-weight: 850;
+        white-space: nowrap;
+        cursor: pointer;
+    }
+
+        .menu-category-tabs button:hover {
+            background: #ffffff;
+            color: #111111;
+        }
+
+.public-menu-list {
+    display: grid;
+    gap: 72px;
+}
+
+.public-menu-category {
+    display: grid;
+    gap: 24px;
+}
+
+.public-menu-category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(17, 17, 17, 0.12);
+}
+
+    .public-menu-category-header h3 {
+        margin: 0;
+        color: #151515;
+        font-size: clamp(2rem, 4vw, 3.3rem);
+        line-height: 1;
+        letter-spacing: -0.05em;
+    }
+
+    .public-menu-category-header p {
+        margin: 10px 0 0;
+        max-width: 650px;
+        color: #6f625a;
+        line-height: 1.65;
+    }
+
+    .public-menu-category-header span {
+        background: #f5efe7;
+        color: #211b17;
+        border-radius: 999px;
+        padding: 10px 16px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+.public-dish-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+}
+
+.luxury-dish-card {
+    overflow: hidden;
+    border-radius: 30px;
+    background: #fffaf3;
+    border: 1px solid rgba(28, 22, 18, 0.08);
+    box-shadow: 0 18px 50px rgba(28, 22, 18, 0.08);
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+    .luxury-dish-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 28px 80px rgba(28, 22, 18, 0.14);
+    }
+
+.luxury-dish-image-button {
+    width: 100%;
+    height: 230px;
+    border: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #f5eee5, #fffdf8);
+    cursor: pointer;
+    overflow: hidden;
+}
+
+    .luxury-dish-image-button img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 18px;
+        transition: transform 0.25s ease;
+    }
+
+.luxury-dish-card:hover .luxury-dish-image-button img {
+    transform: scale(1.04);
+}
+
+.luxury-dish-no-image {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+}
+
+    .luxury-dish-no-image span {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: #171717;
+        color: #ffffff;
+        font-weight: 900;
+        font-size: 1.3rem;
+    }
+
+.luxury-dish-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    flex: 1;
+    justify-content: space-between;
+}
+
+.luxury-dish-category {
+    margin: 0 0 8px;
+    color: var(--primary, #7f1d1d);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+}
+
+.luxury-dish-body h4 {
+    margin: 0;
+    color: #151515;
+    font-size: 1.35rem;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+}
+
+.luxury-dish-description {
+    margin: 10px 0 0;
+    color: #6f625a;
+    line-height: 1.6;
+}
+
+.luxury-dish-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(28, 22, 18, 0.08);
+}
+
+    .luxury-dish-bottom strong {
+        color: #151515;
+        font-size: 1.1rem;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .luxury-dish-bottom button {
+        border: 0;
+        background: #171717;
+        color: #ffffff;
+        padding: 12px 18px;
+        border-radius: 999px;
+        font-weight: 950;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+        .luxury-dish-bottom button:hover {
+            background: var(--primary, #7f1d1d);
+        }
+
+@media (max-width: 1020px) {
+    .public-dish-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 680px) {
+    .restaurant-section {
+        padding: 58px 12px 110px;
+    }
+
+    .menu-category-tabs {
+        top: 68px;
+        border-radius: 22px;
+        margin-bottom: 38px;
+    }
+
+    .public-menu-list {
+        gap: 54px;
+    }
+
+    .public-menu-category-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .public-dish-list {
+        grid-template-columns: 1fr;
+    }
+
+    .luxury-dish-image-button {
+        height: 250px;
+    }
+
+    .luxury-dish-body {
+        padding: 18px;
+    }
+}
+

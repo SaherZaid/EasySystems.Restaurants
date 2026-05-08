@@ -118,26 +118,42 @@ else
                                 <div class="public-dish-list">
                                     @foreach (var item in categoryItems)
                                     {
-                                        <article class="public-dish-row">
-                                            <div class="dish-text">
-                                                <h4>@item.Name</h4>
-
-                                                @if (!string.IsNullOrWhiteSpace(item.Description))
+                                        <article class="luxury-dish-card">
+                                            <button type="button"
+                                                    class="luxury-dish-image-button"
+                                                    @onclick="() => OpenItemOptions(item)"
+                                                    aria-label="Lägg till @item.Name">
+                                                @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
                                                 {
-                                                    <p>@item.Description</p>
+                                                    <img src="@item.ImageUrl" alt="@item.Name" />
                                                 }
-
-                                                <strong>@item.Price.ToString("0.00") kr</strong>
-                                            </div>
-
-                                            @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
-                                            {
-                                                <img src="@item.ImageUrl" alt="@item.Name" />
-                                            }
-
-                                            <button type="button" @onclick="() => OpenItemOptions(item)">
-                                                Lägg till
+                                                else
+                                                {
+                                                    <div class="luxury-dish-no-image">
+                                                        <span>@GetInitials(item.Name)</span>
+                                                    </div>
+                                                }
                                             </button>
+
+                                            <div class="luxury-dish-body">
+                                                <div>
+                                                    <p class="luxury-dish-category">@category.Name</p>
+                                                    <h4>@item.Name</h4>
+
+                                                    @if (!string.IsNullOrWhiteSpace(item.Description))
+                                                    {
+                                                        <p class="luxury-dish-description">@item.Description</p>
+                                                    }
+                                                </div>
+
+                                                <div class="luxury-dish-bottom">
+                                                    <strong>@item.Price.ToString("0.00") kr</strong>
+
+                                                    <button type="button" @onclick="() => OpenItemOptions(item)">
+                                                        Lägg till
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </article>
                                     }
                                 </div>
