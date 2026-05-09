@@ -4,6 +4,7 @@ using EasySystems.Restaurants.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EasySystems.Restaurants.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260509005503_MakeRestaurantImagesNullable")]
+    partial class MakeRestaurantImagesNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -127,7 +130,7 @@ namespace EasySystems.Restaurants.Migrations
 
                     b.HasIndex("RestaurantId");
 
-                    b.ToTable("MenuCategories", (string)null);
+                    b.ToTable("MenuCategories");
                 });
 
             modelBuilder.Entity("EasySystems.Restaurants.Models.MenuItem", b =>
@@ -167,7 +170,7 @@ namespace EasySystems.Restaurants.Migrations
 
                     b.HasIndex("MenuCategoryId");
 
-                    b.ToTable("MenuItems", (string)null);
+                    b.ToTable("MenuItems");
                 });
 
             modelBuilder.Entity("EasySystems.Restaurants.Models.MenuItemOption", b =>
@@ -202,7 +205,7 @@ namespace EasySystems.Restaurants.Migrations
 
                     b.HasIndex("MenuItemId");
 
-                    b.ToTable("MenuItemOptions", (string)null);
+                    b.ToTable("MenuItemOptions");
                 });
 
             modelBuilder.Entity("EasySystems.Restaurants.Models.Order", b =>
@@ -248,7 +251,7 @@ namespace EasySystems.Restaurants.Migrations
 
                     b.HasIndex("RestaurantId");
 
-                    b.ToTable("Orders", (string)null);
+                    b.ToTable("Orders");
                 });
 
             modelBuilder.Entity("EasySystems.Restaurants.Models.OrderItem", b =>
@@ -288,7 +291,7 @@ namespace EasySystems.Restaurants.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.ToTable("OrderItems", (string)null);
+                    b.ToTable("OrderItems");
                 });
 
             modelBuilder.Entity("EasySystems.Restaurants.Models.Restaurant", b =>
@@ -416,7 +419,7 @@ namespace EasySystems.Restaurants.Migrations
 
                     b.HasIndex("OwnerUserId");
 
-                    b.ToTable("Restaurants", (string)null);
+                    b.ToTable("Restaurants");
                 });
 
             modelBuilder.Entity("EasySystems.Restaurants.Models.RestaurantLegalPage", b =>
@@ -452,7 +455,7 @@ namespace EasySystems.Restaurants.Migrations
 
                     b.HasIndex("RestaurantId");
 
-                    b.ToTable("RestaurantLegalPages", (string)null);
+                    b.ToTable("RestaurantLegalPages");
                 });
 
             modelBuilder.Entity("EasySystems.Restaurants.Models.RestaurantUserAccess", b =>
@@ -484,7 +487,7 @@ namespace EasySystems.Restaurants.Migrations
                     b.HasIndex("RestaurantId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("RestaurantUserAccesses", (string)null);
+                    b.ToTable("RestaurantUserAccesses");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

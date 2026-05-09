@@ -208,11 +208,55 @@ else
                             </div>
                         </div>
 
-                        <label>Replace logo</label>
-                        <InputFile class="file-input" OnChange="UploadLogo" accept="image/png,image/jpeg,image/webp" />
+                        <h2>Bilder</h2>
 
-                        <label>Replace hero image</label>
-                        <InputFile class="file-input" OnChange="UploadHeroImage" accept="image/png,image/jpeg,image/webp" />
+                        <div class="image-management-grid">
+                            <div class="image-management-card">
+                                <label>Logotyp</label>
+
+                                @if (!string.IsNullOrWhiteSpace(restaurant.LogoUrl))
+                                {
+                                    <div class="current-image-preview logo-preview-box">
+                                        <img src="@restaurant.LogoUrl" alt="Logotyp" />
+                                    </div>
+
+                                    <button class="danger-btn" type="button" @onclick="RemoveLogo">
+                                        Ta bort logotyp
+                                    </button>
+                                }
+                                else
+                                {
+                                    <div class="empty-image-preview">
+                                        Ingen logotyp vald
+                                    </div>
+                                }
+
+                                <InputFile class="file-input" OnChange="UploadLogo" accept="image/png,image/jpeg,image/webp" />
+                            </div>
+
+                            <div class="image-management-card">
+                                <label>Hero-bild</label>
+
+                                @if (!string.IsNullOrWhiteSpace(restaurant.HeroImageUrl))
+                                {
+                                    <div class="current-image-preview hero-preview-box">
+                                        <img src="@restaurant.HeroImageUrl" alt="Hero-bild" />
+                                    </div>
+
+                                    <button class="danger-btn" type="button" @onclick="RemoveHeroImage">
+                                        Ta bort hero-bild
+                                    </button>
+                                }
+                                else
+                                {
+                                    <div class="empty-image-preview">
+                                        Ingen hero-bild vald. Färg används istället.
+                                    </div>
+                                }
+
+                                <InputFile class="file-input" OnChange="UploadHeroImage" accept="image/png,image/jpeg,image/webp" />
+                            </div>
+                        </div>
 
                         <button class="save-btn" type="submit">Save changes</button>
 
@@ -471,5 +515,25 @@ else
             .Replace("å", "a")
             .Replace("ä", "a")
             .Replace("ö", "o");
+    }
+
+    private void RemoveLogo()
+    {
+        if (!isAuthorized || restaurant is null)
+            return;
+
+        restaurant.LogoUrl = null;
+        successMessage = "Logotypen har tagits bort. Kom ihåg att spara ändringarna.";
+        errorMessage = null;
+    }
+
+    private void RemoveHeroImage()
+    {
+        if (!isAuthorized || restaurant is null)
+            return;
+
+        restaurant.HeroImageUrl = null;
+        successMessage = "Hero-bilden har tagits bort. Kom ihåg att spara ändringarna.";
+        errorMessage = null;
     }
 }

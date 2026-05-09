@@ -1,4 +1,4 @@
-﻿@page "/restaurant/{Slug}"
+﻿@page "/restaurant/{Slug}" 
 @rendermode InteractiveServer
 
 @using EasySystems.Restaurants.Data
@@ -289,106 +289,109 @@ else
                         <button type="button" class="cart-close" @onclick="CloseCart">×</button>
                     </div>
 
-                    @if (orderSubmitted)
-                    {
-                        <div class="order-success">
-                            <strong>Tack! Din beställning är mottagen.</strong>
-                            <p>Ordernummer: #@createdOrderId</p>
+                    <div class="cart-scroll-area">
+                        @if (orderSubmitted)
+                        {
+                            <div class="order-success premium-order-success">
+                                <div class="success-icon">✓</div>
+                                <strong>Tack! Din beställning är mottagen.</strong>
+                                <p>Ordernummer: #@createdOrderId</p>
 
-                            @if (currentUser is not null)
-                            {
-                                <p>Beställningen har sparats på ditt konto.</p>
-                            }
+                                @if (currentUser is not null)
+                                {
+                                    <p>Beställningen har sparats på ditt konto.</p>
+                                }
 
-                            <button type="button" class="checkout-btn" @onclick="CloseCart">
-                                Stäng
-                            </button>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="cart-panel-content">
-                            @foreach (var item in cart)
-                            {
-                                <div class="cart-item">
-                                    <div>
-                                        <strong>@item.Name</strong>
-                                        <span>@item.UnitPrice.ToString("0.00") kr</span>
+                                <button type="button" class="checkout-btn" @onclick="CloseCart">
+                                    Stäng
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="cart-panel-content">
+                                @foreach (var item in cart)
+                                {
+                                    <div class="cart-item">
+                                        <div>
+                                            <strong>@item.Name</strong>
+                                            <span>@item.UnitPrice.ToString("0.00") kr</span>
 
-                                        @if (!string.IsNullOrWhiteSpace(item.SelectedOptions))
-                                        {
-                                            <small class="cart-options">@item.SelectedOptions</small>
-                                        }
+                                            @if (!string.IsNullOrWhiteSpace(item.SelectedOptions))
+                                            {
+                                                <small class="cart-options">@item.SelectedOptions</small>
+                                            }
+                                        </div>
+
+                                        <div class="quantity-controls">
+                                            <button type="button" @onclick="() => DecreaseQuantity(item)">−</button>
+                                            <span>@item.Quantity</span>
+                                            <button type="button" @onclick="() => IncreaseQuantity(item)">+</button>
+                                        </div>
+
+                                        <button type="button" class="remove-item" @onclick="() => RemoveFromCart(item)">
+                                            Ta bort
+                                        </button>
                                     </div>
-
-                                    <div class="quantity-controls">
-                                        <button type="button" @onclick="() => DecreaseQuantity(item)">−</button>
-                                        <span>@item.Quantity</span>
-                                        <button type="button" @onclick="() => IncreaseQuantity(item)">+</button>
-                                    </div>
-
-                                    <button type="button" class="remove-item" @onclick="() => RemoveFromCart(item)">
-                                        Ta bort
-                                    </button>
-                                </div>
-                            }
-                        </div>
-
-                        <div class="cart-checkout-area">
-                            <div class="cart-total">
-                                <span>Totalt</span>
-                                <strong>@CartTotal.ToString("0.00") kr</strong>
+                                }
                             </div>
 
-                            @if (!showCheckout)
-                            {
-                                <button type="button" class="checkout-btn" @onclick="OpenCheckout">
-                                    Fortsätt till beställning
-                                </button>
-                            }
-                            else
-                            {
-                                <div class="checkout-form">
-                                    <h3>Kunduppgifter</h3>
-
-                                    @if (currentUser is null)
-                                    {
-                                        <div class="tip-box">
-                                            <strong>Tips</strong>
-                                            <p>
-                                                Du kan beställa utan konto, men om du loggar in sparas beställningen på ditt konto.
-                                            </p>
-                                            <a href="@GetLoginUrl()">Logga in</a>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="upload-success">
-                                            Inloggad som @GetCurrentUserDisplayName(). Beställningen sparas på ditt konto.
-                                        </div>
-                                    }
-
-                                    <label>Namn</label>
-                                    <InputText class="input" @bind-Value="customerName" placeholder="Ditt namn" />
-
-                                    <label>Telefon</label>
-                                    <InputText class="input" @bind-Value="customerPhone" placeholder="070-123 45 67" />
-
-                                    <label>Meddelande</label>
-                                    <InputTextArea class="input textarea" @bind-Value="customerNote" placeholder="Exempel: Ingen lök, extra sås..." />
-
-                                    @if (!string.IsNullOrWhiteSpace(orderErrorMessage))
-                                    {
-                                        <div class="error">@orderErrorMessage</div>
-                                    }
-
-                                    <button type="button" class="checkout-btn" @onclick="SubmitOrder">
-                                        Skicka beställning
-                                    </button>
+                            <div class="cart-checkout-area">
+                                <div class="cart-total">
+                                    <span>Totalt</span>
+                                    <strong>@CartTotal.ToString("0.00") kr</strong>
                                 </div>
-                            }
-                        </div>
-                    }
+
+                                @if (!showCheckout)
+                                {
+                                    <button type="button" class="checkout-btn" @onclick="OpenCheckout">
+                                        Fortsätt till beställning
+                                    </button>
+                                }
+                                else
+                                {
+                                    <div class="checkout-form">
+                                        <h3>Kunduppgifter</h3>
+
+                                        @if (currentUser is null)
+                                        {
+                                            <div class="tip-box">
+                                                <strong>Tips</strong>
+                                                <p>
+                                                    Du kan beställa utan konto, men om du loggar in sparas beställningen på ditt konto.
+                                                </p>
+                                                <a href="@GetLoginUrl()">Logga in</a>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="upload-success">
+                                                Inloggad som @GetCurrentUserDisplayName(). Beställningen sparas på ditt konto.
+                                            </div>
+                                        }
+
+                                        <label>Namn</label>
+                                        <InputText class="input" @bind-Value="customerName" placeholder="Ditt namn" />
+
+                                        <label>Telefon</label>
+                                        <InputText class="input" @bind-Value="customerPhone" placeholder="070-123 45 67" />
+
+                                        <label>Meddelande</label>
+                                        <InputTextArea class="input textarea" @bind-Value="customerNote" placeholder="Exempel: Ingen lök, extra sås..." />
+
+                                        @if (!string.IsNullOrWhiteSpace(orderErrorMessage))
+                                        {
+                                            <div class="error">@orderErrorMessage</div>
+                                        }
+
+                                        <button type="button" class="checkout-btn" @onclick="SubmitOrder">
+                                            Skicka beställning
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         }
