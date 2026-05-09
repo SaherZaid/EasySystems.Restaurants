@@ -1,4 +1,4 @@
-﻿@page "/restaurant/{Slug}" 
+﻿@page "/restaurant/{Slug}"
 @rendermode InteractiveServer
 
 @using EasySystems.Restaurants.Data
@@ -32,7 +32,7 @@ else
 {
     <RestaurantNavbar Restaurant="restaurant" />
 
-    <main class="restaurant-public" style="--primary:@restaurant.PrimaryColor; --secondary:@restaurant.SecondaryColor;">
+    <main class="restaurant-public" style="@GetPublicPageStyle()">
         <section class="restaurant-hero-public" style="@GetHeroStyle()">
             <div class="restaurant-hero-overlay">
                 <div class="restaurant-logo-public">
@@ -50,28 +50,28 @@ else
                 <p class="restaurant-description">@restaurant.Description</p>
 
                 <div class="restaurant-actions">
-                    <button type="button" class="primary-action" @onclick="ScrollToMenu">
+                    <button type="button" class="primary-action" style="@GetPrimaryButtonStyle()" @onclick="ScrollToMenu">
                         Se meny
                     </button>
 
-                    <a href="/restaurant/@restaurant.Slug/contact" class="secondary-action">
+                    <a href="/restaurant/@restaurant.Slug/contact" class="secondary-action" style="@GetSecondaryButtonStyle()">
                         Kontakt & öppettider
                     </a>
                 </div>
             </div>
         </section>
 
-        <section id="menu" class="restaurant-section">
+        <section id="menu" class="restaurant-section" style="@GetSectionStyle()">
             <div class="section-heading">
-                <p>Meny</p>
-                <h2>Våra rätter</h2>
+                <p style="color:@restaurant.MutedTextColor;">Meny</p>
+                <h2 style="color:@restaurant.HeadingTextColor;">Våra rätter</h2>
             </div>
 
             @if (categories.Count == 0)
             {
-                <div class="empty-menu">
-                    <h3>Menyn är inte publicerad ännu</h3>
-                    <p>Restaurangen håller på att lägga till sina kategorier och rätter.</p>
+                <div class="empty-menu" style="@GetCardStyle()">
+                    <h3 style="color:@restaurant.HeadingTextColor;">Menyn är inte publicerad ännu</h3>
+                    <p style="color:@restaurant.BodyTextColor;">Restaurangen håller på att lägga till sina kategorier och rätter.</p>
                 </div>
             }
             else
@@ -79,7 +79,7 @@ else
                 <div class="menu-category-tabs">
                     @foreach (var category in categories)
                     {
-                        <button type="button" @onclick="() => ScrollToCategory(category.Id)">
+                        <button type="button" style="@GetCategoryTabStyle()" @onclick="() => ScrollToCategory(category.Id)">
                             @category.Name
                         </button>
                     }
@@ -93,23 +93,23 @@ else
                         .OrderBy(x => x.SortOrder)
                         .ToList();
 
-                        <section id="category-@category.Id" class="public-menu-category">
+                        <section id="category-@category.Id" class="public-menu-category" style="@GetCategorySectionStyle()">
                             <div class="public-menu-category-header">
                                 <div>
-                                    <h3>@category.Name</h3>
+                                    <h3 style="color:@restaurant.HeadingTextColor;">@category.Name</h3>
 
                                     @if (!string.IsNullOrWhiteSpace(category.Description))
                                     {
-                                        <p>@category.Description</p>
+                                        <p style="color:@restaurant.BodyTextColor;">@category.Description</p>
                                     }
                                 </div>
 
-                                <span>@categoryItems.Count rätter</span>
+                                <span style="color:@restaurant.MutedTextColor;">@categoryItems.Count rätter</span>
                             </div>
 
                             @if (categoryItems.Count == 0)
                             {
-                                <div class="empty-category">
+                                <div class="empty-category" style="color:@restaurant.MutedTextColor;">
                                     Inga rätter i denna kategori ännu.
                                 </div>
                             }
@@ -118,7 +118,7 @@ else
                                 <div class="public-dish-list">
                                     @foreach (var item in categoryItems)
                                     {
-                                        <article class="luxury-dish-card">
+                                        <article class="luxury-dish-card" style="@GetDishCardStyle()">
                                             <button type="button"
                                                     class="luxury-dish-image-button"
                                                     @onclick="() => OpenItemOptions(item)"
@@ -129,7 +129,7 @@ else
                                                 }
                                                 else
                                                 {
-                                                    <div class="luxury-dish-no-image">
+                                                    <div class="luxury-dish-no-image" style="@GetDishImageFallbackStyle()">
                                                         <span>@GetInitials(item.Name)</span>
                                                     </div>
                                                 }
@@ -137,19 +137,19 @@ else
 
                                             <div class="luxury-dish-body">
                                                 <div>
-                                                    <p class="luxury-dish-category">@category.Name</p>
-                                                    <h4>@item.Name</h4>
+                                                    <p class="luxury-dish-category" style="color:@restaurant.MutedTextColor;">@category.Name</p>
+                                                    <h4 style="color:@restaurant.HeadingTextColor;">@item.Name</h4>
 
                                                     @if (!string.IsNullOrWhiteSpace(item.Description))
                                                     {
-                                                        <p class="luxury-dish-description">@item.Description</p>
+                                                        <p class="luxury-dish-description" style="color:@restaurant.BodyTextColor;">@item.Description</p>
                                                     }
                                                 </div>
 
                                                 <div class="luxury-dish-bottom">
-                                                    <strong>@item.Price.ToString("0.00") kr</strong>
+                                                    <strong style="color:@restaurant.PriceTextColor;">@item.Price.ToString("0.00") kr</strong>
 
-                                                    <button type="button" @onclick="() => OpenItemOptions(item)">
+                                                    <button type="button" style="@GetPrimaryButtonStyle()" @onclick="() => OpenItemOptions(item)">
                                                         Lägg till
                                                     </button>
                                                 </div>
@@ -167,11 +167,11 @@ else
         @if (selectedMenuItem is not null)
         {
             <div class="cart-overlay">
-                <div class="item-options-panel">
+                <div class="item-options-panel" style="@GetPanelStyle()">
                     <div class="cart-header">
                         <div>
-                            <p>Anpassa din rätt</p>
-                            <h2>@selectedMenuItem.Name</h2>
+                            <p style="color:@restaurant.MutedTextColor;">Anpassa din rätt</p>
+                            <h2 style="color:@restaurant.HeadingTextColor;">@selectedMenuItem.Name</h2>
                         </div>
 
                         <button type="button" class="cart-close" @onclick="CloseItemOptions">×</button>
@@ -183,7 +183,7 @@ else
                             <img class="option-dish-image" src="@selectedMenuItem.ImageUrl" alt="@selectedMenuItem.Name" />
                         }
 
-                        <p class="option-dish-description">@selectedMenuItem.Description</p>
+                        <p class="option-dish-description" style="color:@restaurant.BodyTextColor;">@selectedMenuItem.Description</p>
 
                         @{
                             var includedOptions = selectedItemOptions
@@ -200,19 +200,19 @@ else
                         @if (includedOptions.Count > 0)
                         {
                             <div class="option-list">
-                                <h3>Ingår i rätten</h3>
-                                <p class="option-help">Avmarkera det du inte vill ha.</p>
+                                <h3 style="color:@restaurant.HeadingTextColor;">Ingår i rätten</h3>
+                                <p class="option-help" style="color:@restaurant.MutedTextColor;">Avmarkera det du inte vill ha.</p>
 
                                 @foreach (var option in includedOptions)
                                 {
-                                    <label class="option-choice">
+                                    <label class="option-choice" style="@GetOptionChoiceStyle()">
                                         <input type="checkbox"
                                                checked="@selectedOptionIds.Contains(option.Id)"
                                                @onchange="(e) => ToggleOption(option.Id, (bool)e.Value!)" />
 
                                         <span>
-                                            <strong>@option.Name</strong>
-                                            <small>Ingår</small>
+                                            <strong style="color:@restaurant.HeadingTextColor;">@option.Name</strong>
+                                            <small style="color:@restaurant.MutedTextColor;">Ingår</small>
                                         </span>
                                     </label>
                                 }
@@ -222,18 +222,18 @@ else
                         @if (extraOptions.Count > 0)
                         {
                             <div class="option-list">
-                                <h3>Extra tillval</h3>
+                                <h3 style="color:@restaurant.HeadingTextColor;">Extra tillval</h3>
 
                                 @foreach (var option in extraOptions)
                                 {
-                                    <label class="option-choice">
+                                    <label class="option-choice" style="@GetOptionChoiceStyle()">
                                         <input type="checkbox"
                                                checked="@selectedOptionIds.Contains(option.Id)"
                                                @onchange="(e) => ToggleOption(option.Id, (bool)e.Value!)" />
 
                                         <span>
-                                            <strong>@option.Name</strong>
-                                            <small>+@option.ExtraPrice.ToString("0.00") kr</small>
+                                            <strong style="color:@restaurant.HeadingTextColor;">@option.Name</strong>
+                                            <small style="color:@restaurant.PriceTextColor;">+@option.ExtraPrice.ToString("0.00") kr</small>
                                         </span>
                                     </label>
                                 }
@@ -242,7 +242,7 @@ else
 
                         @if (includedOptions.Count == 0 && extraOptions.Count == 0)
                         {
-                            <div class="empty-category">
+                            <div class="empty-category" style="color:@restaurant.MutedTextColor;">
                                 Inga anpassningar för denna rätt.
                             </div>
                         }
@@ -250,11 +250,11 @@ else
 
                     <div class="item-options-footer">
                         <div class="cart-total">
-                            <span>Pris</span>
-                            <strong>@SelectedItemTotal.ToString("0.00") kr</strong>
+                            <span style="color:@restaurant.MutedTextColor;">Pris</span>
+                            <strong style="color:@restaurant.PriceTextColor;">@SelectedItemTotal.ToString("0.00") kr</strong>
                         </div>
 
-                        <button type="button" class="checkout-btn" @onclick="AddSelectedItemToCart">
+                        <button type="button" class="checkout-btn" style="@GetPrimaryButtonStyle()" @onclick="AddSelectedItemToCart">
                             Lägg till i varukorg
                         </button>
                     </div>
@@ -264,13 +264,13 @@ else
 
         @if (CartCount > 0 && !showCart)
         {
-            <div class="cart-bar">
+            <div class="cart-bar" style="@GetCartBarStyle()">
                 <div>
                     <strong>Varukorg</strong>
                     <span>@CartCount varor • @CartTotal.ToString("0.00") kr</span>
                 </div>
 
-                <button type="button" @onclick="OpenCart">
+                <button type="button" style="@GetCartButtonStyle()" @onclick="OpenCart">
                     Visa varukorg
                 </button>
             </div>
@@ -279,11 +279,11 @@ else
         @if (showCart)
         {
             <div class="cart-overlay">
-                <div class="cart-panel">
+                <div class="cart-panel" style="@GetPanelStyle()">
                     <div class="cart-header">
                         <div>
-                            <p>Din beställning</p>
-                            <h2>Varukorg</h2>
+                            <p style="color:@restaurant.MutedTextColor;">Din beställning</p>
+                            <h2 style="color:@restaurant.HeadingTextColor;">Varukorg</h2>
                         </div>
 
                         <button type="button" class="cart-close" @onclick="CloseCart">×</button>
@@ -302,7 +302,7 @@ else
                                     <p>Beställningen har sparats på ditt konto.</p>
                                 }
 
-                                <button type="button" class="checkout-btn" @onclick="CloseCart">
+                                <button type="button" class="checkout-btn" style="@GetPrimaryButtonStyle()" @onclick="CloseCart">
                                     Stäng
                                 </button>
                             </div>
@@ -312,14 +312,14 @@ else
                             <div class="cart-panel-content">
                                 @foreach (var item in cart)
                                 {
-                                    <div class="cart-item">
+                                    <div class="cart-item" style="@GetCartItemStyle()">
                                         <div>
-                                            <strong>@item.Name</strong>
-                                            <span>@item.UnitPrice.ToString("0.00") kr</span>
+                                            <strong style="color:@restaurant.HeadingTextColor;">@item.Name</strong>
+                                            <span style="color:@restaurant.PriceTextColor;">@item.UnitPrice.ToString("0.00") kr</span>
 
                                             @if (!string.IsNullOrWhiteSpace(item.SelectedOptions))
                                             {
-                                                <small class="cart-options">@item.SelectedOptions</small>
+                                                <small class="cart-options" style="color:@restaurant.MutedTextColor;">@item.SelectedOptions</small>
                                             }
                                         </div>
 
@@ -338,20 +338,20 @@ else
 
                             <div class="cart-checkout-area">
                                 <div class="cart-total">
-                                    <span>Totalt</span>
-                                    <strong>@CartTotal.ToString("0.00") kr</strong>
+                                    <span style="color:@restaurant.MutedTextColor;">Totalt</span>
+                                    <strong style="color:@restaurant.PriceTextColor;">@CartTotal.ToString("0.00") kr</strong>
                                 </div>
 
                                 @if (!showCheckout)
                                 {
-                                    <button type="button" class="checkout-btn" @onclick="OpenCheckout">
+                                    <button type="button" class="checkout-btn" style="@GetPrimaryButtonStyle()" @onclick="OpenCheckout">
                                         Fortsätt till beställning
                                     </button>
                                 }
                                 else
                                 {
                                     <div class="checkout-form">
-                                        <h3>Kunduppgifter</h3>
+                                        <h3 style="color:@restaurant.HeadingTextColor;">Kunduppgifter</h3>
 
                                         @if (currentUser is null)
                                         {
@@ -384,7 +384,7 @@ else
                                             <div class="error">@orderErrorMessage</div>
                                         }
 
-                                        <button type="button" class="checkout-btn" @onclick="SubmitOrder">
+                                        <button type="button" class="checkout-btn" style="@GetPrimaryButtonStyle()" @onclick="SubmitOrder">
                                             Skicka beställning
                                         </button>
                                     </div>
@@ -805,12 +805,129 @@ else
         await JS.InvokeVoidAsync("scrollToElementById", $"category-{categoryId}");
     }
 
+    private string GetPublicPageStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"--primary:{restaurant.PrimaryColor}; --secondary:{restaurant.SecondaryColor}; background:{restaurant.PageBackgroundColor}; color:{restaurant.BodyTextColor};";
+    }
+
+    private string GetSectionStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.SectionBackgroundColor};";
+    }
+
+    private string GetCategorySectionStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.MenuCategoryBackgroundColor};";
+    }
+
+    private string GetDishCardStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.MenuItemBackgroundColor}; color:{restaurant.BodyTextColor};";
+    }
+
+    private string GetCardStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.CardBackgroundColor}; color:{restaurant.BodyTextColor};";
+    }
+
+    private string GetPanelStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.CardBackgroundColor}; color:{restaurant.BodyTextColor};";
+    }
+
+    private string GetOptionChoiceStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.SectionBackgroundColor}; color:{restaurant.BodyTextColor};";
+    }
+
+    private string GetCartItemStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.SectionBackgroundColor}; color:{restaurant.BodyTextColor};";
+    }
+
     private string GetHeroStyle()
     {
-        if (restaurant is null || string.IsNullOrWhiteSpace(restaurant.HeroImageUrl))
-            return "background: linear-gradient(135deg, var(--primary), #111827);";
+        if (restaurant is null)
+            return string.Empty;
 
-        return $"background: linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)), url('{restaurant.HeroImageUrl}') center/cover;";
+        if (string.IsNullOrWhiteSpace(restaurant.HeroImageUrl))
+        {
+            return $"background: linear-gradient(135deg, {restaurant.PrimaryColor}, #111827); color:{restaurant.HeroTextColor};";
+        }
+
+        return $"background: linear-gradient({restaurant.HeroOverlayColor}, {restaurant.HeroOverlayColor}), url('{restaurant.HeroImageUrl}') center/cover; color:{restaurant.HeroTextColor};";
+    }
+
+    private string GetPrimaryButtonStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.ButtonBackgroundColor}; color:{restaurant.ButtonTextColor};";
+    }
+
+    private string GetSecondaryButtonStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.SecondaryButtonBackgroundColor}; color:{restaurant.SecondaryButtonTextColor};";
+    }
+
+    private string GetCategoryTabStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.CardBackgroundColor}; color:{restaurant.HeadingTextColor}; border-color:{restaurant.PrimaryColor};";
+    }
+
+    private string GetCartBarStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.CartBarBackgroundColor}; color:{restaurant.CartBarTextColor};";
+    }
+
+    private string GetCartButtonStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.ButtonBackgroundColor}; color:{restaurant.ButtonTextColor};";
+    }
+
+    private string GetDishImageFallbackStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:linear-gradient(135deg, {restaurant.PrimaryColor}, {restaurant.SecondaryColor}); color:{restaurant.ButtonTextColor};";
     }
 
     private string GetInitials(string name)

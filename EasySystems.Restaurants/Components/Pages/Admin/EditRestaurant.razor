@@ -39,7 +39,7 @@ else
             <div>
                 <p class="eyebrow">Edit Restaurant</p>
                 <h1>@(restaurant?.Name ?? "Restaurant")</h1>
-                <p class="subtitle">Update restaurant details, branding, contact information and settings.</p>
+                <p class="subtitle">Update restaurant details, branding, colors, contact information and settings.</p>
             </div>
         </div>
 
@@ -168,43 +168,176 @@ else
                             </label>
                         </div>
 
-                        <h2>Branding</h2>
+                        <h2>Brand colors</h2>
 
-                        <div class="two-cols">
+                        <div class="color-grid">
                             <div>
                                 <label>Primary color</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.PrimaryColor" />
                                 <InputText class="input" @bind-Value="restaurant.PrimaryColor" />
                             </div>
 
                             <div>
                                 <label>Secondary color</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.SecondaryColor" />
                                 <InputText class="input" @bind-Value="restaurant.SecondaryColor" />
                             </div>
                         </div>
 
-                        <h2>Navigation & footer colors</h2>
+                        <h2>Page colors</h2>
 
-                        <div class="two-cols">
+                        <div class="color-grid">
+                            <div>
+                                <label>Page background</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.PageBackgroundColor" />
+                                <InputText class="input" @bind-Value="restaurant.PageBackgroundColor" />
+                            </div>
+
+                            <div>
+                                <label>Section background</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.SectionBackgroundColor" />
+                                <InputText class="input" @bind-Value="restaurant.SectionBackgroundColor" />
+                            </div>
+
+                            <div>
+                                <label>Card background</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.CardBackgroundColor" />
+                                <InputText class="input" @bind-Value="restaurant.CardBackgroundColor" />
+                            </div>
+                        </div>
+
+                        <h2>Text colors</h2>
+
+                        <div class="color-grid">
+                            <div>
+                                <label>Heading text</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.HeadingTextColor" />
+                                <InputText class="input" @bind-Value="restaurant.HeadingTextColor" />
+                            </div>
+
+                            <div>
+                                <label>Body text</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.BodyTextColor" />
+                                <InputText class="input" @bind-Value="restaurant.BodyTextColor" />
+                            </div>
+
+                            <div>
+                                <label>Muted text</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.MutedTextColor" />
+                                <InputText class="input" @bind-Value="restaurant.MutedTextColor" />
+                            </div>
+                        </div>
+
+                        <h2>Navigation colors</h2>
+
+                        <div class="color-grid">
                             <div>
                                 <label>Navbar background</label>
-                                <InputText class="input" @bind-Value="restaurant.NavbarBackgroundColor" placeholder="#FFFFFF" />
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.NavbarBackgroundColor" />
+                                <InputText class="input" @bind-Value="restaurant.NavbarBackgroundColor" />
                             </div>
 
                             <div>
                                 <label>Navbar text</label>
-                                <InputText class="input" @bind-Value="restaurant.NavbarTextColor" placeholder="#111827" />
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.NavbarTextColor" />
+                                <InputText class="input" @bind-Value="restaurant.NavbarTextColor" />
                             </div>
                         </div>
 
-                        <div class="two-cols">
+                        <h2>Footer colors</h2>
+
+                        <div class="color-grid">
                             <div>
                                 <label>Footer background</label>
-                                <InputText class="input" @bind-Value="restaurant.FooterBackgroundColor" placeholder="#111827" />
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.FooterBackgroundColor" />
+                                <InputText class="input" @bind-Value="restaurant.FooterBackgroundColor" />
                             </div>
 
                             <div>
                                 <label>Footer text</label>
-                                <InputText class="input" @bind-Value="restaurant.FooterTextColor" placeholder="#FFFFFF" />
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.FooterTextColor" />
+                                <InputText class="input" @bind-Value="restaurant.FooterTextColor" />
+                            </div>
+                        </div>
+
+                        <h2>Button colors</h2>
+
+                        <div class="color-grid">
+                            <div>
+                                <label>Main button background</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.ButtonBackgroundColor" />
+                                <InputText class="input" @bind-Value="restaurant.ButtonBackgroundColor" />
+                            </div>
+
+                            <div>
+                                <label>Main button text</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.ButtonTextColor" />
+                                <InputText class="input" @bind-Value="restaurant.ButtonTextColor" />
+                            </div>
+
+                            <div>
+                                <label>Secondary button background</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.SecondaryButtonBackgroundColor" />
+                                <InputText class="input" @bind-Value="restaurant.SecondaryButtonBackgroundColor" />
+                            </div>
+
+                            <div>
+                                <label>Secondary button text</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.SecondaryButtonTextColor" />
+                                <InputText class="input" @bind-Value="restaurant.SecondaryButtonTextColor" />
+                            </div>
+                        </div>
+
+                        <h2>Hero colors</h2>
+
+                        <div class="color-grid">
+                            <div>
+                                <label>Hero text color</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.HeroTextColor" />
+                                <InputText class="input" @bind-Value="restaurant.HeroTextColor" />
+                            </div>
+
+                            <div>
+                                <label>Hero overlay</label>
+                                <InputText class="input" @bind-Value="restaurant.HeroOverlayColor" placeholder="rgba(0,0,0,.55)" />
+                            </div>
+                        </div>
+
+                        <h2>Menu colors</h2>
+
+                        <div class="color-grid">
+                            <div>
+                                <label>Category background</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.MenuCategoryBackgroundColor" />
+                                <InputText class="input" @bind-Value="restaurant.MenuCategoryBackgroundColor" />
+                            </div>
+
+                            <div>
+                                <label>Dish card background</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.MenuItemBackgroundColor" />
+                                <InputText class="input" @bind-Value="restaurant.MenuItemBackgroundColor" />
+                            </div>
+
+                            <div>
+                                <label>Price text</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.PriceTextColor" />
+                                <InputText class="input" @bind-Value="restaurant.PriceTextColor" />
+                            </div>
+                        </div>
+
+                        <h2>Cart colors</h2>
+
+                        <div class="color-grid">
+                            <div>
+                                <label>Cart bar background</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.CartBarBackgroundColor" />
+                                <InputText class="input" @bind-Value="restaurant.CartBarBackgroundColor" />
+                            </div>
+
+                            <div>
+                                <label>Cart bar text</label>
+                                <InputText type="color" class="color-input" @bind-Value="restaurant.CartBarTextColor" />
+                                <InputText class="input" @bind-Value="restaurant.CartBarTextColor" />
                             </div>
                         </div>
 
@@ -274,7 +407,7 @@ else
                     <div class="preview-card sticky-preview">
                         <p class="preview-label">Live preview</p>
 
-                        <div class="restaurant-preview" style="--primary:@restaurant.PrimaryColor; --secondary:@restaurant.SecondaryColor;">
+                        <div class="restaurant-preview" style="@GetPreviewVariables()">
                             <div class="mini-navbar-preview" style="@GetMiniNavbarStyle()">
                                 <strong>@DisplayOrFallback(restaurant.Name, "Restaurant")</strong>
                                 <span>Hem</span>
@@ -296,13 +429,19 @@ else
                                 <h2>@DisplayOrFallback(restaurant.Name, "Restaurant name")</h2>
                                 <p>@DisplayOrFallback(restaurant.Description, "Restaurant description")</p>
 
-                                <button type="button">Se meny</button>
+                                <button type="button" style="@GetPrimaryButtonStyle()">Se meny</button>
                             </div>
 
-                            <div class="preview-info">
+                            <div class="preview-info" style="@GetPreviewInfoStyle()">
                                 <span>@DisplayOrFallback(restaurant.Phone, "Phone")</span>
                                 <span>@DisplayOrFallback(restaurant.Email, "Email")</span>
                                 <span>@DisplayOrFallback(restaurant.Address, "Address")</span>
+                            </div>
+
+                            <div class="preview-mini-section" style="@GetPreviewCardStyle()">
+                                <strong style="color:@restaurant.HeadingTextColor;">Dish card preview</strong>
+                                <p style="color:@restaurant.BodyTextColor;">This shows menu card colors.</p>
+                                <span style="color:@restaurant.PriceTextColor;">129.00 kr</span>
                             </div>
 
                             <div class="mini-footer-preview" style="@GetMiniFooterStyle()">
@@ -358,11 +497,6 @@ else
 
         restaurant = await Db.Restaurants
             .FirstOrDefaultAsync(x => x.Id == RestaurantId);
-
-        if (restaurant is null)
-        {
-            return;
-        }
     }
 
     private async Task SaveRestaurant()
@@ -375,6 +509,8 @@ else
 
         restaurant.Name = restaurant.Name.Trim();
         restaurant.Slug = NormalizeSlug(restaurant.Slug);
+
+        ApplyDefaultDesignColors();
 
         if (string.IsNullOrWhiteSpace(restaurant.Name))
         {
@@ -400,6 +536,47 @@ else
         await Db.SaveChangesAsync();
         successMessage = "Restaurant updated successfully.";
     }
+
+    private void ApplyDefaultDesignColors()
+    {
+        if (restaurant is null)
+            return;
+
+        restaurant.PrimaryColor = DefaultColor(restaurant.PrimaryColor, "#8B0000");
+        restaurant.SecondaryColor = DefaultColor(restaurant.SecondaryColor, "#FFFFFF");
+
+        restaurant.NavbarBackgroundColor = DefaultColor(restaurant.NavbarBackgroundColor, "#FFFFFF");
+        restaurant.NavbarTextColor = DefaultColor(restaurant.NavbarTextColor, "#111827");
+
+        restaurant.FooterBackgroundColor = DefaultColor(restaurant.FooterBackgroundColor, "#111827");
+        restaurant.FooterTextColor = DefaultColor(restaurant.FooterTextColor, "#FFFFFF");
+
+        restaurant.PageBackgroundColor = DefaultColor(restaurant.PageBackgroundColor, "#FFF7ED");
+        restaurant.SectionBackgroundColor = DefaultColor(restaurant.SectionBackgroundColor, "#FFFFFF");
+        restaurant.CardBackgroundColor = DefaultColor(restaurant.CardBackgroundColor, "#FFFFFF");
+
+        restaurant.HeadingTextColor = DefaultColor(restaurant.HeadingTextColor, "#111827");
+        restaurant.BodyTextColor = DefaultColor(restaurant.BodyTextColor, "#4B5563");
+        restaurant.MutedTextColor = DefaultColor(restaurant.MutedTextColor, "#6B7280");
+
+        restaurant.ButtonBackgroundColor = DefaultColor(restaurant.ButtonBackgroundColor, restaurant.PrimaryColor);
+        restaurant.ButtonTextColor = DefaultColor(restaurant.ButtonTextColor, "#FFFFFF");
+        restaurant.SecondaryButtonBackgroundColor = DefaultColor(restaurant.SecondaryButtonBackgroundColor, "#FFFFFF");
+        restaurant.SecondaryButtonTextColor = DefaultColor(restaurant.SecondaryButtonTextColor, restaurant.PrimaryColor);
+
+        restaurant.HeroTextColor = DefaultColor(restaurant.HeroTextColor, "#FFFFFF");
+        restaurant.HeroOverlayColor = DefaultColor(restaurant.HeroOverlayColor, "rgba(0,0,0,.55)");
+
+        restaurant.MenuCategoryBackgroundColor = DefaultColor(restaurant.MenuCategoryBackgroundColor, "#FFFFFF");
+        restaurant.MenuItemBackgroundColor = DefaultColor(restaurant.MenuItemBackgroundColor, "#FFFFFF");
+        restaurant.PriceTextColor = DefaultColor(restaurant.PriceTextColor, restaurant.PrimaryColor);
+
+        restaurant.CartBarBackgroundColor = DefaultColor(restaurant.CartBarBackgroundColor, "#111827");
+        restaurant.CartBarTextColor = DefaultColor(restaurant.CartBarTextColor, "#FFFFFF");
+    }
+
+    private string DefaultColor(string? value, string fallback)
+        => string.IsNullOrWhiteSpace(value) ? fallback : value;
 
     private async Task UploadLogo(InputFileChangeEventArgs e)
     {
@@ -470,7 +647,7 @@ else
         Navigation.NavigateTo("/admin/restaurants");
     }
 
-    private string DisplayOrFallback(string value, string fallback)
+    private string DisplayOrFallback(string? value, string fallback)
         => string.IsNullOrWhiteSpace(value) ? fallback : value;
 
     private string GetInitials()
@@ -484,10 +661,21 @@ else
 
     private string GetHeroBackgroundStyle()
     {
-        if (restaurant is null || string.IsNullOrWhiteSpace(restaurant.HeroImageUrl))
+        if (restaurant is null)
             return string.Empty;
 
-        return $"background: linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.55)), url('{restaurant.HeroImageUrl}') center/cover;";
+        if (string.IsNullOrWhiteSpace(restaurant.HeroImageUrl))
+            return $"background: linear-gradient(135deg, {restaurant.PrimaryColor}, #111827); color:{restaurant.HeroTextColor};";
+
+        return $"background: linear-gradient({restaurant.HeroOverlayColor}, {restaurant.HeroOverlayColor}), url('{restaurant.HeroImageUrl}') center/cover; color:{restaurant.HeroTextColor};";
+    }
+
+    private string GetPreviewVariables()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"--primary:{restaurant.PrimaryColor}; --secondary:{restaurant.SecondaryColor}; background:{restaurant.PageBackgroundColor}; color:{restaurant.BodyTextColor};";
     }
 
     private string GetMiniNavbarStyle()
@@ -504,6 +692,30 @@ else
             return string.Empty;
 
         return $"background:{restaurant.FooterBackgroundColor}; color:{restaurant.FooterTextColor};";
+    }
+
+    private string GetPrimaryButtonStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.ButtonBackgroundColor}; color:{restaurant.ButtonTextColor};";
+    }
+
+    private string GetPreviewInfoStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.SectionBackgroundColor}; color:{restaurant.BodyTextColor};";
+    }
+
+    private string GetPreviewCardStyle()
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return $"background:{restaurant.MenuItemBackgroundColor}; color:{restaurant.BodyTextColor}; border-radius:18px; padding:18px; margin-top:16px;";
     }
 
     private string NormalizeSlug(string value)
