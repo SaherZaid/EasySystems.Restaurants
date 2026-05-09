@@ -23,7 +23,6 @@ public class Restaurant
     public string NavbarTextColor { get; set; } = "#111827";
     public string FooterBackgroundColor { get; set; } = "#111827";
     public string FooterTextColor { get; set; } = "#FFFFFF";
-
     public string Phone { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
