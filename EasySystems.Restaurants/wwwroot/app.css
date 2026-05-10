@@ -5038,3 +5038,16 @@ html {
         grid-template-columns: 1fr;
     }
 }
+
+.field-help,
+.color-setting small {
+    display: block;
+    margin: 4px 0 10px;
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.color-setting label {
+    font-weight: 800;
+}

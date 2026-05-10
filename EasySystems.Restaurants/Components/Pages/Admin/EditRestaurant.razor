@@ -17,7 +17,7 @@
 @inject RestaurantAccessService AccessService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Edit Restaurant</PageTitle>
+<PageTitle>Redigera restaurang</PageTitle>
 
 @if (restaurant is not null && isAuthorized)
 {
@@ -26,27 +26,27 @@
 
 @if (!checkedAccess)
 {
-    <div class="public-loading">Checking access...</div>
+    <div class="public-loading">Kontrollerar behörighet...</div>
 }
 else if (!isAuthorized)
 {
-    <div class="public-loading">Redirecting...</div>
+    <div class="public-loading">Omdirigerar...</div>
 }
 else
 {
     <div class="admin-page">
         <div class="admin-header">
             <div>
-                <p class="eyebrow">Edit Restaurant</p>
-                <h1>@(restaurant?.Name ?? "Restaurant")</h1>
-                <p class="subtitle">Update restaurant details, branding, colors, contact information and settings.</p>
+                <p class="eyebrow">Restauranginställningar</p>
+                <h1>@(restaurant?.Name ?? "Restaurang")</h1>
+                <p class="subtitle">Uppdatera information, öppettider, bilder och designfärger för restaurangens publika sida.</p>
             </div>
         </div>
 
         @if (restaurant is null)
         {
             <div class="form-card admin-center-card">
-                <h2>Restaurant not found</h2>
+                <h2>Restaurangen hittades inte</h2>
             </div>
         }
         else
@@ -56,286 +56,311 @@ else
 
                 <div class="admin-grid">
                     <div class="form-card">
-                        <h2>Restaurant details</h2>
+                        <h2>Grundinformation</h2>
 
-                        <label>Restaurant name</label>
+                        <label>Restaurangens namn</label>
                         <InputText class="input" @bind-Value="restaurant.Name" />
 
-                        <label>Slug / URL</label>
+                        <label>URL / slug</label>
+                        <small class="field-help">Detta blir länken till restaurangen, till exempel: /restaurant/min-restaurang</small>
                         <InputText class="input" @bind-Value="restaurant.Slug" />
 
-                        <label>Description</label>
+                        <label>Beskrivning</label>
+                        <small class="field-help">Texten som visas under restaurangens namn på startsidan.</small>
                         <InputTextArea class="input textarea" @bind-Value="restaurant.Description" />
 
-                        <h2>Contact</h2>
+                        <h2>Kontaktuppgifter</h2>
 
                         <div class="two-cols">
                             <div>
-                                <label>Phone</label>
+                                <label>Telefon</label>
                                 <InputText class="input" @bind-Value="restaurant.Phone" />
                             </div>
 
                             <div>
-                                <label>Email</label>
+                                <label>E-post</label>
                                 <InputText class="input" @bind-Value="restaurant.Email" />
                             </div>
                         </div>
 
-                        <label>Address</label>
+                        <label>Adress</label>
                         <InputText class="input" @bind-Value="restaurant.Address" />
 
-                        <h2>Social media</h2>
+                        <h2>Sociala medier</h2>
 
                         <div class="two-cols">
                             <div>
-                                <label>Instagram URL</label>
+                                <label>Instagram-länk</label>
                                 <InputText class="input" @bind-Value="restaurant.InstagramUrl" />
                             </div>
 
                             <div>
-                                <label>Facebook URL</label>
+                                <label>Facebook-länk</label>
                                 <InputText class="input" @bind-Value="restaurant.FacebookUrl" />
                             </div>
                         </div>
 
                         <div class="two-cols">
                             <div>
-                                <label>TikTok URL</label>
+                                <label>TikTok-länk</label>
                                 <InputText class="input" @bind-Value="restaurant.TikTokUrl" />
                             </div>
 
                             <div>
-                                <label>Website URL</label>
+                                <label>Webbplats</label>
                                 <InputText class="input" @bind-Value="restaurant.WebsiteUrl" />
                             </div>
                         </div>
 
-                        <h2>Opening hours</h2>
+                        <h2>Öppettider</h2>
 
                         <div class="opening-hours-grid">
                             <div>
-                                <label>Monday</label>
+                                <label>Måndag</label>
                                 <InputText class="input" @bind-Value="restaurant.MondayHours" />
                             </div>
 
                             <div>
-                                <label>Tuesday</label>
+                                <label>Tisdag</label>
                                 <InputText class="input" @bind-Value="restaurant.TuesdayHours" />
                             </div>
 
                             <div>
-                                <label>Wednesday</label>
+                                <label>Onsdag</label>
                                 <InputText class="input" @bind-Value="restaurant.WednesdayHours" />
                             </div>
 
                             <div>
-                                <label>Thursday</label>
+                                <label>Torsdag</label>
                                 <InputText class="input" @bind-Value="restaurant.ThursdayHours" />
                             </div>
 
                             <div>
-                                <label>Friday</label>
+                                <label>Fredag</label>
                                 <InputText class="input" @bind-Value="restaurant.FridayHours" />
                             </div>
 
                             <div>
-                                <label>Saturday</label>
+                                <label>Lördag</label>
                                 <InputText class="input" @bind-Value="restaurant.SaturdayHours" />
                             </div>
 
                             <div>
-                                <label>Sunday</label>
+                                <label>Söndag</label>
                                 <InputText class="input" @bind-Value="restaurant.SundayHours" />
                             </div>
                         </div>
 
-                        <h2>Settings</h2>
+                        <h2>Beställningsinställningar</h2>
 
                         <div class="option-row">
                             <label class="checkbox-label">
                                 <InputCheckbox @bind-Value="restaurant.IsPickupEnabled" />
-                                Pickup enabled
+                                Avhämtning aktiv
                             </label>
 
                             <label class="checkbox-label">
                                 <InputCheckbox @bind-Value="restaurant.IsDeliveryEnabled" />
-                                Delivery enabled
+                                Leverans aktiv
                             </label>
 
                             <label class="checkbox-label">
                                 <InputCheckbox @bind-Value="restaurant.IsActive" />
-                                Restaurant active
+                                Restaurangen är publicerad
                             </label>
                         </div>
 
-                        <h2>Brand colors</h2>
+                        <h2>Varumärkesfärger</h2>
 
                         <div class="color-grid">
-                            <div>
-                                <label>Primary color</label>
+                            <div class="color-setting">
+                                <label>Huvudfärg</label>
+                                <small>Påverkar restaurangens viktigaste färg. Används ofta för knappar, priser och viktiga detaljer.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.PrimaryColor" />
                                 <InputText class="input" @bind-Value="restaurant.PrimaryColor" />
                             </div>
 
-                            <div>
-                                <label>Secondary color</label>
+                            <div class="color-setting">
+                                <label>Sekundär färg</label>
+                                <small>En mjuk stöd-färg som används tillsammans med huvudfärgen i designen.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.SecondaryColor" />
                                 <InputText class="input" @bind-Value="restaurant.SecondaryColor" />
                             </div>
                         </div>
 
-                        <h2>Page colors</h2>
+                        <h2>Sidans bakgrunder</h2>
 
                         <div class="color-grid">
-                            <div>
-                                <label>Page background</label>
+                            <div class="color-setting">
+                                <label>Hela sidans bakgrund</label>
+                                <small>Ändrar bakgrunden bakom hela restaurangsidan.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.PageBackgroundColor" />
                                 <InputText class="input" @bind-Value="restaurant.PageBackgroundColor" />
                             </div>
 
-                            <div>
-                                <label>Section background</label>
+                            <div class="color-setting">
+                                <label>Menysektionens bakgrund</label>
+                                <small>Ändrar bakgrunden bakom menyområdet där rätterna visas.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.SectionBackgroundColor" />
                                 <InputText class="input" @bind-Value="restaurant.SectionBackgroundColor" />
                             </div>
 
-                            <div>
-                                <label>Card background</label>
+                            <div class="color-setting">
+                                <label>Popup och paneler</label>
+                                <small>Ändrar bakgrunden i varukorgen och fönstret där kunden väljer ingredienser.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.CardBackgroundColor" />
                                 <InputText class="input" @bind-Value="restaurant.CardBackgroundColor" />
                             </div>
                         </div>
 
-                        <h2>Text colors</h2>
+                        <h2>Textfärger</h2>
 
                         <div class="color-grid">
-                            <div>
-                                <label>Heading text</label>
+                            <div class="color-setting">
+                                <label>Rubriker</label>
+                                <small>Ändrar färgen på restaurangnamn, sektionsrubriker, kategorinamn och rättens namn.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.HeadingTextColor" />
                                 <InputText class="input" @bind-Value="restaurant.HeadingTextColor" />
                             </div>
 
-                            <div>
-                                <label>Body text</label>
+                            <div class="color-setting">
+                                <label>Vanlig text</label>
+                                <small>Ändrar färgen på beskrivningar, rättens text och vanlig information.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.BodyTextColor" />
                                 <InputText class="input" @bind-Value="restaurant.BodyTextColor" />
                             </div>
 
-                            <div>
-                                <label>Muted text</label>
+                            <div class="color-setting">
+                                <label>Liten hjälpttext</label>
+                                <small>Ändrar färgen på små texter som kategorinamn, antal rätter och diskreta detaljer.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.MutedTextColor" />
                                 <InputText class="input" @bind-Value="restaurant.MutedTextColor" />
                             </div>
                         </div>
 
-                        <h2>Navigation colors</h2>
+                        <h2>Toppmeny</h2>
 
                         <div class="color-grid">
-                            <div>
-                                <label>Navbar background</label>
+                            <div class="color-setting">
+                                <label>Toppmenyns bakgrund</label>
+                                <small>Ändrar bakgrunden på navigeringen högst upp på restaurangsidan.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.NavbarBackgroundColor" />
                                 <InputText class="input" @bind-Value="restaurant.NavbarBackgroundColor" />
                             </div>
 
-                            <div>
-                                <label>Navbar text</label>
+                            <div class="color-setting">
+                                <label>Toppmenyns text</label>
+                                <small>Ändrar färgen på länkar som Hem, Meny, Kontakt, Logga in och Mitt konto.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.NavbarTextColor" />
                                 <InputText class="input" @bind-Value="restaurant.NavbarTextColor" />
                             </div>
                         </div>
 
-                        <h2>Footer colors</h2>
+                        <h2>Sidfot</h2>
 
                         <div class="color-grid">
-                            <div>
-                                <label>Footer background</label>
+                            <div class="color-setting">
+                                <label>Sidfotens bakgrund</label>
+                                <small>Ändrar bakgrunden längst ner på restaurangsidan.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.FooterBackgroundColor" />
                                 <InputText class="input" @bind-Value="restaurant.FooterBackgroundColor" />
                             </div>
 
-                            <div>
-                                <label>Footer text</label>
+                            <div class="color-setting">
+                                <label>Sidfotens text</label>
+                                <small>Ändrar färgen på text och länkar i sidfoten.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.FooterTextColor" />
                                 <InputText class="input" @bind-Value="restaurant.FooterTextColor" />
                             </div>
                         </div>
 
-                        <h2>Button colors</h2>
+                        <h2>Knappar</h2>
 
                         <div class="color-grid">
-                            <div>
-                                <label>Main button background</label>
+                            <div class="color-setting">
+                                <label>Huvudknapparnas bakgrund</label>
+                                <small>Ändrar bakgrunden på Se meny, Lägg till, Lägg till i varukorg och Skicka beställning.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.ButtonBackgroundColor" />
                                 <InputText class="input" @bind-Value="restaurant.ButtonBackgroundColor" />
                             </div>
 
-                            <div>
-                                <label>Main button text</label>
+                            <div class="color-setting">
+                                <label>Huvudknapparnas text</label>
+                                <small>Ändrar textfärgen inuti huvudknapparna.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.ButtonTextColor" />
                                 <InputText class="input" @bind-Value="restaurant.ButtonTextColor" />
                             </div>
 
-                            <div>
-                                <label>Secondary button background</label>
+                            <div class="color-setting">
+                                <label>Kontaktknappens bakgrund</label>
+                                <small>Ändrar bakgrunden på knappen Kontakt & öppettider i hero-sektionen.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.SecondaryButtonBackgroundColor" />
                                 <InputText class="input" @bind-Value="restaurant.SecondaryButtonBackgroundColor" />
                             </div>
 
-                            <div>
-                                <label>Secondary button text</label>
+                            <div class="color-setting">
+                                <label>Kontaktknappens text</label>
+                                <small>Ändrar textfärgen på knappen Kontakt & öppettider.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.SecondaryButtonTextColor" />
                                 <InputText class="input" @bind-Value="restaurant.SecondaryButtonTextColor" />
                             </div>
                         </div>
 
-                        <h2>Hero colors</h2>
+                        <h2>Hero-bild</h2>
 
                         <div class="color-grid">
-                            <div>
-                                <label>Hero text color</label>
+                            <div class="color-setting">
+                                <label>Text ovanpå hero-bilden</label>
+                                <small>Ändrar färgen på restaurangens namn och beskrivning ovanpå den stora bilden.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.HeroTextColor" />
                                 <InputText class="input" @bind-Value="restaurant.HeroTextColor" />
                             </div>
 
-                            <div>
-                                <label>Hero overlay</label>
+                            <div class="color-setting">
+                                <label>Mörkt lager över hero-bilden</label>
+                                <small>Styr hur mörk bilden blir bakom texten. Exempel: rgba(0,0,0,.55). Högre sista siffra ger mörkare bild.</small>
                                 <InputText class="input" @bind-Value="restaurant.HeroOverlayColor" placeholder="rgba(0,0,0,.55)" />
                             </div>
                         </div>
 
-                        <h2>Menu colors</h2>
+                        <h2>Meny och rätter</h2>
 
                         <div class="color-grid">
-                            <div>
-                                <label>Category background</label>
+                            <div class="color-setting">
+                                <label>Kategoribakgrund</label>
+                                <small>Ändrar bakgrunden på menysektioner som Pizza, Burgare och Drycker.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.MenuCategoryBackgroundColor" />
                                 <InputText class="input" @bind-Value="restaurant.MenuCategoryBackgroundColor" />
                             </div>
 
-                            <div>
-                                <label>Dish card background</label>
+                            <div class="color-setting">
+                                <label>Rättens kortbakgrund</label>
+                                <small>Ändrar bakgrunden på kortet som visar rättens bild, namn, beskrivning och pris.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.MenuItemBackgroundColor" />
                                 <InputText class="input" @bind-Value="restaurant.MenuItemBackgroundColor" />
                             </div>
 
-                            <div>
-                                <label>Price text</label>
+                            <div class="color-setting">
+                                <label>Prisfärg</label>
+                                <small>Ändrar färgen på priser som 129.00 kr i menyn och varukorgen.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.PriceTextColor" />
                                 <InputText class="input" @bind-Value="restaurant.PriceTextColor" />
                             </div>
                         </div>
 
-                        <h2>Cart colors</h2>
+                        <h2>Varukorg</h2>
 
                         <div class="color-grid">
-                            <div>
-                                <label>Cart bar background</label>
+                            <div class="color-setting">
+                                <label>Varukorgsradens bakgrund</label>
+                                <small>Ändrar bakgrunden på raden längst ner som visas efter att kunden lagt till produkter.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.CartBarBackgroundColor" />
                                 <InputText class="input" @bind-Value="restaurant.CartBarBackgroundColor" />
                             </div>
 
-                            <div>
-                                <label>Cart bar text</label>
+                            <div class="color-setting">
+                                <label>Varukorgsradens text</label>
+                                <small>Ändrar textfärgen i raden längst ner, till exempel antal varor och totalsumma.</small>
                                 <InputText type="color" class="color-input" @bind-Value="restaurant.CartBarTextColor" />
                                 <InputText class="input" @bind-Value="restaurant.CartBarTextColor" />
                             </div>
@@ -391,7 +416,7 @@ else
                             </div>
                         </div>
 
-                        <button class="save-btn" type="submit">Save changes</button>
+                        <button class="save-btn" type="submit">Spara ändringar</button>
 
                         @if (!string.IsNullOrWhiteSpace(errorMessage))
                         {
@@ -409,7 +434,7 @@ else
 
                         <div class="restaurant-preview" style="@GetPreviewVariables()">
                             <div class="mini-navbar-preview" style="@GetMiniNavbarStyle()">
-                                <strong>@DisplayOrFallback(restaurant.Name, "Restaurant")</strong>
+                                <strong>@DisplayOrFallback(restaurant.Name, "Restaurang")</strong>
                                 <span>Hem</span>
                                 <span>Meny</span>
                             </div>
@@ -426,33 +451,36 @@ else
                                     }
                                 </div>
 
-                                <h2>@DisplayOrFallback(restaurant.Name, "Restaurant name")</h2>
-                                <p>@DisplayOrFallback(restaurant.Description, "Restaurant description")</p>
+                                <h2>@DisplayOrFallback(restaurant.Name, "Restaurangens namn")</h2>
+                                <p>@DisplayOrFallback(restaurant.Description, "Restaurangens beskrivning visas här.")</p>
 
                                 <button type="button" style="@GetPrimaryButtonStyle()">Se meny</button>
                             </div>
 
                             <div class="preview-info" style="@GetPreviewInfoStyle()">
-                                <span>@DisplayOrFallback(restaurant.Phone, "Phone")</span>
-                                <span>@DisplayOrFallback(restaurant.Email, "Email")</span>
-                                <span>@DisplayOrFallback(restaurant.Address, "Address")</span>
+                                <span>@DisplayOrFallback(restaurant.Phone, "Telefon")</span>
+                                <span>@DisplayOrFallback(restaurant.Email, "E-post")</span>
+                                <span>@DisplayOrFallback(restaurant.Address, "Adress")</span>
                             </div>
 
                             <div class="preview-mini-section" style="@GetPreviewCardStyle()">
-                                <strong style="color:@restaurant.HeadingTextColor;">Dish card preview</strong>
-                                <p style="color:@restaurant.BodyTextColor;">This shows menu card colors.</p>
-                                <span style="color:@restaurant.PriceTextColor;">129.00 kr</span>
+                                <strong style="@($"color:{restaurant?.HeadingTextColor};")">
+                                    Exempel på rätt
+                                </strong>
+                                <p style="color:@(restaurant?.BodyTextColor ?? "#000")">Här ser du hur ett meny-kort kan se ut.</p>
+
+                                <span style="color:@(restaurant?.PriceTextColor ?? "#000")">129.00 kr</span>
                             </div>
 
                             <div class="mini-footer-preview" style="@GetMiniFooterStyle()">
                                 <strong>Footer preview</strong>
-                                <span>Privacy • Terms • Contact</span>
+                                <span>Integritet • Villkor • Kontakt</span>
                             </div>
                         </div>
 
                         <div class="restaurant-admin-actions" style="margin-top:18px;">
-                            <button type="button" @onclick="ViewRestaurant">View restaurant</button>
-                            <button type="button" @onclick="BackToList">Back to list</button>
+                            <button type="button" @onclick="ViewRestaurant">Visa restaurang</button>
+                            <button type="button" @onclick="BackToList">Tillbaka</button>
                         </div>
                     </div>
                 </div>
@@ -514,13 +542,13 @@ else
 
         if (string.IsNullOrWhiteSpace(restaurant.Name))
         {
-            errorMessage = "Restaurant name is required.";
+            errorMessage = "Restaurangens namn krävs.";
             return;
         }
 
         if (string.IsNullOrWhiteSpace(restaurant.Slug))
         {
-            errorMessage = "Slug is required.";
+            errorMessage = "URL / slug krävs.";
             return;
         }
 
@@ -529,12 +557,12 @@ else
 
         if (slugExists)
         {
-            errorMessage = "This slug is already used by another restaurant.";
+            errorMessage = "Denna URL används redan av en annan restaurang.";
             return;
         }
 
         await Db.SaveChangesAsync();
-        successMessage = "Restaurant updated successfully.";
+        successMessage = "Restaurangen har uppdaterats.";
     }
 
     private void ApplyDefaultDesignColors()
@@ -606,13 +634,13 @@ else
 
         if (!allowedExtensions.Contains(extension))
         {
-            errorMessage = "Only JPG, PNG and WEBP images are allowed.";
+            errorMessage = "Endast JPG, PNG och WEBP är tillåtna.";
             return string.Empty;
         }
 
         if (file.Size > MaxFileSize)
         {
-            errorMessage = "Image size must be less than 5 MB.";
+            errorMessage = "Bilden måste vara mindre än 5 MB.";
             return string.Empty;
         }
 
@@ -632,7 +660,7 @@ else
 
         await readStream.CopyToAsync(writeStream);
 
-        successMessage = "Image uploaded. Remember to save changes.";
+        successMessage = "Bilden har laddats upp. Kom ihåg att spara ändringarna.";
         return relativePath;
     }
 
