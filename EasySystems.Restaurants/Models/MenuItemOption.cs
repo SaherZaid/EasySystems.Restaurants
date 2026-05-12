@@ -7,6 +7,9 @@ public class MenuItemOption
     public int MenuItemId { get; set; }
     public MenuItem? MenuItem { get; set; }
 
+    public int? MenuItemOptionGroupId { get; set; }
+    public MenuItemOptionGroup? MenuItemOptionGroup { get; set; }
+
     public string Name { get; set; } = string.Empty;
 
     public decimal ExtraPrice { get; set; }

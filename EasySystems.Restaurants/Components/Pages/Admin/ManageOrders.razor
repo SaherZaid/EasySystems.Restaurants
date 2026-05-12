@@ -194,13 +194,18 @@ else
                             <div class="order-items">
                                 @foreach (var item in selectedOrder.Items)
                                 {
-                                    <div class="order-item-detail">
-                                        <div>
-                                            <span>@item.Quantity × @item.ItemName</span>
+                                    <div class="order-item-detail receipt-style-order-item">
+                                        <div class="receipt-item-main">
+                                            <span>@item.Quantity @item.ItemName</span>
 
                                             @if (!string.IsNullOrWhiteSpace(item.SelectedOptions))
                                             {
-                                                <small>@item.SelectedOptions</small>
+                                                <div class="receipt-item-options">
+                                                    @foreach (var optionLine in FormatSelectedOptionsLikeReceipt(item.SelectedOptions, item.Quantity))
+                                                    {
+                                                        <small>@optionLine</small>
+                                                    }
+                                                </div>
                                             }
                                         </div>
 
@@ -403,5 +408,55 @@ else
             "Cancelled" => "status-cancelled",
             _ => "status-new"
         };
+    }
+
+    private List<string> FormatSelectedOptionsLikeReceipt(string selectedOptions, int quantity)
+    {
+        if (string.IsNullOrWhiteSpace(selectedOptions))
+            return [];
+
+        var lines = new List<string>();
+
+        var parts = selectedOptions
+            .Split(" | ", StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToList();
+
+        foreach (var part in parts)
+        {
+            if (part.StartsWith("Utan:", StringComparison.OrdinalIgnoreCase))
+            {
+                var removedItems = part
+                    .Replace("Utan:", "", StringComparison.OrdinalIgnoreCase)
+                    .Split(",", StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => x.Trim())
+                    .Where(x => !string.IsNullOrWhiteSpace(x));
+
+                foreach (var removedItem in removedItems)
+                {
+                    lines.Add($"{quantity} - {removedItem}");
+                }
+            }
+            else if (part.StartsWith("Extra:", StringComparison.OrdinalIgnoreCase))
+            {
+                var extraItems = part
+                    .Replace("Extra:", "", StringComparison.OrdinalIgnoreCase)
+                    .Split(",", StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => x.Trim())
+                    .Where(x => !string.IsNullOrWhiteSpace(x));
+
+                foreach (var extraItem in extraItems)
+                {
+                    lines.Add($"{quantity} + {extraItem}");
+                }
+            }
+            else
+            {
+                lines.Add($"{quantity} {part}");
+            }
+        }
+
+        return lines;
     }
 }

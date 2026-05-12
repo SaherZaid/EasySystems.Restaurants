@@ -15,7 +15,7 @@
 @inject RestaurantAccessService AccessService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Tillval och ingredienser</PageTitle>
+<PageTitle>Tillval och måltidsval</PageTitle>
 
 @if (restaurant is not null && isAuthorized)
 {
@@ -36,9 +36,9 @@ else
         <div class="admin-header">
             <div>
                 <p class="eyebrow">Meny</p>
-                <h1>Tillval och ingredienser</h1>
+                <h1>Tillval och måltidsval</h1>
                 <p class="subtitle">
-                    Lägg till ingredienser som ingår i rätten och extra tillval som kunden kan välja mot extra kostnad.
+                    Skapa grupper för ingredienser, dryck, pommes, storlek och extra tillval.
                 </p>
             </div>
 
@@ -77,35 +77,92 @@ else
                     <div class="form-card">
                         <div class="admin-card-title">
                             <div>
-                                <h2>Nytt tillval</h2>
-                                <p>Välj om det ingår i rätten eller kostar extra.</p>
+                                <h2>Ny grupp</h2>
+                                <p>Exempel: Ingredienser, Välj dryck, Välj pommes eller Extra tillval.</p>
                             </div>
-                            <span>@options.Count st</span>
+                            <span>@groups.Count grupper</span>
                         </div>
+
+                        <label>Gruppnamn</label>
+                        <InputText class="input"
+                                   @bind-Value="newGroup.Name"
+                                   placeholder="Exempel: Ingredienser" />
+
+                        <label>Typ av grupp</label>
+                        <div class="option-type-picker">
+                            <button type="button"
+                                    class="option-type-card @(newGroup.GroupType == IncludedIngredientsType ? "selected" : "")"
+                                    @onclick="() => SetNewGroupType(IncludedIngredientsType)">
+                                <strong>Ingredienser som ingår</strong>
+                                <span>För saker som redan finns i rätten. Kunden kan ta bort dem.</span>
+                            </button>
+
+                            <button type="button"
+                                    class="option-type-card @(newGroup.GroupType == SingleChoiceType ? "selected" : "")"
+                                    @onclick="() => SetNewGroupType(SingleChoiceType)">
+                                <strong>Välj ett alternativ</strong>
+                                <span>För dryck, pommes eller storlek. Kunden väljer bara ett.</span>
+                            </button>
+
+                            <button type="button"
+                                    class="option-type-card @(newGroup.GroupType == MultipleChoiceType ? "selected" : "")"
+                                    @onclick="() => SetNewGroupType(MultipleChoiceType)">
+                                <strong>Flera val</strong>
+                                <span>För extra tillval. Kunden kan välja flera.</span>
+                            </button>
+                        </div>
+
+                        @if (newGroup.GroupType != IncludedIngredientsType)
+                        {
+                            <label class="checkbox-label">
+                                <InputCheckbox @bind-Value="newGroup.IsRequired" />
+                                Kunden måste välja något i denna grupp
+                            </label>
+                        }
+
+                        <label>Placering</label>
+                        <InputNumber class="input" @bind-Value="newGroup.SortOrder" />
+
+                        <label class="checkbox-label">
+                            <InputCheckbox @bind-Value="newGroup.IsAvailable" />
+                            Visa gruppen för kunder
+                        </label>
+
+                        <button class="save-btn" type="button" @onclick="AddGroup">
+                            Lägg till grupp
+                        </button>
+                    </div>
+
+                    <div class="form-card">
+                        <div class="admin-card-title">
+                            <div>
+                                <h2>Nytt val</h2>
+                                <p>Lägg till ingrediens, dryck, pommes, storlek eller extra tillval.</p>
+                            </div>
+                            <span>@options.Count val</span>
+                        </div>
+
+                        <label>Placera i grupp</label>
+                        <InputSelect class="input" @bind-Value="newOption.MenuItemOptionGroupId" @onchange="OnNewOptionGroupChanged">
+                            <option value="">Ingen grupp - vanligt tillval</option>
+                            @foreach (var group in groups)
+                            {
+                                <option value="@group.Id">@group.Name (@FormatGroupType(group.GroupType))</option>
+                            }
+                        </InputSelect>
 
                         <label>Namn</label>
                         <InputText class="input"
                                    @bind-Value="newOption.Name"
-                                   placeholder="Exempel: Sallad, Tomat, Extra ost..." />
+                                   placeholder="Exempel: Lök, Coca-Cola, Stor pommes, Extra ost..." />
 
-                        <label>Typ</label>
-                        <div class="option-type-picker">
-                            <button type="button"
-                                    class="option-type-card @(newOption.IsDefaultIncluded ? "selected" : "")"
-                                    @onclick="() => SetNewOptionType(true)">
-                                <strong>Ingår i rätten</strong>
-                                <span>Kunden kan ta bort detta, till exempel lök eller tomat.</span>
-                            </button>
-
-                            <button type="button"
-                                    class="option-type-card @(!newOption.IsDefaultIncluded ? "selected" : "")"
-                                    @onclick="() => SetNewOptionType(false)">
-                                <strong>Extra tillval</strong>
-                                <span>Kunden kan lägga till detta mot extra kostnad.</span>
-                            </button>
-                        </div>
-
-                        @if (!newOption.IsDefaultIncluded)
+                        @if (SelectedNewOptionGroupType == IncludedIngredientsType)
+                        {
+                            <div class="upload-success">
+                                Detta val kommer vara markerat från början. Kunden kan ta bort det.
+                            </div>
+                        }
+                        else
                         {
                             <label>Extra pris</label>
                             <InputNumber class="input" @bind-Value="newOption.ExtraPrice" />
@@ -120,7 +177,7 @@ else
                         </label>
 
                         <button class="save-btn" type="button" @onclick="AddOption">
-                            Lägg till
+                            Lägg till val
                         </button>
 
                         @if (!string.IsNullOrWhiteSpace(errorMessage))
@@ -135,10 +192,12 @@ else
                     </div>
 
                     <div class="form-card category-help-card">
-                        <h3>Exempel</h3>
+                        <h3>Exempel MAX/McDonald's</h3>
                         <ul>
-                            <li><strong>Ingår:</strong> Sallad, tomat, lök, sås.</li>
-                            <li><strong>Extra:</strong> Extra ost, extra kött, extra sås.</li>
+                            <li><strong>Ingredienser:</strong> typ “Ingredienser som ingår”. Lägg till lök, sallad, tomat.</li>
+                            <li><strong>Välj dryck:</strong> typ “Välj ett alternativ”. Lägg till Coca-Cola, Fanta, Sprite.</li>
+                            <li><strong>Välj pommes:</strong> typ “Välj ett alternativ”. Lägg till Normal pommes, Stor pommes +10 kr.</li>
+                            <li><strong>Extra tillval:</strong> typ “Flera val”. Lägg till Extra ost, Bacon, Extra kött.</li>
                         </ul>
                     </div>
                 </div>
@@ -153,51 +212,157 @@ else
                         <span>@AvailableOptionCount synliga</span>
                     </div>
 
-                    @if (options.Count == 0)
+                    @if (groups.Count == 0 && options.Count == 0)
                     {
                         <div class="empty-menu">
-                            <h3>Inga ingredienser eller tillval ännu</h3>
-                            <p>Lägg till till exempel sallad, tomat, lök eller extra ost.</p>
+                            <h3>Inga val ännu</h3>
+                            <p>Skapa en grupp eller lägg till vanliga tillval.</p>
                         </div>
                     }
                     else
                     {
                         <div class="option-section-grid">
-                            <div>
-                                <h3>Ingår i rätten</h3>
+                            @foreach (var group in groups.OrderBy(x => x.SortOrder).ThenBy(x => x.Name))
+                            {
+                                var groupOptions = options
+                                .Where(x => x.MenuItemOptionGroupId == group.Id)
+                                .OrderBy(x => x.SortOrder)
+                                .ThenBy(x => x.Name)
+                                .ToList();
 
-                                @if (IncludedOptions.Count == 0)
-                                {
-                                    <div class="empty-category">Inget tillagt ännu.</div>
-                                }
-                                else
-                                {
+                                <div class="option-group-admin-card @(group.IsAvailable ? "" : "is-hidden")">
+                                    @if (editingGroupId == group.Id)
+                                    {
+                                        <div class="edit-category-form modern-option-edit">
+                                            <h3>Redigera grupp</h3>
+
+                                            <label>Gruppnamn</label>
+                                            <InputText class="input" @bind-Value="editGroup.Name" />
+
+                                            <label>Typ av grupp</label>
+                                            <div class="option-type-picker">
+                                                <button type="button"
+                                                        class="option-type-card @(editGroup.GroupType == IncludedIngredientsType ? "selected" : "")"
+                                                        @onclick="() => SetEditGroupType(IncludedIngredientsType)">
+                                                    <strong>Ingredienser som ingår</strong>
+                                                    <span>Kunden kan ta bort dessa.</span>
+                                                </button>
+
+                                                <button type="button"
+                                                        class="option-type-card @(editGroup.GroupType == SingleChoiceType ? "selected" : "")"
+                                                        @onclick="() => SetEditGroupType(SingleChoiceType)">
+                                                    <strong>Välj ett alternativ</strong>
+                                                    <span>Kunden väljer ett.</span>
+                                                </button>
+
+                                                <button type="button"
+                                                        class="option-type-card @(editGroup.GroupType == MultipleChoiceType ? "selected" : "")"
+                                                        @onclick="() => SetEditGroupType(MultipleChoiceType)">
+                                                    <strong>Flera val</strong>
+                                                    <span>Kunden kan välja flera.</span>
+                                                </button>
+                                            </div>
+
+                                            @if (editGroup.GroupType != IncludedIngredientsType)
+                                            {
+                                                <label class="checkbox-label">
+                                                    <InputCheckbox @bind-Value="editGroup.IsRequired" />
+                                                    Kunden måste välja något
+                                                </label>
+                                            }
+
+                                            <label>Placering</label>
+                                            <InputNumber class="input" @bind-Value="editGroup.SortOrder" />
+
+                                            <label class="checkbox-label">
+                                                <InputCheckbox @bind-Value="editGroup.IsAvailable" />
+                                                Visa gruppen för kunder
+                                            </label>
+
+                                            <div class="category-actions">
+                                                <button type="button" class="save-small-btn" @onclick="SaveEditGroup">
+                                                    Spara
+                                                </button>
+
+                                                <button type="button" @onclick="CancelEditGroup">
+                                                    Avbryt
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="option-group-header">
+                                            <div>
+                                                <h3>@group.Name</h3>
+                                                <p>@GetGroupSummary(group)</p>
+
+                                                @if (!group.IsAvailable)
+                                                {
+                                                    <small class="hidden-badge">Dold</small>
+                                                }
+                                            </div>
+
+                                            <div class="category-actions">
+                                                <button type="button" @onclick="() => StartEditGroup(group)">
+                                                    Redigera grupp
+                                                </button>
+
+                                                <button type="button" @onclick="() => ToggleGroupAvailability(group)">
+                                                    @(group.IsAvailable ? "Dölj" : "Visa")
+                                                </button>
+
+                                                @if (pendingDeleteGroupId == group.Id)
+                                                {
+                                                    <button class="danger-btn" type="button" @onclick="() => DeleteGroup(group)">
+                                                        Bekräfta radering
+                                                    </button>
+
+                                                    <button type="button" @onclick="CancelDeleteGroup">
+                                                        Avbryt
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="danger-btn" type="button" @onclick="() => AskDeleteGroup(group)">
+                                                        Radera grupp
+                                                    </button>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        @if (groupOptions.Count == 0)
+                                        {
+                                            <div class="empty-category">
+                                                Inga val i denna grupp ännu.
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="option-admin-list modern-option-list">
+                                                @foreach (var option in groupOptions)
+                                                {
+                                                    @OptionCard(option)
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            }
+
+                            @if (UngroupedOptions.Count > 0)
+                            {
+                                <div>
+                                    <h3>Vanliga tillval utan grupp</h3>
+
                                     <div class="option-admin-list modern-option-list">
-                                        @foreach (var option in IncludedOptions)
+                                        @foreach (var option in UngroupedOptions)
                                         {
                                             @OptionCard(option)
                                         }
                                     </div>
-                                }
-                            </div>
-
-                            <div>
-                                <h3>Extra tillval</h3>
-
-                                @if (ExtraOptions.Count == 0)
-                                {
-                                    <div class="empty-category">Inga extra tillval ännu.</div>
-                                }
-                                else
-                                {
-                                    <div class="option-admin-list modern-option-list">
-                                        @foreach (var option in ExtraOptions)
-                                        {
-                                            @OptionCard(option)
-                                        }
-                                    </div>
-                                }
-                            </div>
+                                </div>
+                            }
                         </div>
                     }
                 </div>
@@ -207,18 +372,24 @@ else
 }
 
 @code {
-    [Parameter]
-    public int RestaurantId { get; set; }
+    [Parameter] public int RestaurantId { get; set; }
+    [Parameter] public int MenuItemId { get; set; }
 
-    [Parameter]
-    public int MenuItemId { get; set; }
+    private const string IncludedIngredientsType = "IncludedIngredients";
+    private const string SingleChoiceType = "SingleChoice";
+    private const string MultipleChoiceType = "MultipleChoice";
 
     private Restaurant? restaurant;
     private MenuItem? menuItem;
+
+    private List<MenuItemOptionGroup> groups = [];
     private List<MenuItemOption> options = [];
 
     private string? errorMessage;
     private string? successMessage;
+
+    private int? editingGroupId;
+    private int? pendingDeleteGroupId;
 
     private int? editingOptionId;
     private int? pendingDeleteOptionId;
@@ -228,20 +399,39 @@ else
 
     private int AvailableOptionCount => options.Count(x => x.IsAvailable);
 
-    private List<MenuItemOption> IncludedOptions => options
-    .Where(x => x.IsDefaultIncluded)
-    .OrderBy(x => x.SortOrder)
+    private string SelectedNewOptionGroupType
+    {
+        get
+        {
+            if (newOption.MenuItemOptionGroupId is null)
+                return string.Empty;
+
+            return groups.FirstOrDefault(x => x.Id == newOption.MenuItemOptionGroupId.Value)?.GroupType ?? string.Empty;
+        }
+    }
+
+    private List<MenuItemOption> UngroupedOptions => options
+    .Where(x => x.MenuItemOptionGroupId is null)
+    .OrderByDescending(x => x.IsDefaultIncluded)
+    .ThenBy(x => x.SortOrder)
+    .ThenBy(x => x.Name)
     .ToList();
 
-    private List<MenuItemOption> ExtraOptions => options
-    .Where(x => !x.IsDefaultIncluded)
-    .OrderBy(x => x.SortOrder)
-    .ToList();
+    private MenuItemOptionGroup newGroup = new()
+            {
+                IsRequired = true,
+                AllowMultiple = false,
+                IsAvailable = true,
+                SortOrder = 1,
+                GroupType = SingleChoiceType
+            };
+
+    private MenuItemOptionGroup editGroup = new();
 
     private MenuItemOption newOption = new()
             {
                 IsAvailable = true,
-                IsDefaultIncluded = true
+                IsDefaultIncluded = false
             };
 
     private MenuItemOption editOption = new();
@@ -267,8 +457,7 @@ else
             return;
         }
 
-        restaurant = await Db.Restaurants
-        .FirstOrDefaultAsync(x => x.Id == RestaurantId);
+        restaurant = await Db.Restaurants.FirstOrDefaultAsync(x => x.Id == RestaurantId);
 
         if (restaurant is null)
             return;
@@ -283,21 +472,44 @@ else
         if (menuItem is null)
             return;
 
-        await LoadOptions();
+        await LoadData();
+        ResetNewGroup();
         ResetNewOption();
     }
 
-    private async Task LoadOptions()
+    private async Task LoadData()
     {
         if (!isAuthorized)
             return;
 
-        options = await Db.MenuItemOptions
+        groups = await Db.MenuItemOptionGroups
         .Where(x => x.MenuItemId == MenuItemId)
-        .OrderByDescending(x => x.IsDefaultIncluded)
+        .OrderBy(x => x.SortOrder)
+        .ThenBy(x => x.Name)
+        .ToListAsync();
+
+        options = await Db.MenuItemOptions
+        .Include(x => x.MenuItemOptionGroup)
+        .Where(x => x.MenuItemId == MenuItemId)
+        .OrderBy(x => x.MenuItemOptionGroupId == null ? 1 : 0)
+        .ThenBy(x => x.MenuItemOptionGroup!.SortOrder)
         .ThenBy(x => x.SortOrder)
         .ThenBy(x => x.Name)
         .ToListAsync();
+    }
+
+    private void ResetNewGroup()
+    {
+        newGroup = new MenuItemOptionGroup
+                {
+                    MenuItemId = MenuItemId,
+                    Name = string.Empty,
+                    GroupType = SingleChoiceType,
+                    IsRequired = true,
+                    AllowMultiple = false,
+                    IsAvailable = true,
+                    SortOrder = groups.Count == 0 ? 1 : groups.Max(x => x.SortOrder) + 1
+                };
     }
 
     private void ResetNewOption()
@@ -305,37 +517,244 @@ else
         newOption = new MenuItemOption
                 {
                     MenuItemId = MenuItemId,
+                    MenuItemOptionGroupId = groups.FirstOrDefault()?.Id,
                     IsAvailable = true,
-                    IsDefaultIncluded = true,
+                    IsDefaultIncluded = false,
                     ExtraPrice = 0,
                     SortOrder = options.Count + 1
                 };
+
+        ApplyOptionDefaultsFromSelectedGroup();
     }
 
-    private void SetNewOptionType(bool isIncluded)
+    private void SetNewGroupType(string groupType)
     {
-        newOption.IsDefaultIncluded = isIncluded;
+        newGroup.GroupType = groupType;
 
-        if (isIncluded)
+        if (groupType == IncludedIngredientsType)
         {
+            newGroup.IsRequired = false;
+            newGroup.AllowMultiple = true;
+        }
+        else if (groupType == SingleChoiceType)
+        {
+            newGroup.AllowMultiple = false;
+            newGroup.IsRequired = true;
+        }
+        else if (groupType == MultipleChoiceType)
+        {
+            newGroup.AllowMultiple = true;
+            newGroup.IsRequired = false;
+        }
+    }
+
+    private void SetEditGroupType(string groupType)
+    {
+        editGroup.GroupType = groupType;
+
+        if (groupType == IncludedIngredientsType)
+        {
+            editGroup.IsRequired = false;
+            editGroup.AllowMultiple = true;
+        }
+        else if (groupType == SingleChoiceType)
+        {
+            editGroup.AllowMultiple = false;
+            editGroup.IsRequired = true;
+        }
+        else if (groupType == MultipleChoiceType)
+        {
+            editGroup.AllowMultiple = true;
+            editGroup.IsRequired = false;
+        }
+    }
+
+    private async Task AddGroup()
+    {
+        errorMessage = null;
+        successMessage = null;
+        pendingDeleteGroupId = null;
+
+        if (!isAuthorized || menuItem is null)
+            return;
+
+        newGroup.Name = newGroup.Name?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(newGroup.Name))
+        {
+            errorMessage = "Gruppnamn krävs.";
+            return;
+        }
+
+        ApplyGroupRules(newGroup);
+        newGroup.MenuItemId = MenuItemId;
+
+        Db.MenuItemOptionGroups.Add(newGroup);
+        await Db.SaveChangesAsync();
+
+        await LoadData();
+        ResetNewGroup();
+        ResetNewOption();
+
+        successMessage = "Gruppen har lagts till.";
+    }
+
+    private void StartEditGroup(MenuItemOptionGroup group)
+    {
+        errorMessage = null;
+        successMessage = null;
+        pendingDeleteGroupId = null;
+
+        editingGroupId = group.Id;
+
+        editGroup = new MenuItemOptionGroup
+                {
+                    Id = group.Id,
+                    MenuItemId = group.MenuItemId,
+                    Name = group.Name,
+                    GroupType = string.IsNullOrWhiteSpace(group.GroupType) ? SingleChoiceType : group.GroupType,
+                    IsRequired = group.IsRequired,
+                    AllowMultiple = group.AllowMultiple,
+                    SortOrder = group.SortOrder,
+                    IsAvailable = group.IsAvailable
+                };
+    }
+
+    private void CancelEditGroup()
+    {
+        editingGroupId = null;
+        editGroup = new MenuItemOptionGroup();
+        errorMessage = null;
+    }
+
+    private async Task SaveEditGroup()
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        if (!isAuthorized || editingGroupId is null)
+            return;
+
+        editGroup.Name = editGroup.Name?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(editGroup.Name))
+        {
+            errorMessage = "Gruppnamn krävs.";
+            return;
+        }
+
+        var group = await Db.MenuItemOptionGroups
+        .FirstOrDefaultAsync(x => x.Id == editingGroupId.Value && x.MenuItemId == MenuItemId);
+
+        if (group is null)
+        {
+            errorMessage = "Gruppen hittades inte.";
+            return;
+        }
+
+        ApplyGroupRules(editGroup);
+
+        group.Name = editGroup.Name;
+        group.GroupType = editGroup.GroupType;
+        group.IsRequired = editGroup.IsRequired;
+        group.AllowMultiple = editGroup.AllowMultiple;
+        group.SortOrder = editGroup.SortOrder;
+        group.IsAvailable = editGroup.IsAvailable;
+
+        await Db.SaveChangesAsync();
+        await LoadData();
+
+        editingGroupId = null;
+        successMessage = "Gruppen har uppdaterats.";
+    }
+
+    private async Task ToggleGroupAvailability(MenuItemOptionGroup group)
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        var dbGroup = await Db.MenuItemOptionGroups
+        .FirstOrDefaultAsync(x => x.Id == group.Id && x.MenuItemId == MenuItemId);
+
+        if (dbGroup is null)
+            return;
+
+        dbGroup.IsAvailable = !dbGroup.IsAvailable;
+
+        await Db.SaveChangesAsync();
+        await LoadData();
+
+        successMessage = dbGroup.IsAvailable
+        ? "Gruppen visas nu för kunder."
+        : "Gruppen är nu dold för kunder.";
+    }
+
+    private void AskDeleteGroup(MenuItemOptionGroup group)
+    {
+        errorMessage = null;
+        successMessage = null;
+        pendingDeleteGroupId = group.Id;
+    }
+
+    private void CancelDeleteGroup()
+    {
+        pendingDeleteGroupId = null;
+        errorMessage = null;
+    }
+
+    private async Task DeleteGroup(MenuItemOptionGroup group)
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        var hasOptions = await Db.MenuItemOptions.AnyAsync(x => x.MenuItemOptionGroupId == group.Id);
+
+        if (hasOptions)
+        {
+            errorMessage = "Gruppen innehåller val. Flytta eller radera valen först.";
+            pendingDeleteGroupId = null;
+            return;
+        }
+
+        var dbGroup = await Db.MenuItemOptionGroups
+        .FirstOrDefaultAsync(x => x.Id == group.Id && x.MenuItemId == MenuItemId);
+
+        if (dbGroup is null)
+            return;
+
+        Db.MenuItemOptionGroups.Remove(dbGroup);
+        await Db.SaveChangesAsync();
+
+        pendingDeleteGroupId = null;
+
+        await LoadData();
+        ResetNewGroup();
+        ResetNewOption();
+
+        successMessage = "Gruppen har raderats.";
+    }
+
+    private void OnNewOptionGroupChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var groupId))
+            newOption.MenuItemOptionGroupId = groupId;
+        else
+            newOption.MenuItemOptionGroupId = null;
+
+        ApplyOptionDefaultsFromSelectedGroup();
+    }
+
+    private void ApplyOptionDefaultsFromSelectedGroup()
+    {
+        if (SelectedNewOptionGroupType == IncludedIngredientsType)
+        {
+            newOption.IsDefaultIncluded = true;
             newOption.ExtraPrice = 0;
         }
-
-        errorMessage = null;
-        successMessage = null;
-    }
-
-    private void SetEditOptionType(bool isIncluded)
-    {
-        editOption.IsDefaultIncluded = isIncluded;
-
-        if (isIncluded)
+        else
         {
-            editOption.ExtraPrice = 0;
+            newOption.IsDefaultIncluded = false;
         }
-
-        errorMessage = null;
-        successMessage = null;
     }
 
     private async Task AddOption()
@@ -344,14 +763,8 @@ else
         successMessage = null;
         pendingDeleteOptionId = null;
 
-        if (!isAuthorized)
+        if (!isAuthorized || menuItem is null)
             return;
-
-        if (menuItem is null)
-        {
-            errorMessage = "Rätten hittades inte.";
-            return;
-        }
 
         newOption.Name = newOption.Name?.Trim() ?? string.Empty;
 
@@ -361,9 +774,30 @@ else
             return;
         }
 
-        if (newOption.IsDefaultIncluded)
+        var groupType = string.Empty;
+
+        if (newOption.MenuItemOptionGroupId.HasValue)
         {
+            var group = await Db.MenuItemOptionGroups
+            .FirstOrDefaultAsync(x => x.Id == newOption.MenuItemOptionGroupId.Value && x.MenuItemId == MenuItemId);
+
+            if (group is null)
+            {
+                errorMessage = "Gruppen hittades inte.";
+                return;
+            }
+
+            groupType = group.GroupType;
+        }
+
+        if (groupType == IncludedIngredientsType)
+        {
+            newOption.IsDefaultIncluded = true;
             newOption.ExtraPrice = 0;
+        }
+        else
+        {
+            newOption.IsDefaultIncluded = false;
         }
 
         if (newOption.ExtraPrice < 0)
@@ -377,10 +811,10 @@ else
         Db.MenuItemOptions.Add(newOption);
         await Db.SaveChangesAsync();
 
-        await LoadOptions();
+        await LoadData();
         ResetNewOption();
 
-        successMessage = "Tillvalet har sparats.";
+        successMessage = "Valet har sparats.";
     }
 
     private void StartEditOption(MenuItemOption option)
@@ -398,6 +832,7 @@ else
                 {
                     Id = option.Id,
                     MenuItemId = option.MenuItemId,
+                    MenuItemOptionGroupId = option.MenuItemOptionGroupId,
                     Name = option.Name,
                     ExtraPrice = option.ExtraPrice,
                     IsDefaultIncluded = option.IsDefaultIncluded,
@@ -429,17 +864,6 @@ else
             return;
         }
 
-        if (editOption.IsDefaultIncluded)
-        {
-            editOption.ExtraPrice = 0;
-        }
-
-        if (editOption.ExtraPrice < 0)
-        {
-            errorMessage = "Extra pris kan inte vara negativt.";
-            return;
-        }
-
         var option = await Db.MenuItemOptions
         .Include(x => x.MenuItem)
         .ThenInclude(x => x!.MenuCategory)
@@ -452,10 +876,43 @@ else
 
         if (option is null)
         {
-            errorMessage = "Tillvalet hittades inte.";
+            errorMessage = "Valet hittades inte.";
             return;
         }
 
+        var groupType = string.Empty;
+
+        if (editOption.MenuItemOptionGroupId.HasValue)
+        {
+            var group = await Db.MenuItemOptionGroups
+            .FirstOrDefaultAsync(x => x.Id == editOption.MenuItemOptionGroupId.Value && x.MenuItemId == MenuItemId);
+
+            if (group is null)
+            {
+                errorMessage = "Gruppen hittades inte.";
+                return;
+            }
+
+            groupType = group.GroupType;
+        }
+
+        if (groupType == IncludedIngredientsType)
+        {
+            editOption.IsDefaultIncluded = true;
+            editOption.ExtraPrice = 0;
+        }
+        else
+        {
+            editOption.IsDefaultIncluded = false;
+        }
+
+        if (editOption.ExtraPrice < 0)
+        {
+            errorMessage = "Extra pris kan inte vara negativt.";
+            return;
+        }
+
+        option.MenuItemOptionGroupId = editOption.MenuItemOptionGroupId;
         option.Name = editOption.Name;
         option.ExtraPrice = editOption.ExtraPrice;
         option.IsDefaultIncluded = editOption.IsDefaultIncluded;
@@ -463,10 +920,10 @@ else
         option.IsAvailable = editOption.IsAvailable;
 
         await Db.SaveChangesAsync();
-        await LoadOptions();
+        await LoadData();
 
         editingOptionId = null;
-        successMessage = "Tillvalet har uppdaterats.";
+        successMessage = "Valet har uppdaterats.";
     }
 
     private async Task ToggleAvailability(MenuItemOption option)
@@ -494,11 +951,11 @@ else
         dbOption.IsAvailable = !dbOption.IsAvailable;
 
         await Db.SaveChangesAsync();
-        await LoadOptions();
+        await LoadData();
 
         successMessage = dbOption.IsAvailable
-        ? "Tillvalet visas nu för kunder."
-        : "Tillvalet är nu dolt för kunder.";
+        ? "Valet visas nu för kunder."
+        : "Valet är nu dolt för kunder.";
     }
 
     private void AskDelete(MenuItemOption option)
@@ -540,38 +997,36 @@ else
 
         pendingDeleteOptionId = null;
 
-        await LoadOptions();
+        await LoadData();
 
-        successMessage = "Tillvalet har raderats.";
+        successMessage = "Valet har raderats.";
     }
 
     private RenderFragment OptionCard(MenuItemOption option) => @<div class="option-admin-card modern-option-card @(option.IsAvailable ? "" : "is-hidden")">
         @if (editingOptionId == option.Id)
     {
         <div class="edit-category-form modern-option-edit">
-            <h3>Redigera tillval</h3>
+            <h3>Redigera val</h3>
+
+            <label>Grupp</label>
+            <InputSelect class="input" @bind-Value="editOption.MenuItemOptionGroupId">
+                <option value="">Ingen grupp - vanligt tillval</option>
+                @foreach (var group in groups)
+            {
+                <option value="@group.Id">@group.Name (@FormatGroupType(group.GroupType))</option>
+            }
+            </InputSelect>
 
             <label>Namn</label>
             <InputText class="input" @bind-Value="editOption.Name" />
 
-            <label>Typ</label>
-            <div class="option-type-picker">
-                <button type="button"
-                        class="option-type-card @(editOption.IsDefaultIncluded ? "selected" : "")"
-                        @onclick="() => SetEditOptionType(true)">
-                    <strong>Ingår</strong>
-                    <span>Ingår i rätten från början.</span>
-                </button>
-
-                <button type="button"
-                        class="option-type-card @(!editOption.IsDefaultIncluded ? "selected" : "")"
-                        @onclick="() => SetEditOptionType(false)">
-                    <strong>Extra</strong>
-                    <span>Kostar extra för kunden.</span>
-                </button>
+            @if (GetGroupType(editOption.MenuItemOptionGroupId) == IncludedIngredientsType)
+        {
+            <div class="upload-success">
+                Detta är en ingrediens som ingår. Kunden kan ta bort den.
             </div>
-
-            @if (!editOption.IsDefaultIncluded)
+        }
+        else
         {
             <label>Extra pris</label>
             <InputNumber class="input" @bind-Value="editOption.ExtraPrice" />
@@ -602,13 +1057,17 @@ else
             <div>
                 <strong>@option.Name</strong>
 
-                @if (option.IsDefaultIncluded)
+                @if (GetGroupType(option.MenuItemOptionGroupId) == IncludedIngredientsType)
             {
-                <span class="included-tag">Ingår</span>
+                <span class="included-tag">Ingår - kan tas bort</span>
+            }
+            else if (option.ExtraPrice > 0)
+            {
+                <span class="extra-price-tag">+@option.ExtraPrice.ToString("0.00") kr</span>
             }
             else
             {
-                <span class="extra-price-tag">+@option.ExtraPrice.ToString("0.00") kr</span>
+                <span class="included-tag">0 kr</span>
             }
 
                 @if (!option.IsAvailable)
@@ -648,6 +1107,53 @@ else
         </div>
     }
     </div>;
+
+    private void ApplyGroupRules(MenuItemOptionGroup group)
+    {
+        if (group.GroupType == IncludedIngredientsType)
+        {
+            group.IsRequired = false;
+            group.AllowMultiple = true;
+        }
+        else if (group.GroupType == SingleChoiceType)
+        {
+            group.AllowMultiple = false;
+        }
+        else if (group.GroupType == MultipleChoiceType)
+        {
+            group.AllowMultiple = true;
+        }
+    }
+
+    private string GetGroupType(int? groupId)
+    {
+        if (groupId is null)
+            return string.Empty;
+
+        return groups.FirstOrDefault(x => x.Id == groupId.Value)?.GroupType ?? string.Empty;
+    }
+
+    private string FormatGroupType(string? groupType)
+    {
+        return groupType switch
+        {
+            IncludedIngredientsType => "Ingredienser",
+            SingleChoiceType => "Ett val",
+            MultipleChoiceType => "Flera val",
+            _ => "Ett val"
+        };
+    }
+
+    private string GetGroupSummary(MenuItemOptionGroup group)
+    {
+        return group.GroupType switch
+        {
+            IncludedIngredientsType => "Ingredienser som ingår • kunden kan ta bort",
+            SingleChoiceType => $"{(group.IsRequired ? "Obligatorisk" : "Frivillig")} • Ett val",
+            MultipleChoiceType => $"{(group.IsRequired ? "Obligatorisk" : "Frivillig")} • Flera val",
+            _ => "Ett val"
+        };
+    }
 
     private void BackToItems()
     {

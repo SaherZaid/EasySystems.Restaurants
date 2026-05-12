@@ -14,6 +14,8 @@ namespace EasySystems.Restaurants.Data
         public DbSet<RestaurantLegalPage> RestaurantLegalPages { get; set; } = null!;
         public DbSet<MenuItemOption> MenuItemOptions { get; set; } = null!;
         public DbSet<RestaurantUserAccess> RestaurantUserAccesses { get; set; } = null!;
+        public DbSet<MenuItemOptionGroup> MenuItemOptionGroups { get; set; } = null!;
+
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

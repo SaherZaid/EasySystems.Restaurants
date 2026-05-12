@@ -5051,3 +5051,302 @@ html {
 .color-setting label {
     font-weight: 800;
 }
+
+.option-group-admin-card {
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    border-radius: 22px;
+    padding: 18px;
+    display: grid;
+    gap: 14px;
+}
+
+    .option-group-admin-card.is-hidden {
+        opacity: .75;
+        background: #f9fafb;
+    }
+
+.option-group-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 14px;
+}
+
+    .option-group-header h3 {
+        margin: 0 0 6px;
+    }
+
+    .option-group-header p {
+        margin: 0;
+        color: #6b7280;
+        font-weight: 700;
+    }
+
+@media (max-width: 768px) {
+    .option-group-header {
+        flex-direction: column;
+    }
+}
+
+.meal-option-group {
+    border: 1px solid rgba(17,17,17,.08);
+    border-radius: 24px;
+    padding: 18px;
+    background: rgba(255,255,255,.55);
+    margin-bottom: 18px;
+}
+
+.meal-option-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+    .meal-option-group-header h3 {
+        margin: 0;
+    }
+
+.required-badge {
+    background: #111827;
+    color: #ffffff;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-weight: 800;
+    font-size: .78rem;
+    white-space: nowrap;
+}
+
+.premium-option-choice {
+    cursor: pointer;
+}
+
+    .premium-option-choice input[type="radio"],
+    .premium-option-choice input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--primary, #111827);
+    }
+
+@media (max-width: 640px) {
+    .meal-option-group-header {
+        flex-direction: column;
+    }
+}
+
+.meal-option-group {
+    border: 1px solid rgba(17,17,17,.08);
+    border-radius: 24px;
+    padding: 18px;
+    background: rgba(255,255,255,.55);
+    margin-bottom: 18px;
+}
+
+.meal-option-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+    .meal-option-group-header h3 {
+        margin: 0;
+    }
+
+.required-badge {
+    background: #111827;
+    color: #ffffff;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-weight: 800;
+    font-size: .78rem;
+    white-space: nowrap;
+}
+
+.premium-option-choice input[type="radio"],
+.premium-option-choice input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary, #111827);
+}
+
+.receipt-style-order-item {
+    align-items: flex-start;
+}
+
+.receipt-item-main {
+    display: grid;
+    gap: 6px;
+}
+
+    .receipt-item-main > span {
+        font-weight: 900;
+    }
+
+.receipt-item-options {
+    display: grid;
+    gap: 3px;
+    padding-left: 18px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+    .receipt-item-options small {
+        display: block;
+        color: #374151;
+        font-size: .92rem;
+        line-height: 1.45;
+    }
+
+@media (max-width: 768px) {
+    .orders-main-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .orders-list-panel {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .modern-orders-list {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 4px 4px 12px;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .modern-order-card {
+        min-width: 260px;
+        max-width: 260px;
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+    }
+
+    .order-detail-panel,
+    .modern-order-detail {
+        width: 100%;
+    }
+
+    .orders-toolbar {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .modern-order-tabs {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+        .modern-order-tabs button {
+            white-space: nowrap;
+            flex: 0 0 auto;
+        }
+}
+
+@media (max-width: 768px) {
+
+    .modern-status-actions {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+        .modern-status-actions button {
+            min-height: 42px;
+            padding: 10px 8px;
+            font-size: .82rem;
+            font-weight: 700;
+            border-radius: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .modern-status-actions .danger-btn {
+            grid-column: span 2;
+        }
+}
+
+/* FIX: Order status buttons too large */
+.modern-status-actions,
+.order-actions.modern-status-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    align-items: center !important;
+}
+
+    .modern-status-actions button,
+    .order-actions.modern-status-actions button {
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: fit-content !important;
+        height: auto !important;
+        min-height: 36px !important;
+        padding: 8px 12px !important;
+        font-size: 0.85rem !important;
+        line-height: 1.1 !important;
+        border-radius: 999px !important;
+        white-space: nowrap !important;
+        flex: 0 0 auto !important;
+    }
+
+@media (max-width: 768px) {
+    .modern-status-actions,
+    .order-actions.modern-status-actions {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+
+        .modern-status-actions button,
+        .order-actions.modern-status-actions button {
+            width: auto !important;
+            max-width: none !important;
+            min-height: 34px !important;
+            padding: 7px 10px !important;
+            font-size: 0.78rem !important;
+            border-radius: 999px !important;
+            flex: 0 0 auto !important;
+        }
+}
+
+/* FIX: Desktop orders detail stays visible while scrolling */
+@media (min-width: 769px) {
+    .orders-main-layout {
+        align-items: flex-start;
+    }
+
+    .order-detail-panel,
+    .modern-order-detail {
+        position: sticky;
+        top: 96px;
+        max-height: calc(100vh - 120px);
+        overflow-y: auto;
+        align-self: flex-start;
+    }
+
+    .modern-status-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+        background: inherit;
+        padding-top: 12px;
+        padding-bottom: 8px;
+        border-top: 1px solid rgba(17, 24, 39, .08);
+    }
+}

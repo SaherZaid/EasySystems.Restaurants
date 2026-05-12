@@ -89,9 +89,9 @@ else
                     @foreach (var category in categories)
                     {
                         var categoryItems = items
-                        .Where(x => x.MenuCategoryId == category.Id)
-                        .OrderBy(x => x.SortOrder)
-                        .ToList();
+                            .Where(x => x.MenuCategoryId == category.Id)
+                            .OrderBy(x => x.SortOrder)
+                            .ToList();
 
                         <section id="category-@category.Id" class="public-menu-category" style="@GetCategorySectionStyle()">
                             <div class="public-menu-category-header">
@@ -183,29 +183,124 @@ else
                             <img class="option-dish-image" src="@selectedMenuItem.ImageUrl" alt="@selectedMenuItem.Name" />
                         }
 
-                        <p class="option-dish-description" style="color:@restaurant.BodyTextColor;">@selectedMenuItem.Description</p>
-
-                        @{
-                            var includedOptions = selectedItemOptions
-                            .Where(x => x.IsDefaultIncluded)
-                            .OrderBy(x => x.SortOrder)
-                            .ToList();
-
-                            var extraOptions = selectedItemOptions
-                            .Where(x => !x.IsDefaultIncluded)
-                            .OrderBy(x => x.SortOrder)
-                            .ToList();
+                        @if (!string.IsNullOrWhiteSpace(selectedMenuItem.Description))
+                        {
+                            <p class="option-dish-description" style="color:@restaurant.BodyTextColor;">@selectedMenuItem.Description</p>
                         }
 
-                        @if (includedOptions.Count > 0)
+                        @if (!string.IsNullOrWhiteSpace(optionValidationMessage))
+                        {
+                            <div class="error">@optionValidationMessage</div>
+                        }
+
+                        @{
+                            var groupedOptions = selectedItemGroups
+                                .Where(g => g.IsAvailable)
+                                .OrderBy(g => g.SortOrder)
+                                .ThenBy(g => g.Name)
+                                .ToList();
+
+                            var ungroupedIncludedOptions = selectedItemOptions
+                                .Where(x => x.MenuItemOptionGroupId is null && x.IsDefaultIncluded)
+                                .OrderBy(x => x.SortOrder)
+                                .ToList();
+
+                            var ungroupedExtraOptions = selectedItemOptions
+                                .Where(x => x.MenuItemOptionGroupId is null && !x.IsDefaultIncluded)
+                                .OrderBy(x => x.SortOrder)
+                                .ToList();
+                        }
+
+                        @foreach (var group in groupedOptions)
+                        {
+                            var groupType = NormalizeGroupType(group.GroupType);
+
+                            var groupOptions = selectedItemOptions
+                                .Where(x => x.MenuItemOptionGroupId == group.Id && x.IsAvailable)
+                                .OrderBy(x => x.SortOrder)
+                                .ThenBy(x => x.Name)
+                                .ToList();
+
+                            if (groupOptions.Count == 0)
+                                continue;
+
+                            <div class="option-list meal-option-group">
+                                <div class="meal-option-group-header">
+                                    <div>
+                                        <h3 style="color:@restaurant.HeadingTextColor;">@group.Name</h3>
+                                        <p class="option-help" style="color:@restaurant.MutedTextColor;">
+                                            @GetCustomerGroupHelpText(group)
+                                        </p>
+                                    </div>
+
+                                    @if (group.IsRequired && groupType != IncludedIngredientsType)
+                                    {
+                                        <small class="required-badge">Krävs</small>
+                                    }
+                                </div>
+
+                                @foreach (var option in groupOptions)
+                                {
+                                    if (groupType == IncludedIngredientsType || groupType == MultipleChoiceType)
+                                    {
+                                        <label class="option-choice premium-option-choice" style="@GetOptionChoiceStyle()">
+                                            <input type="checkbox"
+                                                   checked="@selectedOptionIds.Contains(option.Id)"
+                                                   @onchange="(e) => ToggleOption(option.Id, (bool)e.Value!)" />
+
+                                            <span>
+                                                <strong style="color:@restaurant.HeadingTextColor;">@option.Name</strong>
+
+                                                @if (groupType == IncludedIngredientsType)
+                                                {
+                                                    <small style="color:@restaurant.MutedTextColor;">Ingår</small>
+                                                }
+                                                else if (option.ExtraPrice > 0)
+                                                {
+                                                    <small style="color:@restaurant.PriceTextColor;">+@option.ExtraPrice.ToString("0.00") kr</small>
+                                                }
+                                                else
+                                                {
+                                                    <small style="color:@restaurant.MutedTextColor;">0 kr</small>
+                                                }
+                                            </span>
+                                        </label>
+                                    }
+                                    else
+                                    {
+                                        <label class="option-choice premium-option-choice" style="@GetOptionChoiceStyle()">
+                                            <input type="radio"
+                                                   name="group-@group.Id"
+                                                   checked="@IsSingleGroupOptionSelected(group.Id, option.Id)"
+                                                   @onchange="() => SelectSingleGroupOption(group.Id, option.Id)" />
+
+                                            <span>
+                                                <strong style="color:@restaurant.HeadingTextColor;">@option.Name</strong>
+
+                                                @if (option.ExtraPrice > 0)
+                                                {
+                                                    <small style="color:@restaurant.PriceTextColor;">+@option.ExtraPrice.ToString("0.00") kr</small>
+                                                }
+                                                else
+                                                {
+                                                    <small style="color:@restaurant.MutedTextColor;">Ingår</small>
+                                                }
+                                            </span>
+                                        </label>
+                                    }
+                                }
+                            </div>
+                        }
+
+                        @if (ungroupedIncludedOptions.Count > 0)
                         {
                             <div class="option-list">
                                 <h3 style="color:@restaurant.HeadingTextColor;">Ingår i rätten</h3>
                                 <p class="option-help" style="color:@restaurant.MutedTextColor;">Avmarkera det du inte vill ha.</p>
 
-                                @foreach (var option in includedOptions)
+                                @foreach (var option in ungroupedIncludedOptions)
                                 {
-                                    <label class="option-choice" style="@GetOptionChoiceStyle()">
+                                    <label class="option-choice premium-option-choice" style="@GetOptionChoiceStyle()">
                                         <input type="checkbox"
                                                checked="@selectedOptionIds.Contains(option.Id)"
                                                @onchange="(e) => ToggleOption(option.Id, (bool)e.Value!)" />
@@ -219,28 +314,36 @@ else
                             </div>
                         }
 
-                        @if (extraOptions.Count > 0)
+                        @if (ungroupedExtraOptions.Count > 0)
                         {
                             <div class="option-list">
                                 <h3 style="color:@restaurant.HeadingTextColor;">Extra tillval</h3>
 
-                                @foreach (var option in extraOptions)
+                                @foreach (var option in ungroupedExtraOptions)
                                 {
-                                    <label class="option-choice" style="@GetOptionChoiceStyle()">
+                                    <label class="option-choice premium-option-choice" style="@GetOptionChoiceStyle()">
                                         <input type="checkbox"
                                                checked="@selectedOptionIds.Contains(option.Id)"
                                                @onchange="(e) => ToggleOption(option.Id, (bool)e.Value!)" />
 
                                         <span>
                                             <strong style="color:@restaurant.HeadingTextColor;">@option.Name</strong>
-                                            <small style="color:@restaurant.PriceTextColor;">+@option.ExtraPrice.ToString("0.00") kr</small>
+
+                                            @if (option.ExtraPrice > 0)
+                                            {
+                                                <small style="color:@restaurant.PriceTextColor;">+@option.ExtraPrice.ToString("0.00") kr</small>
+                                            }
+                                            else
+                                            {
+                                                <small style="color:@restaurant.MutedTextColor;">0 kr</small>
+                                            }
                                         </span>
                                     </label>
                                 }
                             </div>
                         }
 
-                        @if (includedOptions.Count == 0 && extraOptions.Count == 0)
+                        @if (groupedOptions.Count == 0 && ungroupedIncludedOptions.Count == 0 && ungroupedExtraOptions.Count == 0)
                         {
                             <div class="empty-category" style="color:@restaurant.MutedTextColor;">
                                 Inga anpassningar för denna rätt.
@@ -357,9 +460,7 @@ else
                                         {
                                             <div class="tip-box">
                                                 <strong>Tips</strong>
-                                                <p>
-                                                    Du kan beställa utan konto, men om du loggar in sparas beställningen på ditt konto.
-                                                </p>
+                                                <p>Du kan beställa utan konto, men om du loggar in sparas beställningen på ditt konto.</p>
                                                 <a href="@GetLoginUrl()">Logga in</a>
                                             </div>
                                         }
@@ -404,6 +505,10 @@ else
     [Parameter]
     public string Slug { get; set; } = string.Empty;
 
+    private const string IncludedIngredientsType = "IncludedIngredients";
+    private const string SingleChoiceType = "SingleChoice";
+    private const string MultipleChoiceType = "MultipleChoice";
+
     private Restaurant? restaurant;
     private ApplicationUser? currentUser;
 
@@ -413,6 +518,7 @@ else
     private List<MenuCategory> categories = [];
     private List<MenuItem> items = [];
     private List<MenuItemOption> itemOptions = [];
+    private List<MenuItemOptionGroup> itemOptionGroups = [];
     private List<CartItem> cart = [];
 
     private bool showCart;
@@ -422,7 +528,10 @@ else
 
     private MenuItem? selectedMenuItem;
     private List<MenuItemOption> selectedItemOptions = [];
+    private List<MenuItemOptionGroup> selectedItemGroups = [];
     private HashSet<int> selectedOptionIds = [];
+    private Dictionary<int, int> selectedSingleGroupOptionIds = [];
+    private string? optionValidationMessage;
 
     private string customerName = string.Empty;
     private string customerPhone = string.Empty;
@@ -449,12 +558,22 @@ else
     private decimal CartTotal => cart.Sum(x => x.UnitPrice * x.Quantity);
     private int CartCount => cart.Sum(x => x.Quantity);
 
-    private decimal SelectedItemTotal =>
-        selectedMenuItem is null
-            ? 0
-            : selectedMenuItem.Price + selectedItemOptions
-                .Where(x => !x.IsDefaultIncluded && selectedOptionIds.Contains(x.Id))
+    private decimal SelectedItemTotal
+    {
+        get
+        {
+            if (selectedMenuItem is null)
+                return 0;
+
+            var selectedOptionIdList = GetAllSelectedOptionIds();
+
+            var extraTotal = selectedItemOptions
+                .Where(x => selectedOptionIdList.Contains(x.Id) && x.ExtraPrice > 0)
                 .Sum(x => x.ExtraPrice);
+
+            return selectedMenuItem.Price + extraTotal;
+        }
+    }
 
     private class CartItem
     {
@@ -497,10 +616,21 @@ else
 
             var itemIds = items.Select(i => i.Id).ToList();
 
-            itemOptions = await Db.MenuItemOptions
+            itemOptionGroups = await Db.MenuItemOptionGroups
                 .AsNoTracking()
                 .Where(x => x.IsAvailable && itemIds.Contains(x.MenuItemId))
                 .OrderBy(x => x.SortOrder)
+                .ToListAsync();
+
+            itemOptions = await Db.MenuItemOptions
+                .AsNoTracking()
+                .Include(x => x.MenuItemOptionGroup)
+                .Where(x =>
+                    x.IsAvailable &&
+                    itemIds.Contains(x.MenuItemId) &&
+                    (x.MenuItemOptionGroupId == null || x.MenuItemOptionGroup!.IsAvailable))
+                .OrderBy(x => x.MenuItemOptionGroup!.SortOrder)
+                .ThenBy(x => x.SortOrder)
                 .ToListAsync();
         }
 
@@ -536,9 +666,7 @@ else
             currentUser = await UserManager.GetUserAsync(authState.User);
 
             if (currentUser is not null)
-            {
                 PrefillCustomerFromUser();
-            }
         }
     }
 
@@ -557,9 +685,7 @@ else
         }
 
         if (string.IsNullOrWhiteSpace(customerPhone))
-        {
             customerPhone = currentUser.PhoneNumber ?? string.Empty;
-        }
     }
 
     private async Task LoadCart()
@@ -568,15 +694,9 @@ else
             return;
 
         var json = await JS.InvokeAsync<string?>("easyCart.get", CartStorageKey);
-
-        if (!string.IsNullOrWhiteSpace(json))
-        {
-            cart = JsonSerializer.Deserialize<List<CartItem>>(json) ?? [];
-        }
-        else
-        {
-            cart = [];
-        }
+        cart = !string.IsNullOrWhiteSpace(json)
+            ? JsonSerializer.Deserialize<List<CartItem>>(json) ?? []
+            : [];
     }
 
     private async Task SaveCart()
@@ -588,35 +708,103 @@ else
     private void OpenItemOptions(MenuItem item)
     {
         selectedMenuItem = item;
+        optionValidationMessage = null;
+
+        selectedItemGroups = itemOptionGroups
+            .Where(x => x.MenuItemId == item.Id && x.IsAvailable)
+            .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.Name)
+            .ToList();
 
         selectedItemOptions = itemOptions
-            .Where(x => x.MenuItemId == item.Id)
-            .OrderBy(x => x.SortOrder)
+            .Where(x => x.MenuItemId == item.Id && x.IsAvailable)
+            .OrderBy(x => x.MenuItemOptionGroup?.SortOrder ?? 999)
+            .ThenBy(x => x.SortOrder)
+            .ThenBy(x => x.Name)
             .ToList();
 
         selectedOptionIds = selectedItemOptions
-            .Where(x => x.IsDefaultIncluded)
+            .Where(x =>
+                x.MenuItemOptionGroupId is null && x.IsDefaultIncluded ||
+                x.MenuItemOptionGroupId is not null &&
+                NormalizeGroupType(x.MenuItemOptionGroup?.GroupType) == IncludedIngredientsType)
             .Select(x => x.Id)
             .ToHashSet();
+
+        selectedSingleGroupOptionIds = [];
     }
 
     private void CloseItemOptions()
     {
         selectedMenuItem = null;
         selectedItemOptions = [];
+        selectedItemGroups = [];
         selectedOptionIds = [];
+        selectedSingleGroupOptionIds = [];
+        optionValidationMessage = null;
     }
 
     private void ToggleOption(int optionId, bool isSelected)
     {
         if (isSelected)
-        {
             selectedOptionIds.Add(optionId);
-        }
         else
-        {
             selectedOptionIds.Remove(optionId);
+
+        optionValidationMessage = null;
+    }
+
+    private void SelectSingleGroupOption(int groupId, int optionId)
+    {
+        selectedSingleGroupOptionIds[groupId] = optionId;
+        optionValidationMessage = null;
+    }
+
+    private bool IsSingleGroupOptionSelected(int groupId, int optionId)
+    {
+        return selectedSingleGroupOptionIds.TryGetValue(groupId, out var selectedOptionId) &&
+               selectedOptionId == optionId;
+    }
+
+    private HashSet<int> GetAllSelectedOptionIds()
+    {
+        var ids = selectedOptionIds.ToHashSet();
+
+        foreach (var selectedOptionId in selectedSingleGroupOptionIds.Values)
+            ids.Add(selectedOptionId);
+
+        return ids;
+    }
+
+    private bool ValidateRequiredGroups()
+    {
+        foreach (var group in selectedItemGroups.Where(x => x.IsAvailable && x.IsRequired))
+        {
+            var groupType = NormalizeGroupType(group.GroupType);
+
+            if (groupType == IncludedIngredientsType)
+                continue;
+
+            var groupOptions = selectedItemOptions
+                .Where(x => x.MenuItemOptionGroupId == group.Id && x.IsAvailable)
+                .ToList();
+
+            if (groupOptions.Count == 0)
+                continue;
+
+            var hasSelection = groupType == MultipleChoiceType
+                ? groupOptions.Any(x => selectedOptionIds.Contains(x.Id))
+                : selectedSingleGroupOptionIds.ContainsKey(group.Id);
+
+            if (!hasSelection)
+            {
+                optionValidationMessage = $"Välj ett alternativ i “{group.Name}”.";
+                return false;
+            }
         }
+
+        optionValidationMessage = null;
+        return true;
     }
 
     private async Task AddSelectedItemToCart()
@@ -624,12 +812,50 @@ else
         if (selectedMenuItem is null)
             return;
 
+        if (!ValidateRequiredGroups())
+            return;
+
+        var selectedOptionIdList = GetAllSelectedOptionIds();
+
         var removedIncludedOptions = selectedItemOptions
-            .Where(x => x.IsDefaultIncluded && !selectedOptionIds.Contains(x.Id))
+            .Where(x =>
+                (x.MenuItemOptionGroupId is null && x.IsDefaultIncluded ||
+                 x.MenuItemOptionGroupId is not null &&
+                 NormalizeGroupType(x.MenuItemOptionGroup?.GroupType) == IncludedIngredientsType) &&
+                !selectedOptionIdList.Contains(x.Id))
+            .ToList();
+
+        var selectedGroupedOptions = selectedItemGroups
+            .OrderBy(x => x.SortOrder)
+            .Select(group =>
+            {
+                var groupType = NormalizeGroupType(group.GroupType);
+
+                if (groupType == IncludedIngredientsType)
+                    return string.Empty;
+
+                var selectedNames = selectedItemOptions
+                    .Where(option =>
+                        option.MenuItemOptionGroupId == group.Id &&
+                        selectedOptionIdList.Contains(option.Id))
+                    .OrderBy(option => option.SortOrder)
+                    .Select(option => option.ExtraPrice > 0
+                        ? $"{option.Name} +{option.ExtraPrice.ToString("0.00")} kr"
+                        : option.Name)
+                    .ToList();
+
+                return selectedNames.Count == 0
+                    ? string.Empty
+                    : $"{group.Name}: {string.Join(", ", selectedNames)}";
+            })
+            .Where(x => !string.IsNullOrWhiteSpace(x))
             .ToList();
 
         var selectedExtraOptions = selectedItemOptions
-            .Where(x => !x.IsDefaultIncluded && selectedOptionIds.Contains(x.Id))
+            .Where(x =>
+                x.MenuItemOptionGroupId is null &&
+                !x.IsDefaultIncluded &&
+                selectedOptionIds.Contains(x.Id))
             .ToList();
 
         var removedText = removedIncludedOptions.Count == 0
@@ -638,13 +864,17 @@ else
 
         var extraText = selectedExtraOptions.Count == 0
             ? string.Empty
-            : "Extra: " + string.Join(", ", selectedExtraOptions.Select(x => x.Name));
+            : "Extra: " + string.Join(", ", selectedExtraOptions.Select(x =>
+                x.ExtraPrice > 0
+                    ? $"{x.Name} +{x.ExtraPrice.ToString("0.00")} kr"
+                    : x.Name));
 
         var optionText = string.Join(" | ",
-            new[] { removedText, extraText }
+            selectedGroupedOptions
+                .Concat(new[] { removedText, extraText })
                 .Where(x => !string.IsNullOrWhiteSpace(x)));
 
-        var finalPrice = selectedMenuItem.Price + selectedExtraOptions.Sum(x => x.ExtraPrice);
+        var finalPrice = SelectedItemTotal;
 
         var existing = cart.FirstOrDefault(x =>
             x.MenuItemId == selectedMenuItem.Id &&
@@ -653,13 +883,13 @@ else
         if (existing is null)
         {
             cart.Add(new CartItem
-                {
-                    MenuItemId = selectedMenuItem.Id,
-                    Name = selectedMenuItem.Name,
-                    SelectedOptions = optionText,
-                    UnitPrice = finalPrice,
-                    Quantity = 1
-                });
+            {
+                MenuItemId = selectedMenuItem.Id,
+                Name = selectedMenuItem.Name,
+                SelectedOptions = optionText,
+                UnitPrice = finalPrice,
+                Quantity = 1
+            });
         }
         else
         {
@@ -691,13 +921,9 @@ else
     private async Task DecreaseQuantity(CartItem item)
     {
         if (item.Quantity <= 1)
-        {
             cart.Remove(item);
-        }
         else
-        {
             item.Quantity--;
-        }
 
         await SaveCart();
 
@@ -757,25 +983,25 @@ else
         }
 
         var order = new Order
+        {
+            RestaurantId = restaurant.Id,
+            CustomerUserId = currentUser?.Id,
+            CustomerName = customerName.Trim(),
+            CustomerPhone = customerPhone.Trim(),
+            CustomerNote = customerNote.Trim(),
+            TotalAmount = CartTotal,
+            Status = "New",
+            CreatedAt = DateTime.UtcNow,
+            Items = cart.Select(x => new OrderItem
             {
-                RestaurantId = restaurant.Id,
-                CustomerUserId = currentUser?.Id,
-                CustomerName = customerName.Trim(),
-                CustomerPhone = customerPhone.Trim(),
-                CustomerNote = customerNote.Trim(),
-                TotalAmount = CartTotal,
-                Status = "New",
-                CreatedAt = DateTime.UtcNow,
-                Items = cart.Select(x => new OrderItem
-                {
-                    MenuItemId = x.MenuItemId,
-                    ItemName = x.Name,
-                    SelectedOptions = x.SelectedOptions,
-                    UnitPrice = x.UnitPrice,
-                    Quantity = x.Quantity,
-                    LineTotal = x.UnitPrice * x.Quantity
-                }).ToList()
-            };
+                MenuItemId = x.MenuItemId,
+                ItemName = x.Name,
+                SelectedOptions = x.SelectedOptions,
+                UnitPrice = x.UnitPrice,
+                Quantity = x.Quantity,
+                LineTotal = x.UnitPrice * x.Quantity
+            }).ToList()
+        };
 
         Db.Orders.Add(order);
         await Db.SaveChangesAsync();
@@ -805,69 +1031,50 @@ else
         await JS.InvokeVoidAsync("scrollToElementById", $"category-{categoryId}");
     }
 
-    private string GetPublicPageStyle()
+    private string NormalizeGroupType(string? groupType)
     {
-        if (restaurant is null)
-            return string.Empty;
+        if (string.IsNullOrWhiteSpace(groupType))
+            return SingleChoiceType;
 
-        return $"--primary:{restaurant.PrimaryColor}; --secondary:{restaurant.SecondaryColor}; background:{restaurant.PageBackgroundColor}; color:{restaurant.BodyTextColor};";
+        return groupType;
     }
+
+    private string GetCustomerGroupHelpText(MenuItemOptionGroup group)
+    {
+        var groupType = NormalizeGroupType(group.GroupType);
+
+        return groupType switch
+        {
+            IncludedIngredientsType => "Ingår i rätten • avmarkera det du inte vill ha",
+            SingleChoiceType => $"{(group.IsRequired ? "Obligatoriskt val" : "Frivilligt")} • välj ett alternativ",
+            MultipleChoiceType => $"{(group.IsRequired ? "Obligatoriskt val" : "Frivilligt")} • du kan välja flera",
+            _ => "Välj ett alternativ"
+        };
+    }
+
+    private string GetPublicPageStyle()
+        => restaurant is null ? string.Empty : $"--primary:{restaurant.PrimaryColor}; --secondary:{restaurant.SecondaryColor}; background:{restaurant.PageBackgroundColor}; color:{restaurant.BodyTextColor};";
 
     private string GetSectionStyle()
-    {
-        if (restaurant is null)
-            return string.Empty;
-
-        return $"background:{restaurant.SectionBackgroundColor};";
-    }
+        => restaurant is null ? string.Empty : $"background:{restaurant.SectionBackgroundColor};";
 
     private string GetCategorySectionStyle()
-    {
-        if (restaurant is null)
-            return string.Empty;
-
-        return $"background:{restaurant.MenuCategoryBackgroundColor};";
-    }
+        => restaurant is null ? string.Empty : $"background:{restaurant.MenuCategoryBackgroundColor};";
 
     private string GetDishCardStyle()
-    {
-        if (restaurant is null)
-            return string.Empty;
-
-        return $"background:{restaurant.MenuItemBackgroundColor}; color:{restaurant.BodyTextColor};";
-    }
+        => restaurant is null ? string.Empty : $"background:{restaurant.MenuItemBackgroundColor}; color:{restaurant.BodyTextColor};";
 
     private string GetCardStyle()
-    {
-        if (restaurant is null)
-            return string.Empty;
-
-        return $"background:{restaurant.CardBackgroundColor}; color:{restaurant.BodyTextColor};";
-    }
+        => restaurant is null ? string.Empty : $"background:{restaurant.CardBackgroundColor}; color:{restaurant.BodyTextColor};";
 
     private string GetPanelStyle()
-    {
-        if (restaurant is null)
-            return string.Empty;
-
-        return $"background:{restaurant.CardBackgroundColor}; color:{restaurant.BodyTextColor};";
-    }
+        => restaurant is null ? string.Empty : $"background:{restaurant.CardBackgroundColor}; color:{restaurant.BodyTextColor};";
 
     private string GetOptionChoiceStyle()
-    {
-        if (restaurant is null)
-            return string.Empty;
-
-        return $"background:{restaurant.SectionBackgroundColor}; color:{restaurant.BodyTextColor};";
-    }
+        => restaurant is null ? string.Empty : $"background:{restaurant.SectionBackgroundColor}; color:{restaurant.BodyTextColor};";
 
     private string GetCartItemStyle()
-    {
-        if (restaurant is null)
-            return string.Empty;
-
-        return $"background:{restaurant.SectionBackgroundColor}; color:{restaurant.BodyTextColor};";
-    }
+        => restaurant is null ? string.Empty : $"background:{restaurant.SectionBackgroundColor}; color:{restaurant.BodyTextColor};";
 
     private string GetHeroStyle()
     {
@@ -875,60 +1082,28 @@ else
             return string.Empty;
 
         if (string.IsNullOrWhiteSpace(restaurant.HeroImageUrl))
-        {
             return $"background: linear-gradient(135deg, {restaurant.PrimaryColor}, #111827); color:{restaurant.HeroTextColor};";
-        }
 
         return $"background: linear-gradient({restaurant.HeroOverlayColor}, {restaurant.HeroOverlayColor}), url('{restaurant.HeroImageUrl}') center/cover; color:{restaurant.HeroTextColor};";
     }
 
     private string GetPrimaryButtonStyle()
-    {
-        if (restaurant is null)
-            return string.Empty;
-
-        return $"background:{restaurant.ButtonBackgroundColor}; color:{restaurant.ButtonTextColor};";
-    }
+        => restaurant is null ? string.Empty : $"background:{restaurant.ButtonBackgroundColor}; color:{restaurant.ButtonTextColor};";
 
     private string GetSecondaryButtonStyle()
-    {
-        if (restaurant is null)
-            return string.Empty;
-
-        return $"background:{restaurant.SecondaryButtonBackgroundColor}; color:{restaurant.SecondaryButtonTextColor};";
-    }
+        => restaurant is null ? string.Empty : $"background:{restaurant.SecondaryButtonBackgroundColor}; color:{restaurant.SecondaryButtonTextColor};";
 
     private string GetCategoryTabStyle()
-    {
-        if (restaurant is null)
-            return string.Empty;
-
-        return $"background:{restaurant.CardBackgroundColor}; color:{restaurant.HeadingTextColor}; border-color:{restaurant.PrimaryColor};";
-    }
+        => restaurant is null ? string.Empty : $"background:{restaurant.CardBackgroundColor}; color:{restaurant.HeadingTextColor}; border-color:{restaurant.PrimaryColor};";
 
     private string GetCartBarStyle()
-    {
-        if (restaurant is null)
-            return string.Empty;
-
-        return $"background:{restaurant.CartBarBackgroundColor}; color:{restaurant.CartBarTextColor};";
-    }
+        => restaurant is null ? string.Empty : $"background:{restaurant.CartBarBackgroundColor}; color:{restaurant.CartBarTextColor};";
 
     private string GetCartButtonStyle()
-    {
-        if (restaurant is null)
-            return string.Empty;
-
-        return $"background:{restaurant.ButtonBackgroundColor}; color:{restaurant.ButtonTextColor};";
-    }
+        => restaurant is null ? string.Empty : $"background:{restaurant.ButtonBackgroundColor}; color:{restaurant.ButtonTextColor};";
 
     private string GetDishImageFallbackStyle()
-    {
-        if (restaurant is null)
-            return string.Empty;
-
-        return $"background:linear-gradient(135deg, {restaurant.PrimaryColor}, {restaurant.SecondaryColor}); color:{restaurant.ButtonTextColor};";
-    }
+        => restaurant is null ? string.Empty : $"background:linear-gradient(135deg, {restaurant.PrimaryColor}, {restaurant.SecondaryColor}); color:{restaurant.ButtonTextColor};";
 
     private string GetInitials(string name)
     {
@@ -961,8 +1136,8 @@ else
         return Navigation.GetUriWithQueryParameters(
             "/Account/Login",
             new Dictionary<string, object?>
-                {
-                    ["ReturnUrl"] = returnUrl
-                });
+            {
+                ["ReturnUrl"] = returnUrl
+            });
     }
 }
