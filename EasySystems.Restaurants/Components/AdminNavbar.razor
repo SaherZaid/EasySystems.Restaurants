@@ -6,6 +6,7 @@
 
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
 
 <nav class="admin-navbar">
     <div class="admin-navbar-inner">
@@ -20,8 +21,6 @@
         </button>
 
         <div class="admin-nav-links @(isOpen ? "open" : "")">
-
-            
 
             @if (isPlatformSuperAdmin)
             {
@@ -79,6 +78,16 @@
                 }
             }
 
+            @if (isAuthenticated)
+            {
+                <form action="/Account/RestaurantLogout" method="post" class="admin-nav-logout">
+                    <AntiforgeryToken />
+                    <input type="hidden" name="returnUrl" value="@GetLogoutReturnUrl()" />
+                    <button type="submit">
+                        Logga ut
+                    </button>
+                </form>
+            }
         </div>
     </div>
 </nav>
@@ -91,6 +100,7 @@
     public string? RestaurantSlug { get; set; }
 
     private bool isOpen;
+    private bool isAuthenticated;
     private bool isPlatformSuperAdmin;
     private bool canAccessRestaurant;
     private string? restaurantRole;
@@ -103,6 +113,7 @@
 
     protected override async Task OnParametersSetAsync()
     {
+        isAuthenticated = false;
         isPlatformSuperAdmin = false;
         canAccessRestaurant = false;
         restaurantRole = null;
@@ -112,6 +123,8 @@
 
         if (principal.Identity?.IsAuthenticated != true)
             return;
+
+        isAuthenticated = true;
 
         var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -152,5 +165,13 @@
     private void CloseMenu()
     {
         isOpen = false;
+    }
+
+    private string GetLogoutReturnUrl()
+    {
+        if (!string.IsNullOrWhiteSpace(RestaurantSlug))
+            return $"/restaurant/{RestaurantSlug}";
+
+        return "/admin/restaurants";
     }
 }

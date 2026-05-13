@@ -5350,3 +5350,21 @@ html {
         border-top: 1px solid rgba(17, 24, 39, .08);
     }
 }
+
+.admin-nav-logout {
+    margin: 0;
+}
+
+    .admin-nav-logout button {
+        border: none;
+        background: #8b1e1e;
+        color: #fff;
+        padding: 10px 16px;
+        border-radius: 999px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+        .admin-nav-logout button:hover {
+            opacity: .9;
+        }
