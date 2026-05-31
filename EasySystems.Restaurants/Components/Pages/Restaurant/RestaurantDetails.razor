@@ -819,93 +819,100 @@ else
 
         var selectedOptionIdList = GetAllSelectedOptionIds();
 
-        var removedIncludedOptions = selectedItemOptions
-    .Where(x =>
-        x.IsDefaultIncluded &&
-        !selectedOptionIdList.Contains(x.Id) &&
-        (
-            x.MenuItemOptionGroupId is null ||
-            NormalizeGroupType(x.MenuItemOptionGroup?.GroupType) == IncludedIngredientsType
-        ))
-    .ToList();
+        var optionTextParts = new List<string>();
 
-        var selectedGroupedOptions = selectedItemGroups
-    .OrderBy(x => x.SortOrder)
-    .Select(group =>
-    {
-        var groupType = NormalizeGroupType(group.GroupType);
-
-        if (groupType == IncludedIngredientsType)
+        foreach (var group in selectedItemGroups.OrderBy(x => x.SortOrder))
         {
-            var selectedExtraIngredientNames = selectedItemOptions
-                .Where(option =>
-                    option.MenuItemOptionGroupId == group.Id &&
-                    !option.IsDefaultIncluded &&
-                    selectedOptionIdList.Contains(option.Id))
-                .OrderBy(option => option.SortOrder)
-                .Select(option => option.ExtraPrice > 0
-                    ? $"{option.Name} +{option.ExtraPrice.ToString("0.00")} kr"
-                    : option.Name)
+            var groupType = NormalizeGroupType(group.GroupType);
+
+            var groupOptions = selectedItemOptions
+                .Where(x => x.MenuItemOptionGroupId == group.Id)
+                .OrderBy(x => x.SortOrder)
+                .ThenBy(x => x.Name)
                 .ToList();
 
-            return selectedExtraIngredientNames.Count == 0
-                ? string.Empty
-                : $"Extra: {string.Join(", ", selectedExtraIngredientNames)}";
+            if (groupOptions.Count == 0)
+                continue;
+
+            var lines = new List<string>();
+
+            if (groupType == IncludedIngredientsType)
+            {
+                var removedIncluded = groupOptions
+                    .Where(x => x.IsDefaultIncluded && !selectedOptionIdList.Contains(x.Id))
+                    .Select(x => $"- {x.Name}")
+                    .ToList();
+
+                var addedExtras = groupOptions
+                    .Where(x => !x.IsDefaultIncluded && selectedOptionIdList.Contains(x.Id))
+                    .Select(x => x.ExtraPrice > 0
+                        ? $"+ {x.Name} +{x.ExtraPrice.ToString("0.00")} kr"
+                        : $"+ {x.Name}")
+                    .ToList();
+
+                lines.AddRange(addedExtras);
+                lines.AddRange(removedIncluded);
+            }
+            else if (groupType == SingleChoiceType)
+            {
+                if (selectedSingleGroupOptionIds.TryGetValue(group.Id, out var selectedOptionId))
+                {
+                    var selectedOption = groupOptions.FirstOrDefault(x => x.Id == selectedOptionId);
+
+                    if (selectedOption is not null)
+                    {
+                        lines.Add(selectedOption.ExtraPrice > 0
+                            ? $"{selectedOption.Name} +{selectedOption.ExtraPrice.ToString("0.00")} kr"
+                            : selectedOption.Name);
+                    }
+                }
+            }
+            else
+            {
+                var selectedOptions = groupOptions
+                    .Where(x => selectedOptionIdList.Contains(x.Id))
+                    .Select(x => x.ExtraPrice > 0
+                        ? $"+ {x.Name} +{x.ExtraPrice.ToString("0.00")} kr"
+                        : $"+ {x.Name}")
+                    .ToList();
+
+                lines.AddRange(selectedOptions);
+            }
+
+            if (lines.Count > 0)
+            {
+                optionTextParts.Add($"{group.Name}: {string.Join(", ", lines)}");
+            }
         }
 
-        List<MenuItemOption> selectedOptionsInGroup;
-
-        if (groupType == SingleChoiceType)
-        {
-            selectedOptionsInGroup = selectedSingleGroupOptionIds.TryGetValue(group.Id, out var selectedOptionId)
-                ? selectedItemOptions.Where(x => x.Id == selectedOptionId).ToList()
-                : [];
-        }
-        else
-        {
-            selectedOptionsInGroup = selectedItemOptions
-                .Where(option =>
-                    option.MenuItemOptionGroupId == group.Id &&
-                    selectedOptionIdList.Contains(option.Id))
-                .ToList();
-        }
-
-        var selectedNames = selectedOptionsInGroup
-            .OrderBy(option => option.SortOrder)
-            .Select(option => option.ExtraPrice > 0
-                ? $"{option.Name} +{option.ExtraPrice.ToString("0.00")} kr"
-                : option.Name)
+        var ungroupedOptions = selectedItemOptions
+            .Where(x => x.MenuItemOptionGroupId is null)
+            .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.Name)
             .ToList();
 
-        return selectedNames.Count == 0
-            ? string.Empty
-            : $"{group.Name}: {string.Join(", ", selectedNames)}";
-    })
-    .Where(x => !string.IsNullOrWhiteSpace(x))
-    .ToList();
+        var ungroupedLines = new List<string>();
 
-        var selectedExtraOptions = selectedItemOptions
-            .Where(x =>
-                x.MenuItemOptionGroupId is null &&
-                !x.IsDefaultIncluded &&
-                selectedOptionIds.Contains(x.Id))
-            .ToList();
+        ungroupedLines.AddRange(
+            ungroupedOptions
+                .Where(x => x.IsDefaultIncluded && !selectedOptionIdList.Contains(x.Id))
+                .Select(x => $"- {x.Name}")
+        );
 
-        var removedText = removedIncludedOptions.Count == 0
-            ? string.Empty
-            : "Utan: " + string.Join(", ", removedIncludedOptions.Select(x => x.Name));
+        ungroupedLines.AddRange(
+            ungroupedOptions
+                .Where(x => !x.IsDefaultIncluded && selectedOptionIdList.Contains(x.Id))
+                .Select(x => x.ExtraPrice > 0
+                    ? $"+ {x.Name} +{x.ExtraPrice.ToString("0.00")} kr"
+                    : $"+ {x.Name}")
+        );
 
-        var extraText = selectedExtraOptions.Count == 0
-            ? string.Empty
-            : "Extra: " + string.Join(", ", selectedExtraOptions.Select(x =>
-                x.ExtraPrice > 0
-                    ? $"{x.Name} +{x.ExtraPrice.ToString("0.00")} kr"
-                    : x.Name));
+        if (ungroupedLines.Count > 0)
+        {
+            optionTextParts.Add($"Tillval: {string.Join(", ", ungroupedLines)}");
+        }
 
-        var optionText = string.Join(" | ",
-            selectedGroupedOptions
-                .Concat(new[] { removedText, extraText })
-                .Where(x => !string.IsNullOrWhiteSpace(x)));
+        var optionText = string.Join(" | ", optionTextParts);
 
         var finalPrice = SelectedItemTotal;
 
