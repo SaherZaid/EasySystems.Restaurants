@@ -249,19 +249,19 @@ else
                                                    @onchange="(e) => ToggleOption(option.Id, (bool)e.Value!)" />
 
                                             <span>
-                                                <strong style="color:@restaurant.HeadingTextColor;">@option.Name</strong>
+                                                <strong>@option.Name</strong>
 
-                                                @if (groupType == IncludedIngredientsType)
+                                                @if (groupType == IncludedIngredientsType && option.IsDefaultIncluded)
                                                 {
-                                                    <small style="color:@restaurant.MutedTextColor;">Ingår</small>
+                                                    <small>Ingår</small>
                                                 }
                                                 else if (option.ExtraPrice > 0)
                                                 {
-                                                    <small style="color:@restaurant.PriceTextColor;">+@option.ExtraPrice.ToString("0.00") kr</small>
+                                                    <small>+@option.ExtraPrice.ToString("0.00") kr</small>
                                                 }
                                                 else
                                                 {
-                                                    <small style="color:@restaurant.MutedTextColor;">0 kr</small>
+                                                    <small>0 kr</small>
                                                 }
                                             </span>
                                         </label>
@@ -724,12 +724,14 @@ else
             .ToList();
 
         selectedOptionIds = selectedItemOptions
-            .Where(x =>
-                x.MenuItemOptionGroupId is null && x.IsDefaultIncluded ||
-                x.MenuItemOptionGroupId is not null &&
-                NormalizeGroupType(x.MenuItemOptionGroup?.GroupType) == IncludedIngredientsType)
-            .Select(x => x.Id)
-            .ToHashSet();
+    .Where(x =>
+        x.IsDefaultIncluded &&
+        (
+            x.MenuItemOptionGroupId is null ||
+            NormalizeGroupType(x.MenuItemOptionGroup?.GroupType) == IncludedIngredientsType
+        ))
+    .Select(x => x.Id)
+    .ToHashSet();
 
         selectedSingleGroupOptionIds = [];
     }
@@ -818,38 +820,69 @@ else
         var selectedOptionIdList = GetAllSelectedOptionIds();
 
         var removedIncludedOptions = selectedItemOptions
-            .Where(x =>
-                (x.MenuItemOptionGroupId is null && x.IsDefaultIncluded ||
-                 x.MenuItemOptionGroupId is not null &&
-                 NormalizeGroupType(x.MenuItemOptionGroup?.GroupType) == IncludedIngredientsType) &&
-                !selectedOptionIdList.Contains(x.Id))
-            .ToList();
+    .Where(x =>
+        x.IsDefaultIncluded &&
+        !selectedOptionIdList.Contains(x.Id) &&
+        (
+            x.MenuItemOptionGroupId is null ||
+            NormalizeGroupType(x.MenuItemOptionGroup?.GroupType) == IncludedIngredientsType
+        ))
+    .ToList();
 
         var selectedGroupedOptions = selectedItemGroups
-            .OrderBy(x => x.SortOrder)
-            .Select(group =>
-            {
-                var groupType = NormalizeGroupType(group.GroupType);
+    .OrderBy(x => x.SortOrder)
+    .Select(group =>
+    {
+        var groupType = NormalizeGroupType(group.GroupType);
 
-                if (groupType == IncludedIngredientsType)
-                    return string.Empty;
+        if (groupType == IncludedIngredientsType)
+        {
+            var selectedExtraIngredientNames = selectedItemOptions
+                .Where(option =>
+                    option.MenuItemOptionGroupId == group.Id &&
+                    !option.IsDefaultIncluded &&
+                    selectedOptionIdList.Contains(option.Id))
+                .OrderBy(option => option.SortOrder)
+                .Select(option => option.ExtraPrice > 0
+                    ? $"{option.Name} +{option.ExtraPrice.ToString("0.00")} kr"
+                    : option.Name)
+                .ToList();
 
-                var selectedNames = selectedItemOptions
-                    .Where(option =>
-                        option.MenuItemOptionGroupId == group.Id &&
-                        selectedOptionIdList.Contains(option.Id))
-                    .OrderBy(option => option.SortOrder)
-                    .Select(option => option.ExtraPrice > 0
-                        ? $"{option.Name} +{option.ExtraPrice.ToString("0.00")} kr"
-                        : option.Name)
-                    .ToList();
+            return selectedExtraIngredientNames.Count == 0
+                ? string.Empty
+                : $"Extra: {string.Join(", ", selectedExtraIngredientNames)}";
+        }
 
-                return selectedNames.Count == 0
-                    ? string.Empty
-                    : $"{group.Name}: {string.Join(", ", selectedNames)}";
-            })
-            .Where(x => !string.IsNullOrWhiteSpace(x))
+        List<MenuItemOption> selectedOptionsInGroup;
+
+        if (groupType == SingleChoiceType)
+        {
+            selectedOptionsInGroup = selectedSingleGroupOptionIds.TryGetValue(group.Id, out var selectedOptionId)
+                ? selectedItemOptions.Where(x => x.Id == selectedOptionId).ToList()
+                : [];
+        }
+        else
+        {
+            selectedOptionsInGroup = selectedItemOptions
+                .Where(option =>
+                    option.MenuItemOptionGroupId == group.Id &&
+                    selectedOptionIdList.Contains(option.Id))
+                .ToList();
+        }
+
+        var selectedNames = selectedOptionsInGroup
+            .OrderBy(option => option.SortOrder)
+            .Select(option => option.ExtraPrice > 0
+                ? $"{option.Name} +{option.ExtraPrice.ToString("0.00")} kr"
+                : option.Name)
             .ToList();
+
+        return selectedNames.Count == 0
+            ? string.Empty
+            : $"{group.Name}: {string.Join(", ", selectedNames)}";
+    })
+    .Where(x => !string.IsNullOrWhiteSpace(x))
+    .ToList();
 
         var selectedExtraOptions = selectedItemOptions
             .Where(x =>
