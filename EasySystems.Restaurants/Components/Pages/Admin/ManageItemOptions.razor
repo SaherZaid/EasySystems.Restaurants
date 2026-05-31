@@ -94,7 +94,7 @@ else
                                     class="option-type-card @(newGroup.GroupType == IncludedIngredientsType ? "selected" : "")"
                                     @onclick="() => SetNewGroupType(IncludedIngredientsType)">
                                 <strong>Ingredienser som ingår</strong>
-                                <span>För saker som redan finns i rätten. Kunden kan ta bort dem.</span>
+                                <span>För ingredienser som ingår eller extra ingredienser kunden kan lägga till.</span>
                             </button>
 
                             <button type="button"
@@ -158,8 +158,16 @@ else
 
                         @if (SelectedNewOptionGroupType == IncludedIngredientsType)
                         {
+                            <label class="checkbox-label">
+                                <InputCheckbox @bind-Value="newOption.IsDefaultIncluded" />
+                                Ingår från början i rätten
+                            </label>
+
+                            <label>Extra pris</label>
+                            <InputNumber class="input" @bind-Value="newOption.ExtraPrice" />
+
                             <div class="upload-success">
-                                Detta val kommer vara markerat från början. Kunden kan ta bort det.
+                                Om valet ingår från början kan kunden ta bort det. Om det inte ingår kan kunden lägga till det som extra.
                             </div>
                         }
                         else
@@ -245,7 +253,7 @@ else
                                                         class="option-type-card @(editGroup.GroupType == IncludedIngredientsType ? "selected" : "")"
                                                         @onclick="() => SetEditGroupType(IncludedIngredientsType)">
                                                     <strong>Ingredienser som ingår</strong>
-                                                    <span>Kunden kan ta bort dessa.</span>
+                                                    <span>Kunden kan ta bort eller lägga till extra.</span>
                                                 </button>
 
                                                 <button type="button"
@@ -746,15 +754,8 @@ else
 
     private void ApplyOptionDefaultsFromSelectedGroup()
     {
-        if (SelectedNewOptionGroupType == IncludedIngredientsType)
-        {
-            newOption.IsDefaultIncluded = true;
-            newOption.ExtraPrice = 0;
-        }
-        else
-        {
-            newOption.IsDefaultIncluded = false;
-        }
+        newOption.IsDefaultIncluded = false;
+        newOption.ExtraPrice = 0;
     }
 
     private async Task AddOption()
@@ -790,14 +791,14 @@ else
             groupType = group.GroupType;
         }
 
-        if (groupType == IncludedIngredientsType)
-        {
-            newOption.IsDefaultIncluded = true;
-            newOption.ExtraPrice = 0;
-        }
-        else
+        if (groupType != IncludedIngredientsType)
         {
             newOption.IsDefaultIncluded = false;
+        }
+
+        if (groupType == IncludedIngredientsType && newOption.IsDefaultIncluded)
+        {
+            newOption.ExtraPrice = 0;
         }
 
         if (newOption.ExtraPrice < 0)
@@ -896,14 +897,14 @@ else
             groupType = group.GroupType;
         }
 
-        if (groupType == IncludedIngredientsType)
-        {
-            editOption.IsDefaultIncluded = true;
-            editOption.ExtraPrice = 0;
-        }
-        else
+        if (groupType != IncludedIngredientsType)
         {
             editOption.IsDefaultIncluded = false;
+        }
+
+        if (groupType == IncludedIngredientsType && editOption.IsDefaultIncluded)
+        {
+            editOption.ExtraPrice = 0;
         }
 
         if (editOption.ExtraPrice < 0)
@@ -1022,8 +1023,16 @@ else
 
             @if (GetGroupType(editOption.MenuItemOptionGroupId) == IncludedIngredientsType)
         {
+            <label class="checkbox-label">
+                <InputCheckbox @bind-Value="editOption.IsDefaultIncluded" />
+                Ingår från början i rätten
+            </label>
+
+            <label>Extra pris</label>
+            <InputNumber class="input" @bind-Value="editOption.ExtraPrice" />
+
             <div class="upload-success">
-                Detta är en ingrediens som ingår. Kunden kan ta bort den.
+                Markerad = kunden kan ta bort den. Inte markerad = kunden kan lägga till den som extra.
             </div>
         }
         else
@@ -1057,7 +1066,7 @@ else
             <div>
                 <strong>@option.Name</strong>
 
-                @if (GetGroupType(option.MenuItemOptionGroupId) == IncludedIngredientsType)
+                @if (GetGroupType(option.MenuItemOptionGroupId) == IncludedIngredientsType && option.IsDefaultIncluded)
             {
                 <span class="included-tag">Ingår - kan tas bort</span>
             }
@@ -1148,7 +1157,7 @@ else
     {
         return group.GroupType switch
         {
-            IncludedIngredientsType => "Ingredienser som ingår • kunden kan ta bort",
+            IncludedIngredientsType => "Ingredienser • kunden kan ta bort eller lägga till extra",
             SingleChoiceType => $"{(group.IsRequired ? "Obligatorisk" : "Frivillig")} • Ett val",
             MultipleChoiceType => $"{(group.IsRequired ? "Obligatorisk" : "Frivillig")} • Flera val",
             _ => "Ett val"
