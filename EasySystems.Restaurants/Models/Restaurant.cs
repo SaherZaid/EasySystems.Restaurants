@@ -22,6 +22,8 @@ public class Restaurant
     public string NavbarBackgroundColor { get; set; } = "#FFFFFF";
     public string NavbarTextColor { get; set; } = "#111827";
 
+
+
     public string FooterBackgroundColor { get; set; } = "#111827";
     public string FooterTextColor { get; set; } = "#FFFFFF";
 

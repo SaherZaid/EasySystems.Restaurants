@@ -3,17 +3,25 @@
 
 @using System.ComponentModel.DataAnnotations
 @using EasySystems.Restaurants.Data
+@using EasySystems.Restaurants.Models
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
 
 @attribute [Authorize]
 
+@inject ApplicationDbContext Db
 @inject AuthenticationStateProvider AuthStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
 
-<PageTitle>My profile</PageTitle>
+<PageTitle>Min profil</PageTitle>
+
+@if (navbarRestaurant is not null)
+{
+    <RestaurantNavbar Restaurant="navbarRestaurant" />
+}
 
 <div class="customer-profile-page">
     <div class="customer-profile-shell">
@@ -36,7 +44,7 @@
 
                 @if (isLoading)
                 {
-                    <div class="public-loading">Loading profile...</div>
+                    <div class="public-loading">Laddar profil...</div>
                 }
                 else
                 {
@@ -46,32 +54,31 @@
 
                         <div class="auth-two-cols">
                             <div class="auth-field">
-                                <label>First name</label>
+                                <label>Förnamn</label>
                                 <InputText class="auth-input" @bind-Value="Input.FirstName" />
                                 <ValidationMessage For="() => Input.FirstName" class="auth-validation" />
                             </div>
 
                             <div class="auth-field">
-                                <label>Last name</label>
+                                <label>Efternamn</label>
                                 <InputText class="auth-input" @bind-Value="Input.LastName" />
                                 <ValidationMessage For="() => Input.LastName" class="auth-validation" />
                             </div>
                         </div>
 
                         <div class="auth-field">
-                            <label>Email</label>
+                            <label>E-post</label>
                             <input class="auth-input" value="@Input.Email" disabled />
-                            <small class="profile-help">Email cannot be changed here right now.</small>
                         </div>
 
                         <div class="auth-field">
-                            <label>Phone number</label>
+                            <label>Telefonnummer</label>
                             <InputText class="auth-input" @bind-Value="Input.PhoneNumber" />
                             <ValidationMessage For="() => Input.PhoneNumber" class="auth-validation" />
                         </div>
 
                         <button type="submit" class="auth-submit">
-                            Save profile
+                            Spara profil
                         </button>
 
                         @if (!string.IsNullOrWhiteSpace(successMessage))
@@ -91,17 +98,17 @@
                 <h2>Konto</h2>
 
                 <div class="profile-info-row">
-                    <span>Email confirmed</span>
-                    <strong>@(currentUser?.EmailConfirmed == true ? "Yes" : "No")</strong>
+                    <span>E-post bekräftad</span>
+                    <strong>@(currentUser?.EmailConfirmed == true ? "Ja" : "Nej")</strong>
                 </div>
 
                 <div class="profile-info-row">
-                    <span>Phone</span>
-                    <strong>@(string.IsNullOrWhiteSpace(currentUser?.PhoneNumber) ? "Not added" : currentUser.PhoneNumber)</strong>
+                    <span>Telefonnummer</span>
+                    <strong>@(string.IsNullOrWhiteSpace(currentUser?.PhoneNumber) ? "Inte tillagt" : currentUser.PhoneNumber)</strong>
                 </div>
 
                 <div class="profile-info-row">
-                    <span>Created</span>
+                    <span>Skapad</span>
                     <strong>@currentUser?.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")</strong>
                 </div>
 
@@ -121,6 +128,8 @@
 
 @code {
     private ApplicationUser? currentUser;
+    private EasySystems.Restaurants.Models.Restaurant? navbarRestaurant;
+
     private bool isLoading = true;
 
     private string? successMessage;
@@ -141,12 +150,29 @@
         }
 
         Input = new InputModel
-            {
-                FirstName = currentUser.FirstName,
-                LastName = currentUser.LastName,
-                Email = currentUser.Email ?? "",
-                PhoneNumber = currentUser.PhoneNumber ?? ""
-            };
+        {
+            FirstName = currentUser.FirstName,
+            LastName = currentUser.LastName,
+            Email = currentUser.Email ?? "",
+            PhoneNumber = currentUser.PhoneNumber ?? ""
+        };
+
+        navbarRestaurant = await Db.Orders
+            .AsNoTracking()
+            .Include(x => x.Restaurant)
+            .Where(x => x.CustomerUserId == currentUser.Id)
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => x.Restaurant)
+            .FirstOrDefaultAsync(x => x != null);
+
+        if (navbarRestaurant is null)
+        {
+            navbarRestaurant = await Db.Restaurants
+                .AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderByDescending(x => x.CreatedAt)
+                .FirstOrDefaultAsync();
+        }
 
         isLoading = false;
     }
@@ -171,20 +197,20 @@
             return;
         }
 
-        successMessage = "Profile updated successfully.";
+        successMessage = "Profilen har uppdaterats.";
     }
 
     private string GetDisplayName()
     {
         if (currentUser is null)
-            return "My profile";
+            return "Min profil";
 
         var fullName = $"{currentUser.FirstName} {currentUser.LastName}".Trim();
 
         if (!string.IsNullOrWhiteSpace(fullName))
             return fullName;
 
-        return currentUser.Email ?? "My profile";
+        return currentUser.Email ?? "Min profil";
     }
 
     private string GetInitials()
@@ -211,23 +237,26 @@
 
     private void GoBack()
     {
-        Navigation.NavigateTo("/");
+        if (navbarRestaurant is not null && !string.IsNullOrWhiteSpace(navbarRestaurant.Slug))
+            Navigation.NavigateTo($"/restaurant/{navbarRestaurant.Slug}");
+        else
+            Navigation.NavigateTo("/");
     }
 
     private sealed class InputModel
     {
-        [Required(ErrorMessage = "First name is required.")]
-        [StringLength(50, ErrorMessage = "First name cannot be longer than 50 characters.")]
+        [Required(ErrorMessage = "Förnamn krävs.")]
+        [StringLength(50, ErrorMessage = "Förnamnet får inte vara längre än 50 tecken.")]
         public string FirstName { get; set; } = "";
 
-        [Required(ErrorMessage = "Last name is required.")]
-        [StringLength(50, ErrorMessage = "Last name cannot be longer than 50 characters.")]
+        [Required(ErrorMessage = "Efternamn krävs.")]
+        [StringLength(50, ErrorMessage = "Efternamnet får inte vara längre än 50 tecken.")]
         public string LastName { get; set; } = "";
 
         public string Email { get; set; } = "";
 
-        [Required(ErrorMessage = "Phone number is required.")]
-        [Phone(ErrorMessage = "Enter a valid phone number.")]
+        [Required(ErrorMessage = "Telefonnummer krävs.")]
+        [Phone(ErrorMessage = "Ange ett giltigt telefonnummer.")]
         public string PhoneNumber { get; set; } = "";
     }
 }

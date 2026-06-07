@@ -98,7 +98,7 @@ else
                                        @bind-Value="newItem.Description"
                                        placeholder="Exempel: Serveras med ris, sallad och valfri sås." />
 
-                        <div class="two-cols">
+                        <div class="two-cols item-price-row">
                             <div>
                                 <label>Pris</label>
                                 <InputNumber class="input" @bind-Value="newItem.Price" />
@@ -208,7 +208,7 @@ else
                                             <label>Beskrivning</label>
                                             <InputTextArea class="input textarea" @bind-Value="editItem.Description" />
 
-                                            <div class="two-cols">
+                                            <div class="two-cols item-price-row">
                                                 <div>
                                                     <label>Pris</label>
                                                     <InputNumber class="input" @bind-Value="editItem.Price" />
@@ -717,7 +717,7 @@ else
         await Db.SaveChangesAsync();
 
         pendingDeleteItemId = null;
-
+        
         await LoadItems();
         ResetNewItem();
 
