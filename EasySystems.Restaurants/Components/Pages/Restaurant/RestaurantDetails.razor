@@ -1093,7 +1093,32 @@ else
     }
 
     private string GetPublicPageStyle()
-        => restaurant is null ? string.Empty : $"--primary:{restaurant.PrimaryColor}; --secondary:{restaurant.SecondaryColor}; background:{restaurant.PageBackgroundColor}; color:{restaurant.BodyTextColor};";
+    {
+        if (restaurant is null)
+            return string.Empty;
+
+        return
+            $"--primary:{restaurant.PrimaryColor};" +
+            $"--secondary:{restaurant.SecondaryColor};" +
+            $"--page-bg:{restaurant.PageBackgroundColor};" +
+            $"--section-bg:{restaurant.SectionBackgroundColor};" +
+            $"--card-bg:{restaurant.CardBackgroundColor};" +
+            $"--heading:{restaurant.HeadingTextColor};" +
+            $"--body:{restaurant.BodyTextColor};" +
+            $"--muted:{restaurant.MutedTextColor};" +
+            $"--button-bg:{restaurant.ButtonBackgroundColor};" +
+            $"--button-text:{restaurant.ButtonTextColor};" +
+            $"--secondary-button-bg:{restaurant.SecondaryButtonBackgroundColor};" +
+            $"--secondary-button-text:{restaurant.SecondaryButtonTextColor};" +
+            $"--hero-text:{restaurant.HeroTextColor};" +
+            $"--menu-category-bg:{restaurant.MenuCategoryBackgroundColor};" +
+            $"--menu-item-bg:{restaurant.MenuItemBackgroundColor};" +
+            $"--price:{restaurant.PriceTextColor};" +
+            $"--cart-bg:{restaurant.CartBarBackgroundColor};" +
+            $"--cart-text:{restaurant.CartBarTextColor};" +
+            $"background:{restaurant.PageBackgroundColor};" +
+            $"color:{restaurant.BodyTextColor};";
+    }
 
     private string GetSectionStyle()
         => restaurant is null ? string.Empty : $"background:{restaurant.SectionBackgroundColor};";

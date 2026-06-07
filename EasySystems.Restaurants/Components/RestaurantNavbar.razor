@@ -1,7 +1,6 @@
 ﻿@using EasySystems.Restaurants.Models
 @using EasySystems.Restaurants.Data
 @using Microsoft.AspNetCore.Components.Authorization
-@using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.EntityFrameworkCore
 @using System.Security.Claims
 
@@ -9,41 +8,91 @@
 @inject NavigationManager Navigation
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
 
-<nav class="restaurant-navbar"
-     style="--nav-bg:@GetNavBackground(); --nav-text:@GetNavText(); --primary:@GetPrimary();">
-    <div class="restaurant-navbar-inner">
+<nav class="restaurant-navbar @(GetNavbarClass())"
+     style="@GetNavbarStyle()">
+    <div class="restaurant-navbar-inner" style="@GetNavbarInnerStyle()">
         <a class="restaurant-nav-brand" href="/restaurant/@Restaurant?.Slug">
             @if (!string.IsNullOrWhiteSpace(Restaurant?.LogoUrl))
             {
-                <img src="@Restaurant.LogoUrl" alt="@Restaurant.Name logo" />
+                <img src="@Restaurant.LogoUrl"
+                     alt="@Restaurant.Name logo"
+                     style="@GetLogoStyle()" />
             }
             else
             {
-                <span>@GetInitials()</span>
+                <span style="@GetLogoFallbackStyle()">@GetInitials()</span>
             }
 
-            <strong>@Restaurant?.Name</strong>
+            <strong style="color:@GetValue(Restaurant?.NavbarBrandTitleColor, GetNavText())">
+                @Restaurant?.Name
+            </strong>
         </a>
 
-        <button type="button" class="restaurant-nav-toggle" @onclick="ToggleMenu">
+        <button type="button"
+                class="restaurant-nav-toggle"
+                style="@GetToggleStyle()"
+                @onclick="ToggleMenu">
             ☰
         </button>
 
-        <div class="restaurant-nav-links @(isOpen ? "open" : "")">
-            <a href="/restaurant/@Restaurant?.Slug" @onclick="CloseMenu">Hem</a>
-            <a href="/restaurant/@Restaurant?.Slug#menu" @onclick="CloseMenu">Meny</a>
-            <a href="/restaurant/@Restaurant?.Slug/contact" @onclick="CloseMenu">Kontakt & öppettider</a>
-            <a href="/restaurant/@Restaurant?.Slug/privacy" @onclick="CloseMenu">Integritet</a>
-            <a href="/restaurant/@Restaurant?.Slug/terms" @onclick="CloseMenu">Villkor</a>
+        <div class="restaurant-nav-links @(isOpen ? "open" : "")"
+             style="@GetMobileMenuStyle()">
+            <a class="@GetRestaurantLinkClass("")"
+               style="@GetRestaurantLinkStyle("")"
+               href="/restaurant/@Restaurant?.Slug"
+               @onclick="CloseMenu">
+                Hem
+            </a>
+
+            <a style="@GetRestaurantLinkStyle("#menu")"
+               href="/restaurant/@Restaurant?.Slug#menu"
+               @onclick="CloseMenu">
+                Meny
+            </a>
+
+            <a class="@GetRestaurantLinkClass("contact")"
+               style="@GetRestaurantLinkStyle("contact")"
+               href="/restaurant/@Restaurant?.Slug/contact"
+               @onclick="CloseMenu">
+                Kontakt & öppettider
+            </a>
+
+            <a class="@GetRestaurantLinkClass("privacy")"
+               style="@GetRestaurantLinkStyle("privacy")"
+               href="/restaurant/@Restaurant?.Slug/privacy"
+               @onclick="CloseMenu">
+                Integritet
+            </a>
+
+            <a class="@GetRestaurantLinkClass("terms")"
+               style="@GetRestaurantLinkStyle("terms")"
+               href="/restaurant/@Restaurant?.Slug/terms"
+               @onclick="CloseMenu">
+                Villkor
+            </a>
 
             @if (isAuthenticated)
             {
-                <a href="/Account/Orders" @onclick="CloseMenu">Mina beställningar</a>
-                <a href="/Account/Profile" @onclick="CloseMenu">Mitt konto</a>
+                <a class="@GetAccountLinkClass("/Account/Orders")"
+                   style="@GetAccountLinkStyle("/Account/Orders")"
+                   href="/Account/Orders"
+                   @onclick="CloseMenu">
+                    Mina beställningar
+                </a>
+
+                <a class="@GetAccountLinkClass("/Account/Profile")"
+                   style="@GetAccountLinkStyle("/Account/Profile")"
+                   href="/Account/Profile"
+                   @onclick="CloseMenu">
+                    Mitt konto
+                </a>
 
                 @if (canOpenAdmin)
                 {
-                    <a class="restaurant-admin-link" href="/admin/restaurants" @onclick="CloseMenu">
+                    <a class="restaurant-admin-link @GetAdminLinkClass()"
+                       href="/admin/restaurants"
+                       style="@GetAdminLinkStyle()"
+                       @onclick="CloseMenu">
                         Admin
                     </a>
                 }
@@ -51,14 +100,17 @@
                 <form action="/Account/RestaurantLogout" method="post" class="restaurant-nav-logout">
                     <AntiforgeryToken />
                     <input type="hidden" name="returnUrl" value="@GetReturnUrl()" />
-                    <button type="submit">
+                    <button type="submit" style="@GetNavbarButtonStyle()">
                         Logga ut
                     </button>
                 </form>
             }
             else
             {
-                <a class="restaurant-login-link" href="@GetLoginUrl()" @onclick="CloseMenu">
+                <a class="restaurant-login-link"
+                   href="@GetLoginUrl()"
+                   style="@GetNavbarButtonStyle()"
+                   @onclick="CloseMenu">
                     Logga in
                 </a>
             }
@@ -73,6 +125,20 @@
     private bool isOpen;
     private bool canOpenAdmin;
     private bool isAuthenticated;
+
+    private string CurrentPath =>
+        new Uri(Navigation.Uri).AbsolutePath.TrimEnd('/').ToLowerInvariant();
+
+    private string RestaurantBasePath
+    {
+        get
+        {
+            if (Restaurant is null || string.IsNullOrWhiteSpace(Restaurant.Slug))
+                return "/restaurant";
+
+            return $"/restaurant/{Restaurant.Slug}".TrimEnd('/').ToLowerInvariant();
+        }
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -134,25 +200,172 @@
         return Navigation.GetUriWithQueryParameters(
             "/Account/Login",
             new Dictionary<string, object?>
-                {
-                    ["ReturnUrl"] = GetReturnUrl()
-                });
+            {
+                ["ReturnUrl"] = GetReturnUrl()
+            });
+    }
+
+    private string GetNavbarClass()
+    {
+        var classes = new List<string>();
+
+        if (Restaurant?.NavbarIsSticky == true)
+            classes.Add("is-sticky");
+
+        if (Restaurant?.NavbarIsFloating == true)
+            classes.Add("is-floating");
+
+        return string.Join(" ", classes);
+    }
+
+    private string GetRestaurantLinkClass(string page)
+        => IsRestaurantPageActive(page) ? "active" : "";
+
+    private string GetAccountLinkClass(string path)
+        => IsPathActive(path) ? "active" : "";
+
+    private string GetAdminLinkClass()
+        => CurrentPath.StartsWith("/admin/restaurants") ? "active" : "";
+
+    private bool IsRestaurantPageActive(string page)
+    {
+        if (page == "#menu")
+            return false;
+
+        var expectedPath = string.IsNullOrWhiteSpace(page)
+            ? RestaurantBasePath
+            : $"{RestaurantBasePath}/{page}".TrimEnd('/').ToLowerInvariant();
+
+        return CurrentPath == expectedPath;
+    }
+
+    private bool IsPathActive(string path)
+    {
+        var normalized = path.TrimEnd('/').ToLowerInvariant();
+        return CurrentPath == normalized;
+    }
+
+    private string GetRestaurantLinkStyle(string page)
+        => IsRestaurantPageActive(page) ? GetActiveLinkStyle() : GetNormalLinkStyle();
+
+    private string GetAccountLinkStyle(string path)
+        => IsPathActive(path) ? GetActiveLinkStyle() : GetNormalLinkStyle();
+
+    private string GetAdminLinkStyle()
+    {
+        if (CurrentPath.StartsWith("/admin/restaurants"))
+            return GetNavbarButtonStyle(
+                GetValue(Restaurant?.NavbarActiveBackgroundColor, GetPrimary()),
+                GetValue(Restaurant?.NavbarActiveTextColor, "#0F172A"));
+
+        return GetNavbarButtonStyle();
+    }
+
+    private string GetNormalLinkStyle()
+    {
+        return
+            $"color:{GetNavText()};" +
+            "background:transparent;";
+    }
+
+    private string GetActiveLinkStyle()
+    {
+        return
+            $"background:{GetValue(Restaurant?.NavbarActiveBackgroundColor, GetPrimary())};" +
+            $"color:{GetValue(Restaurant?.NavbarActiveTextColor, "#0F172A")};";
+    }
+
+    private string GetNavbarStyle()
+    {
+        return
+            $"--nav-bg:{GetNavBackground()};" +
+            $"--nav-text:{GetNavText()};" +
+            $"--primary:{GetPrimary()};" +
+            $"--nav-hover:{GetValue(Restaurant?.NavbarLinkHoverColor, GetPrimary())};" +
+            $"--nav-active-bg:{GetValue(Restaurant?.NavbarActiveBackgroundColor, "#FFF7ED")};" +
+            $"--nav-active-text:{GetValue(Restaurant?.NavbarActiveTextColor, GetNavText())};" +
+            $"--nav-border:{GetValue(Restaurant?.NavbarBorderColor, "#E5E7EB")};" +
+            $"--nav-shadow:{GetValue(Restaurant?.NavbarShadowColor, "rgba(17,24,39,.10)")};" +
+            $"background:{GetNavBackground()};" +
+            $"color:{GetNavText()};" +
+            $"border-color:{GetValue(Restaurant?.NavbarBorderColor, "#E5E7EB")};";
+    }
+
+    private string GetNavbarInnerStyle()
+    {
+        var radius = Restaurant?.NavbarIsFloating == true
+            ? Math.Max(Restaurant.NavbarBorderRadius, 0)
+            : 0;
+
+        return
+            $"min-height:{GetInt(Restaurant?.NavbarHeight, 76)}px;" +
+            $"border-radius:{radius}px;" +
+            $"box-shadow:0 14px 34px {GetValue(Restaurant?.NavbarShadowColor, "rgba(17,24,39,.10)")};";
+    }
+
+    private string GetLogoStyle()
+    {
+        var size = GetInt(Restaurant?.NavbarLogoSize, 46);
+
+        return
+            $"width:{size}px;" +
+            $"height:{size}px;" +
+            $"border-radius:50%;" +
+            $"object-fit:cover;";
+    }
+
+    private string GetLogoFallbackStyle()
+    {
+        var size = GetInt(Restaurant?.NavbarLogoSize, 46);
+
+        return
+            $"width:{size}px;" +
+            $"height:{size}px;" +
+            $"background:{GetValue(Restaurant?.NavbarLogoBackgroundColor, GetPrimary())};" +
+            $"color:{GetValue(Restaurant?.NavbarLogoTextColor, "#FFFFFF")};";
+    }
+
+    private string GetToggleStyle()
+    {
+        return
+            $"background:{GetValue(Restaurant?.NavbarButtonBackgroundColor, GetPrimary())};" +
+            $"color:{GetValue(Restaurant?.NavbarButtonTextColor, "#FFFFFF")};";
+    }
+
+    private string GetMobileMenuStyle()
+    {
+        return
+            $"background:{GetValue(Restaurant?.NavbarMobileBackgroundColor, GetNavBackground())};";
+    }
+
+    private string GetNavbarButtonStyle()
+    {
+        return GetNavbarButtonStyle(
+            GetValue(Restaurant?.NavbarButtonBackgroundColor, GetPrimary()),
+            GetValue(Restaurant?.NavbarButtonTextColor, "#FFFFFF"));
+    }
+
+    private string GetNavbarButtonStyle(string background, string color)
+    {
+        return
+            $"background:{background};" +
+            $"color:{color};";
     }
 
     private string GetNavBackground()
-        => string.IsNullOrWhiteSpace(Restaurant?.NavbarBackgroundColor)
-            ? "#FFFFFF"
-            : Restaurant.NavbarBackgroundColor;
+        => GetValue(Restaurant?.NavbarBackgroundColor, "#FFFFFF");
 
     private string GetNavText()
-        => string.IsNullOrWhiteSpace(Restaurant?.NavbarTextColor)
-            ? "#111827"
-            : Restaurant.NavbarTextColor;
+        => GetValue(Restaurant?.NavbarTextColor, "#111827");
 
     private string GetPrimary()
-        => string.IsNullOrWhiteSpace(Restaurant?.PrimaryColor)
-            ? "#111827"
-            : Restaurant.PrimaryColor;
+        => GetValue(Restaurant?.PrimaryColor, "#111827");
+
+    private string GetValue(string? value, string fallback)
+        => string.IsNullOrWhiteSpace(value) ? fallback : value;
+
+    private int GetInt(int? value, int fallback)
+        => value.HasValue && value.Value > 0 ? value.Value : fallback;
 
     private string GetInitials()
     {

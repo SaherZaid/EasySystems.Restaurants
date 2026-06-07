@@ -22,10 +22,40 @@ public class Restaurant
     public string NavbarBackgroundColor { get; set; } = "#FFFFFF";
     public string NavbarTextColor { get; set; } = "#111827";
 
+    public string NavbarActiveBackgroundColor { get; set; } = "#FFF7ED";
+    public string NavbarActiveTextColor { get; set; } = "#111827";
+    public string NavbarShadowColor { get; set; } = "rgba(17,24,39,.10)";
+    public string NavbarLogoBackgroundColor { get; set; } = "#8B0000";
+    public string NavbarLogoTextColor { get; set; } = "#FFFFFF";
+    public string NavbarBorderColor { get; set; } = "#E5E7EB";
+    public string NavbarLinkHoverColor { get; set; } = "#8B0000";
+    public string NavbarButtonBackgroundColor { get; set; } = "#8B0000";
+    public string NavbarButtonTextColor { get; set; } = "#FFFFFF";
+    public string NavbarBrandTitleColor { get; set; } = "#111827";
+    public string NavbarBrandSubtitleColor { get; set; } = "#6B7280";
+    public string NavbarMobileBackgroundColor { get; set; } = "#FFFFFF";
 
+    public int NavbarLogoSize { get; set; } = 46;
+    public int NavbarHeight { get; set; } = 76;
+    public int NavbarBorderRadius { get; set; } = 22;
+    public bool NavbarIsSticky { get; set; } = true;
+    public bool NavbarIsFloating { get; set; } = true;
 
     public string FooterBackgroundColor { get; set; } = "#111827";
     public string FooterTextColor { get; set; } = "#FFFFFF";
+
+    public string FooterTitle { get; set; } = string.Empty;
+    public string FooterDescription { get; set; } = string.Empty;
+    public string FooterCopyrightText { get; set; } = string.Empty;
+    public string FooterBorderColor { get; set; } = "#2A2A2A";
+    public string FooterLinkColor { get; set; } = "#FFFFFF";
+    public string FooterLinkHoverColor { get; set; } = "#C9A46A";
+    public string FooterHeadingColor { get; set; } = "#FFFFFF";
+    public string FooterMutedTextColor { get; set; } = "#A1A1AA";
+
+    public bool ShowFooterLogo { get; set; } = true;
+    public bool ShowFooterSocialLinks { get; set; } = true;
+    public bool ShowFooterLegalLinks { get; set; } = true;
 
     public string PageBackgroundColor { get; set; } = "#FFF7ED";
     public string SectionBackgroundColor { get; set; } = "#FFFFFF";

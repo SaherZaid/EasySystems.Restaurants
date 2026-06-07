@@ -1,74 +1,125 @@
 ﻿@using EasySystems.Restaurants.Models
 
 <footer class="restaurant-footer"
-        style="--footer-bg:@GetFooterBackground(); --footer-text:@GetFooterText(); --primary:@GetPrimary();">
+        style="@GetFooterStyle()">
     <div class="restaurant-footer-inner">
         <div class="footer-brand">
-            @if (!string.IsNullOrWhiteSpace(Restaurant?.LogoUrl))
+            @if (Restaurant?.ShowFooterLogo == true)
             {
-                <img src="@Restaurant.LogoUrl" alt="@Restaurant.Name logo" />
-            }
-            else
-            {
-                <span>@GetInitials()</span>
+                @if (!string.IsNullOrWhiteSpace(Restaurant.LogoUrl))
+                {
+                    <img src="@Restaurant.LogoUrl" alt="@Restaurant.Name logo" />
+                }
+                else
+                {
+                    <span>@GetInitials()</span>
+                }
             }
 
             <div>
-                <strong>@Restaurant?.Name</strong>
-                <p>@Restaurant?.Address</p>
+                <strong style="color:@GetValue(Restaurant?.FooterHeadingColor, "#FFFFFF")">
+                    @DisplayOrFallback(Restaurant?.FooterTitle, Restaurant?.Name ?? "Restaurang")
+                </strong>
+
+                <p style="color:@GetValue(Restaurant?.FooterMutedTextColor, "#A1A1AA")">
+                    @DisplayOrFallback(Restaurant?.FooterDescription, Restaurant?.Address ?? "")
+                </p>
             </div>
         </div>
 
-        <div class="footer-links">
-            <a href="/restaurant/@Restaurant?.Slug">Hem</a>
-            <a href="/restaurant/@Restaurant?.Slug#menu">Meny</a>
-            <a href="/restaurant/@Restaurant?.Slug/contact">Kontakt & öppettider</a>
-            <a href="/restaurant/@Restaurant?.Slug/privacy">Integritet</a>
-            <a href="/restaurant/@Restaurant?.Slug/terms">Villkor</a>
-        </div>
+        @if (Restaurant?.ShowFooterLegalLinks == true)
+        {
+            <div class="footer-links">
+                <a style="@GetFooterLinkStyle()" href="/restaurant/@Restaurant?.Slug">Hem</a>
+                <a style="@GetFooterLinkStyle()" href="/restaurant/@Restaurant?.Slug#menu">Meny</a>
+                <a style="@GetFooterLinkStyle()" href="/restaurant/@Restaurant?.Slug/contact">Kontakt & öppettider</a>
+                <a style="@GetFooterLinkStyle()" href="/restaurant/@Restaurant?.Slug/privacy">Integritet</a>
+                <a style="@GetFooterLinkStyle()" href="/restaurant/@Restaurant?.Slug/terms">Villkor</a>
+            </div>
+        }
 
-        <div class="footer-socials">
-            @if (!string.IsNullOrWhiteSpace(Restaurant?.InstagramUrl))
-            {
-                <a href="@Restaurant.InstagramUrl" target="_blank">Instagram</a>
-            }
+        @if (Restaurant?.ShowFooterSocialLinks == true)
+        {
+            <div class="footer-socials">
+                @if (!string.IsNullOrWhiteSpace(Restaurant?.InstagramUrl))
+                {
+                    <a style="@GetFooterLinkStyle()" href="@Restaurant.InstagramUrl" target="_blank">Instagram</a>
+                }
 
-            @if (!string.IsNullOrWhiteSpace(Restaurant?.FacebookUrl))
-            {
-                <a href="@Restaurant.FacebookUrl" target="_blank">Facebook</a>
-            }
+                @if (!string.IsNullOrWhiteSpace(Restaurant?.FacebookUrl))
+                {
+                    <a style="@GetFooterLinkStyle()" href="@Restaurant.FacebookUrl" target="_blank">Facebook</a>
+                }
 
-            @if (!string.IsNullOrWhiteSpace(Restaurant?.TikTokUrl))
-            {
-                <a href="@Restaurant.TikTokUrl" target="_blank">TikTok</a>
-            }
+                @if (!string.IsNullOrWhiteSpace(Restaurant?.TikTokUrl))
+                {
+                    <a style="@GetFooterLinkStyle()" href="@Restaurant.TikTokUrl" target="_blank">TikTok</a>
+                }
 
-            @if (!string.IsNullOrWhiteSpace(Restaurant?.WebsiteUrl))
-            {
-                <a href="@Restaurant.WebsiteUrl" target="_blank">Website</a>
-            }
-        </div>
+                @if (!string.IsNullOrWhiteSpace(Restaurant?.WebsiteUrl))
+                {
+                    <a style="@GetFooterLinkStyle()" href="@Restaurant.WebsiteUrl" target="_blank">Website</a>
+                }
+            </div>
+        }
     </div>
+
+    @if (!string.IsNullOrWhiteSpace(GetCopyrightText()))
+    {
+        <div class="restaurant-footer-bottom"
+             style="border-top:1px solid @GetValue(Restaurant?.FooterBorderColor, "#2A2A2A"); color:@GetValue(Restaurant?.FooterMutedTextColor, "#A1A1AA");">
+            @GetCopyrightText()
+        </div>
+    }
 </footer>
 
 @code {
     [Parameter]
     public Restaurant? Restaurant { get; set; }
 
+    private string GetFooterStyle()
+    {
+        return
+            $"--footer-bg:{GetFooterBackground()};" +
+            $"--footer-text:{GetFooterText()};" +
+            $"--primary:{GetPrimary()};" +
+            $"--footer-link:{GetValue(Restaurant?.FooterLinkColor, "#FFFFFF")};" +
+            $"--footer-link-hover:{GetValue(Restaurant?.FooterLinkHoverColor, GetPrimary())};" +
+            $"background:{GetFooterBackground()};" +
+            $"color:{GetFooterText()};" +
+            $"border-top:1px solid {GetValue(Restaurant?.FooterBorderColor, "#2A2A2A")};";
+    }
+
+    private string GetFooterLinkStyle()
+    {
+        return $"color:{GetValue(Restaurant?.FooterLinkColor, "#FFFFFF")};";
+    }
+
     private string GetFooterBackground()
-        => string.IsNullOrWhiteSpace(Restaurant?.FooterBackgroundColor)
-            ? "#111827"
-            : Restaurant.FooterBackgroundColor;
+        => GetValue(Restaurant?.FooterBackgroundColor, "#111827");
 
     private string GetFooterText()
-        => string.IsNullOrWhiteSpace(Restaurant?.FooterTextColor)
-            ? "#FFFFFF"
-            : Restaurant.FooterTextColor;
+        => GetValue(Restaurant?.FooterTextColor, "#FFFFFF");
 
     private string GetPrimary()
-        => string.IsNullOrWhiteSpace(Restaurant?.PrimaryColor)
-            ? "#111827"
-            : Restaurant.PrimaryColor;
+        => GetValue(Restaurant?.PrimaryColor, "#111827");
+
+    private string GetValue(string? value, string fallback)
+        => string.IsNullOrWhiteSpace(value) ? fallback : value;
+
+    private string DisplayOrFallback(string? value, string fallback)
+        => string.IsNullOrWhiteSpace(value) ? fallback : value;
+
+    private string GetCopyrightText()
+    {
+        if (!string.IsNullOrWhiteSpace(Restaurant?.FooterCopyrightText))
+            return Restaurant.FooterCopyrightText;
+
+        if (!string.IsNullOrWhiteSpace(Restaurant?.Name))
+            return $"© {DateTime.Now.Year} {Restaurant.Name}. Alla rättigheter förbehållna.";
+
+        return string.Empty;
+    }
 
     private string GetInitials()
     {
