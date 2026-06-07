@@ -5887,3 +5887,13 @@ html {
     background: var(--nav-active-bg) !important;
     color: var(--nav-active-text) !important;
 }
+
+
+.legal-hero .eyebrow {
+    color: #FFFFFF;
+    opacity: .92;
+    font-size: .9rem;
+    font-weight: 700;
+    letter-spacing: .25em;
+    text-transform: uppercase;
+}
