@@ -241,7 +241,7 @@ Examples:
 
 ## 🛠️ Tech Stack
 
-* .NET 8
+* .NET 9
 * Blazor Server
 * ASP.NET Core
 * Entity Framework Core
