@@ -1,6 +1,6 @@
 # EasySystems Restaurants
 
-![.NET](https://img.shields.io/badge/.NET-8.0-purple?style=flat-square)
+![.NET](https://img.shields.io/badge/.NET-9.0-purple?style=flat-square)
 ![Blazor](https://img.shields.io/badge/Blazor-Server-blueviolet?style=flat-square)
 ![SQL Server](https://img.shields.io/badge/Database-SQL%20Server-red?style=flat-square)
 ![Identity](https://img.shields.io/badge/Auth-ASP.NET%20Identity-green?style=flat-square)
