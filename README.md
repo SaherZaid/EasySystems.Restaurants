@@ -389,15 +389,21 @@ The project has evolved from a restaurant website into a complete SaaS platform 
 
 ---
 
-## 👨‍💻 Developer
+## 👨‍💻 Developers
 
 Built by Saher Zaid and Samer Zaid
 
 📧 [Saherzaid1997@gmail.com](mailto:Saherzaid1997@gmail.com)
 
+📧 [Smooory2012@gmail.com](mailto:Smooory2012@gmail.com)
+
 🔗 LinkedIn:
 https://www.linkedin.com/in/saher-zaid-4584842a7/
 
+https://www.linkedin.com/in/samer-zaid-32370a289/
+
 📞 +46 738 785 036
+
+📞 +46 738 785 236
 
 ---
