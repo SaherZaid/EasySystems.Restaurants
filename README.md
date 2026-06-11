@@ -10,9 +10,9 @@
 
 # EasySystems Restaurants
 
-EasySystems Restaurants is a modern multi-restaurant SaaS platform built with Blazor Server and ASP.NET Core.
+EasySystems Restaurants is a modern multi restaurant SaaS platform built with Blazor Server and ASP.NET Core.
 
-The system allows restaurant owners to create and manage their own restaurant website, menu, branding, online ordering experience, and customer-facing pages through a centralized admin dashboard.
+The system allows restaurant owners to create and manage their own restaurant website, menu, branding, online ordering experience, and customer facing pages through a centralized admin dashboard.
 
 Each restaurant can have its own:
 
@@ -31,7 +31,7 @@ The goal is to provide restaurants with a complete digital storefront and orderi
 
 ## 🎯 Purpose & Vision
 
-Many small and medium-sized restaurants rely on social media pages, PDF menus, phone calls, and manual order handling.
+Many small and medium sized restaurants rely on social media pages, PDF menus, phone calls, and manual order handling.
 
 EasySystems Restaurants centralizes everything into one platform.
 
@@ -124,7 +124,7 @@ Each restaurant can create its own visual identity without touching code.
 
 ✔ Item descriptions
 
-✔ Restaurant-specific menus
+✔ Restaurant specific menus
 
 ---
 
@@ -169,7 +169,7 @@ Examples:
 
 ✔ Guest ordering
 
-✔ Logged-in customer ordering
+✔ Logged in customer ordering
 
 ---
 
@@ -247,7 +247,7 @@ Examples:
 * Entity Framework Core
 * SQL Server
 * ASP.NET Identity
-* Role-Based Authorization
+* Role Based Authorization
 * JavaScript Interop
 * Razor Components
 * HTML
@@ -373,9 +373,9 @@ Has full access to the entire platform including restaurants, users, permissions
 
 The platform currently includes:
 
-* Multi-restaurant support
-* Restaurant-specific branding
-* Restaurant-specific permissions
+* Multi restaurant support
+* Restaurant specific branding
+* Restaurant specific permissions
 * Public restaurant websites
 * Online ordering
 * Shopping cart
