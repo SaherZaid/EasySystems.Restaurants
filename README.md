@@ -60,9 +60,9 @@ Customers can:
 
 ### Restaurant Management
 
-✔ Multi-restaurant architecture
+✔ Multi restaurant architecture
 
-✔ Restaurant-specific admin access
+✔ Restaurant specific admin access
 
 ✔ Restaurant ownership system
 
